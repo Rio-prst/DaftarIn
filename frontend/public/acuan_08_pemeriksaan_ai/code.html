@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WEB v2 — Pemeriksaan</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #F5F7FB; color: #172B45; margin: 0; }
+    h1, h2, h3, .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-size: 20px; line-height: 1; vertical-align: middle; }
+    .jmw-progress { display: flex; align-items: flex-start; width: 100%; height: 96px; box-sizing: border-box; padding: 16px 24px; border: 1px solid #DDE5EF; border-radius: 12px; background: #fff; margin: 24px 0; }
+    .jmw-step { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+    .jmw-step:after { content: ""; position: absolute; top: 15px; left: calc(50% + 24px); right: calc(-50% + 24px); height: 2px; background: #DDE5EF; }
+    .jmw-step:last-child:after { display: none; }
+    .jmw-step.is-complete:after { background: #087F68; }
+    .jmw-step-dot { width: 32px; height: 32px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #DDE5EF; border-radius: 50%; background: #fff; color: #52657A; font: 600 14px/20px 'Inter', sans-serif; z-index: 1; }
+    .jmw-step-label { font: 500 14px/20px 'Inter', sans-serif; color: #52657A; white-space: nowrap; }
+    .is-complete .jmw-step-dot { background: #087F68; border-color: #087F68; color: #fff; }
+    .is-complete .jmw-step-label { color: #172B45; }
+    .is-current .jmw-step-dot { background: #1769D2; border-color: #1769D2; color: #fff; box-shadow: 0 0 0 3px #E7F0FF; }
+    .is-current .jmw-step-label { font-weight: 700; color: #172B45; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#F5F7FB]" style="width: 1280px; height: 1000px; overflow: hidden; display: flex; margin: 0; background-color: #F5F7FB; font-family: 'Inter', sans-serif; color: #172B45;">
+<!-- Left Sidebar (fixed width 240px) -->
+<aside class="w-[240px] bg-[#142C4B] text-white flex flex-col" style="width: 240px; height: 1000px; flex-shrink: 0;">
+<!-- Brand Block height 72px -->
+<div class="h-[72px] px-5 flex items-center gap-3 border-b border-[#233F66]">
+<div class="w-8 h-8 rounded bg-[#1769D2] flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-white">fact_check</span>
+</div>
+<div>
+<div class="font-heading font-bold text-base tracking-tight leading-none text-white">JejakMasWowo</div>
+<div class="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+</div>
+</div>
+<!-- Navigation Rows (height 44px, 8px gap, 16px horizontal margin) -->
+<nav class="flex-1 py-4 px-4 space-y-2">
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">search</span>
+<span>Cari Layanan</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-semibold bg-[#1769D2] text-white shadow-sm" href="#">
+<span class="material-symbols-outlined text-white">assignment</span>
+<span>Persiapan Saya</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">send</span>
+<span>Pengajuan Saya</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">notifications</span>
+<span>Notifikasi</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">manage_accounts</span>
+<span>Profil &amp; Privasi</span>
+</a>
+</nav>
+<!-- Sidebar Bottom: Keluar & Prototipe · Simulasi -->
+<div class="p-4 border-t border-[#233F66]">
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">logout</span>
+<span>Keluar</span>
+</a>
+<div class="px-3 pt-3 text-[12px] text-[#7E98B9]">Prototipe · Simulasi</div>
+</div>
+</aside>
+<!-- Main Region (starts x240) -->
+<div class="flex flex-col" style="width: 1040px; height: 1000px; display: flex; flex-direction: column; min-width: 0; overflow: hidden;">
+<!-- Topbar (height 72px, white, border-bottom) -->
+<header class="h-[72px] bg-white border-b border-[#DDE5EF] px-8 flex items-center justify-between flex-shrink-0">
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-sm text-[#52657A]">
+<span>Persiapan</span>
+<span class="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+<span>Akta Kelahiran</span>
+<span class="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+<span class="font-medium text-[#172B45]">Pemeriksaan</span>
+</div>
+<!-- Right Controls: Location, Bantuan inline, Bell, Avatar -->
+<div class="flex items-center gap-3">
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F7FB] border border-[#DDE5EF] rounded-full text-xs font-medium text-[#52657A]">
+<span class="material-symbols-outlined text-[#52657A] text-[16px]">location_on</span>
+<span>Kota Contoh · Simulasi</span>
+</div>
+<button class="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-1.5 transition" type="button">
+<span class="material-symbols-outlined text-[#52657A] text-[18px]">help_outline</span>
+<span>Bantuan</span>
+</button>
+<button class="w-9 h-9 rounded-lg border border-[#DDE5EF] bg-white text-[#52657A] flex items-center justify-center hover:bg-[#F5F7FB] transition" type="button">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<div class="flex items-center gap-2 pl-2 border-l border-[#DDE5EF]">
+<div class="w-8 h-8 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-semibold text-xs">AC</div>
+<span class="text-sm font-semibold text-[#172B45]">Ayu Contoh</span>
+</div>
+</div>
+</header>
+<!-- Page Content (inner margin 32px, bottom padding 96px for action bar) -->
+<main class="p-8 w-full" style="flex: 1 1 0%; min-height: 0; overflow-y: auto; box-sizing: border-box;">
+<!-- Page-heading block -->
+<div>
+<h1 class="text-[28px] leading-[36px] font-bold text-[#172B45]">Hasil pemeriksaan awal</h1>
+<p class="text-[16px] leading-[24px] text-[#52657A] mt-2">Akta Kelahiran (contoh) · Kota Contoh · Persiapan JMW-DEMO-001</p>
+</div>
+<!-- Preparation Stepper (Step 4 active) -->
+<div class="jmw-progress">
+<!-- 1. Kebutuhan (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Kebutuhan</div>
+</div>
+<!-- 2. Data (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Data</div>
+</div>
+<!-- 3. Dokumen (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Dokumen</div>
+</div>
+<!-- 4. Pemeriksaan (current) -->
+<div class="jmw-step is-current">
+<div class="jmw-step-dot">4</div>
+<div class="jmw-step-label">Pemeriksaan</div>
+</div>
+<!-- 5. Ringkasan -->
+<div class="jmw-step">
+<div class="jmw-step-dot">5</div>
+<div class="jmw-step-label">Ringkasan</div>
+</div>
+</div>
+<!-- Compact Single Callout (No wall of banners) -->
+<div class="mb-6 p-4 rounded-[12px] bg-[#FFF8E8] border border-[#F1E0B6] flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#996000] text-[22px]">warning</span>
+<div>
+<span class="text-sm font-bold text-[#996000]">2 temuan perlu perhatian pada draf</span>
+<span class="text-xs text-[#52657A] ml-2">Pemeriksaan AI bersifat pendampingan mandiri, bukan keputusan resmi loket instansi.</span>
+</div>
+</div>
+<div class="text-xs font-semibold px-2.5 py-1 bg-white border border-[#F1E0B6] text-[#996000] rounded-full">Prioritas Perbaikan</div>
+</div>
+<!-- Balanced 2-Column Layout (Document Viewer + Actionable Findings) -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- Left: Document Viewer (col-span-6) -->
+<div class="col-span-6 bg-white border border-[#DDE5EF] rounded-[12px] overflow-hidden">
+<!-- Viewer Top Controls -->
+<div class="h-12 px-4 border-b border-[#DDE5EF] flex items-center justify-between bg-[#F8FAFD]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#1769D2] text-[18px]">description</span>
+<span class="text-xs font-semibold text-[#172B45]">Pratinjau: Surat Keterangan Lahir</span>
+</div>
+<!-- Zoom controls (viewer control only) -->
+<div class="flex items-center gap-2 text-xs text-[#52657A]">
+<button class="w-7 h-7 rounded border border-[#DDE5EF] bg-white flex items-center justify-center hover:bg-gray-50 text-base leading-none" type="button">−</button>
+<span class="font-medium text-[#172B45] px-1">100%</span>
+<button class="w-7 h-7 rounded border border-[#DDE5EF] bg-white flex items-center justify-center hover:bg-gray-50 text-base leading-none" type="button">+</button>
+</div>
+</div>
+<!-- Document Render Frame -->
+<div class="p-6 bg-[#F5F7FB] min-h-[440px] flex items-center justify-center">
+<div class="w-full bg-white border border-[#DDE5EF] rounded-lg shadow-xs p-6 font-mono text-xs text-[#172B45] space-y-4">
+<div class="text-center pb-3 border-b border-[#DDE5EF]">
+<div class="font-bold text-sm tracking-tight text-[#172B45]">RS / KLINIK CONTOH SEHAT KOTA</div>
+<div class="text-[11px] text-[#52657A]">SURAT KETERANGAN KELAHIRAN</div>
+<div class="text-[10px] text-[#8DA0B6]">No. SKK/2026/X/0884-CONTOH</div>
+</div>
+<div class="space-y-2 text-[11px]">
+<div class="flex justify-between">
+<span class="text-[#52657A]">Hari, Tanggal:</span>
+<span class="font-medium">Sabtu, 24 Oktober 2026</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[#52657A]">Nama Ibu:</span>
+<span class="font-medium">Ayu Puspita (contoh)</span>
+</div>
+<div class="flex justify-between">
+<span class="text-[#52657A]">Nama Ayah:</span>
+<span class="font-medium">Budi Santoso (contoh)</span>
+</div>
+<!-- Highlighted Finding 1 -->
+<div class="p-2.5 rounded bg-[#FFF8E8] border border-[#F1E0B6]">
+<div class="flex items-center justify-between text-[10px] font-semibold text-[#996000] mb-1">
+<span>Anotasi #1: Ketidaksesuaian Ejaan</span>
+<span class="bg-[#FFF1D0] px-1.5 py-0.5 rounded">Perlu Koreksi</span>
+</div>
+<div class="flex justify-between font-bold text-xs text-[#172B45]">
+<span>Nama Bayi:</span>
+<span class="text-[#996000] underline">Ayu Cntoh</span>
+</div>
+</div>
+<div class="pt-2 text-[10px] text-[#8DA0B6] italic text-center">
+                  * Halaman 1 dari 2 · Tanda tangan basah tertera di hlm. 2
+                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Actionable Findings (col-span-6) -->
+<div class="col-span-6 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-heading text-[20px] leading-[28px] font-semibold text-[#172B45]">Rincian Temuan Pemeriksaan</h2>
+<span class="text-xs font-semibold px-2 py-1 bg-[#F5F7FB] border border-[#DDE5EF] rounded-full text-[#52657A]">2 Catatan Perlu Aksi</span>
+</div>
+<!-- Finding Card 1: Penulisan Nama Berbeda -->
+<div class="bg-white border-l-4 border-l-[#996000] border border-[#DDE5EF] rounded-[12px] p-5 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold uppercase tracking-wider text-[#996000]">Perhatian Ejaan · Halaman 1</span>
+<span class="material-symbols-outlined text-[#996000] text-[20px]">spellcheck</span>
+</div>
+<h3 class="font-heading text-base font-bold text-[#172B45]">Penulisan nama berbeda</h3>
+<div class="grid grid-cols-2 gap-2 bg-[#F5F7FB] p-3 rounded-lg text-xs">
+<div>
+<span class="text-[#52657A] block text-[11px]">Form isian Anda:</span>
+<span class="font-semibold text-[#172B45]">Ayu Contoh</span>
+</div>
+<div>
+<span class="text-[#52657A] block text-[11px]">Teks terbaca OCR:</span>
+<span class="font-semibold text-[#996000]">Ayu Cntoh ⚠</span>
+</div>
+</div>
+<p class="text-[13px] leading-[20px] text-[#52657A]">
+              Pembacaan otomatis mendeteksi kemungkinan salah satu huruf terlewat saat pemindaian berkas fisik atau ketikan asli rumah sakit.
+            </p>
+<div class="flex items-center gap-2 pt-1">
+<button class="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">
+                Perbaiki Isian Data
+              </button>
+<button class="h-9 px-3 rounded-lg bg-[#E7F0FF] text-xs font-semibold text-[#1769D2] hover:bg-[#D5E6FF] transition" type="button">
+                Koreksi Pembacaan OCR
+              </button>
+</div>
+</div>
+<!-- Finding Card 2: Bagian Dokumen Kurang Terbaca -->
+<div class="bg-white border-l-4 border-l-[#996000] border border-[#DDE5EF] rounded-[12px] p-5 space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold uppercase tracking-wider text-[#996000]">Kualitas Berkas · Halaman 2</span>
+<span class="material-symbols-outlined text-[#996000] text-[20px]">document_scanner</span>
+</div>
+<h3 class="font-heading text-base font-bold text-[#172B45]">Bagian dokumen kurang terbaca</h3>
+<p class="text-[13px] leading-[20px] text-[#52657A]">
+              Cap fasilitas kesehatan atau tanda tangan tampak buram pada salinan pemindaian. Hal ini berisiko memperlambat verifikasi di loket.
+            </p>
+<div class="p-3 rounded-lg bg-[#ECF8F3] border border-[#C5E8D8] text-xs text-[#087F68] flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] mt-0.5">lightbulb</span>
+<span><strong>Saran Praktis:</strong> Ambil foto ulang dengan pencahayaan merata pada permukaan datar tegak lurus.</span>
+</div>
+<div class="pt-1">
+<button class="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] inline-flex items-center gap-1.5 transition" type="button">
+<span class="material-symbols-outlined text-[16px]">upload</span>
+<span>Unggah Ulang Dokumen</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (height 64px, white, border-top, fixed bottom aligned to x240+) -->
+<div class="h-[64px] bg-white border-t border-[#DDE5EF] px-8 flex items-center justify-between flex-shrink-0">
+<button class="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-2 transition" type="button">
+<span class="material-symbols-outlined text-[#52657A]">arrow_back</span>
+<span>Kembali ke Dokumen</span>
+</button>
+<div class="flex items-center gap-3">
+<button class="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">
+          Simpan draf
+        </button>
+<button class="h-[44px] px-4 rounded-lg bg-[#1769D2] text-white text-sm font-semibold hover:bg-[#1257B0] flex items-center gap-2 shadow-sm transition" type="button">
+<span class="material-symbols-outlined text-white">refresh</span>
+<span>Periksa ulang</span>
+</button>
+</div>
+</div>
+</div>
+</body>
+</html>

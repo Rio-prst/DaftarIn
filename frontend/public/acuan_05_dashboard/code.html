@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JejakMasWowo - Dasbor Warga</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-fixed": "#95f1ff",
+            "primary-fixed": "#d5e3ff",
+            "on-primary": "#ffffff",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f7f9ff",
+            "on-secondary-container": "#002d64",
+            "surface-dim": "#c8dcf5",
+            "primary": "#001733",
+            "surface-variant": "#d0e4fd",
+            "surface-container-highest": "#d0e4fd",
+            "background": "#f7f9ff",
+            "surface": "#f7f9ff",
+            "secondary": "#005bbe",
+            "on-primary-container": "#7e94b8",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#004491",
+            "tertiary-fixed-dim": "#79d4e2",
+            "tertiary": "#001b1e",
+            "on-secondary": "#ffffff",
+            "on-background": "#081d2f",
+            "surface-container-low": "#edf4ff",
+            "outline": "#74777e",
+            "primary-fixed-dim": "#b1c8ee",
+            "on-tertiary-container": "#3fa0ad",
+            "on-surface-variant": "#44474e",
+            "secondary-fixed-dim": "#acc7ff",
+            "tertiary-container": "#003137",
+            "on-tertiary-fixed": "#001f24",
+            "on-tertiary": "#ffffff",
+            "outline-variant": "#c4c6ce",
+            "surface-container": "#e3efff",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#081d2f",
+            "inverse-primary": "#b1c8ee",
+            "primary-container": "#142c4b",
+            "inverse-on-surface": "#e8f1ff",
+            "on-primary-fixed-variant": "#314868",
+            "surface-container-high": "#d9eaff",
+            "secondary-container": "#5494ff",
+            "on-error-container": "#93000a",
+            "on-primary-fixed": "#011c3a",
+            "on-secondary-fixed": "#001a40",
+            "on-tertiary-fixed-variant": "#004f57",
+            "inverse-surface": "#1f3245",
+            "error": "#ba1a1a",
+            "secondary-fixed": "#d7e2ff",
+            "surface-tint": "#495f81"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "margin": "2rem",
+            "space-md": "1rem",
+            "margin-lg": "3rem",
+            "gutter": "1.5rem",
+            "margin-sm": "1rem",
+            "gutter-sm": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "body-sm": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "display-mobile": ["Plus Jakarta Sans"],
+            "caption": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "body-md": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "display": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "body-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+            "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "headline-sm": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
+            "display-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "caption": ["11px", {"lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500"}],
+            "body-lg": ["16px", {"lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "body-md": ["14px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "headline-lg-mobile": ["26px", {"lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "display": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface flex antialiased selection:bg-secondary-fixed selection:text-on-secondary-container w-[1280px] h-[1000px] max-w-[1280px] max-h-[1000px] overflow-hidden m-0">
+<!-- LEFT SIDEBAR (Deep navy #142C4B background) -->
+<aside class="w-[240px] h-[1000px] bg-primary-container text-on-primary flex-shrink-0 flex flex-col justify-between shadow-md z-30">
+<!-- Top Segment -->
+<div>
+<!-- Brand Header -->
+<div class="px-6 py-6 border-b border-on-primary-container/20">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px] material-symbols-fill">task_alt</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-[17px] font-bold text-on-primary tracking-tight leading-none">JejakMasWowo</h1>
+<p class="font-caption text-caption text-on-primary-container mt-1">Panduan dan persiapan layanan warga</p>
+</div>
+</div>
+</div>
+<!-- Navigation Menu -->
+<nav class="px-3 py-4 space-y-1">
+<!-- Dashboard (Active) -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary text-on-primary font-label-md text-label-md transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-[20px] material-symbols-fill">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Cari Layanan -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">search</span>
+<span>Cari Layanan</span>
+</a>
+<!-- Persiapan Saya -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span>
+<span>Persiapan Saya</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-secondary/30 text-secondary-fixed border border-secondary-container/40">2</span>
+</a>
+<!-- Pengajuan Saya -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span>Pengajuan Saya</span>
+</div>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-container-high/20 text-on-primary-container">1</span>
+</a>
+<!-- Notifikasi -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span>Notifikasi</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-error ring-2 ring-primary-container"></span>
+</a>
+<!-- Profil & Privasi -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+<span>Profil &amp; Privasi</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Sidebar -->
+<div class="px-4 py-5 border-t border-on-primary-container/20 space-y-4">
+<div class="p-3 rounded-lg bg-primary/60 border border-on-primary-container/20"><div class="flex items-center gap-1.5 mb-1 text-secondary-fixed"><span class="material-symbols-outlined text-[15px]">account_circle</span><span class="font-label-sm text-[11px] font-semibold uppercase tracking-wider">Akun Warga</span></div><p class="font-caption text-caption text-on-primary-container leading-relaxed">Kelola persiapan dan dokumenmu dari akun ini.</p><a class="font-caption text-[11px] text-secondary-fixed hover:underline mt-1 inline-block" href="#">Privasi &amp; Keamanan Data</a></div>
+<button class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-on-primary-container hover:text-error hover:bg-error/10 font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span>Keluar</span>
+</button>
+</div>
+</aside>
+<!-- MAIN CANVAS -->
+<div class="w-[1040px] h-[1000px] flex flex-col min-w-0 overflow-hidden">
+<!-- Top Notice / Disclaimer Ribbon -->
+<!-- Topbar on Main Canvas -->
+<header class="h-[72px] bg-surface-container-lowest border-b border-outline-variant/50 px-8 flex items-center justify-between flex-shrink-0 shadow-[0_1px_3px_rgba(20,44,75,0.03)] z-20"><nav class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant"><a class="hover:text-secondary transition-colors" href="#">Beranda</a><span class="material-symbols-outlined text-[14px] text-outline">chevron_right</span><span class="font-semibold text-primary">Dasbor Warga</span></nav><div class="flex items-center gap-4"><div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant/60 text-on-surface-variant font-label-sm text-label-sm"><span class="material-symbols-outlined text-[15px] text-secondary">location_on</span><span>Kota Contoh · Simulasi</span></div><button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-primary hover:bg-surface-container font-label-sm text-label-sm font-medium transition-all" type="button"><span class="material-symbols-outlined text-[16px]">support_agent</span><span>Bantuan</span></button><button class="relative w-9 h-9 rounded-lg border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span></button><span class="h-6 w-px bg-outline-variant/60"></span><div class="flex items-center gap-3 pl-1"><div class="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-container font-headline-sm text-sm font-bold flex items-center justify-center ring-2 ring-surface-container-high">A</div><div class="text-left"><div class="font-label-md text-label-md font-semibold text-primary leading-tight">Ayu Contoh</div><div class="font-caption text-caption text-on-surface-variant">Warga Terdaftar</div></div></div></div></header>
+<!-- MAIN SCROLLABLE BODY -->
+<main class="flex-1 min-h-0 overflow-y-auto p-8 w-full space-y-6">
+<!-- DASHBOARD HEADER -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">Selamat datang kembali, Ayu</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Lanjutkan langkah yang belum selesai untuk mempermudah proses di loket atau kanal resmi.</p>
+</div>
+<button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-secondary text-on-primary hover:bg-[#1357B0] transition-all font-label-md text-label-md font-semibold shadow-sm active:scale-95" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Mulai Pengurusan Baru</span>
+</button>
+</div>
+<!-- TOP ACTION & STATUS HIGHLIGHT (Hero / Priority Section) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+<!-- Prominent Next-Action Banner (8 cols) -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-xl border border-[#FDE68A] p-6 shadow-[0px_1px_3px_rgba(20,44,75,0.04),0px_4px_8px_rgba(20,44,75,0.02)] relative overflow-hidden flex flex-col justify-between">
+<div class="absolute top-0 left-0 bottom-0 w-1.5 bg-[#D97706]"></div>
+<div>
+<div class="flex items-center justify-between gap-3 mb-2.5">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                Perlu Tindakan Anda · Simulasi
+              </span>
+<span class="font-caption text-caption text-on-surface-variant">Pemeriksaan terakhir: 28 Oktober 2026, 09:15 WIB</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-primary mb-2">Ada berkas yang perlu kamu perbaiki</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-4">
+<strong>Layanan: Akta Kelahiran (contoh)</strong> · Ditemukan 2 temuan pada Surat Keterangan Lahir &amp; Buku Nikah yang dapat memperlambat verifikasi di loket instansi resmi.
+            </p>
+</div>
+<div class="flex flex-wrap items-center gap-3 pt-3 border-t border-outline-variant/30">
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary text-on-primary hover:bg-[#1357B0] transition-colors font-label-md text-label-md font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span>Lihat Hasil Pemeriksaan</span>
+</button>
+<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+<span>Unggah Berkas Pengganti</span>
+</button>
+</div>
+</div>
+<!-- Restrained Compact Summary Widget (4 cols) -->
+<div class="lg:col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-6 shadow-[0px_1px_3px_rgba(20,44,75,0.04)] flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<h4 class="font-title-md text-title-md font-bold text-primary">Ringkasan Pribadi</h4>
+<span class="material-symbols-outlined text-outline text-[18px]">lock</span>
+</div>
+<div class="space-y-3.5"><div class="p-3 rounded-lg bg-surface-container-low/70 border border-outline-variant/40"><div class="font-label-md text-label-md font-semibold text-primary mb-1">Rujukan Peraturan</div><p class="font-caption text-caption text-on-surface-variant">Sumber resmi belum ditautkan pada contoh simulasi.</p></div><div class="p-3 rounded-lg bg-surface-container-low/70 border border-outline-variant/40"><div class="font-label-md text-label-md font-semibold text-primary">Biaya Pelayanan</div><div class="font-caption text-caption text-on-surface-variant mt-1">Belum diverifikasi — contoh simulasi.</div></div><div class="p-3 rounded-lg bg-surface-container-low/70 border border-outline-variant/40"><div class="font-label-md text-label-md font-semibold text-primary">Standar Waktu Layanan</div><div class="font-caption text-caption text-on-surface-variant mt-1">Belum diverifikasi — contoh simulasi.</div></div></div>
+</div>
+<div class="pt-4 mt-3 border-t border-outline-variant/30 flex items-center gap-2 text-on-surface-variant font-caption text-caption"><span class="material-symbols-outlined text-[16px] text-secondary">shield</span><span>Kelola persiapan dan dokumenmu dari akun ini · <a class="underline hover:text-primary" href="#">Privasi</a></span></div>
+</div>
+</div>
+<!-- MAIN CONTENT AREA (2-column layout: 8/12 and 4/12) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (8 cols) -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Section 'Persiapan Saya' -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<h3 class="font-title-md text-title-md font-bold text-primary">Persiapan Saya</h3>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-secondary/10 text-secondary border border-secondary/20">2 Draf Aktif</span>
+</div>
+<a class="font-label-md text-label-md text-secondary hover:underline font-medium inline-flex items-center gap-1" href="#">
+                Kelola Semua
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+<!-- Card 1: Akta Kelahiran (contoh) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)] hover:border-outline transition-all">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-caption text-caption text-[#087F8C] font-medium bg-[#087F8C]/10 px-2 py-0.5 rounded">Disdukcapil (contoh) · Kota Contoh</span>
+<span class="font-caption text-caption text-on-surface-variant">Diperbarui: Hari ini, 09:15 WIB</span>
+</div>
+<h4 class="font-headline-sm text-[18px] font-bold text-primary">Akta Kelahiran (contoh)</h4>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] font-label-sm text-label-sm font-semibold whitespace-nowrap self-start">
+<span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>
+                  Perlu diperiksa ulang
+                </span>
+</div>
+<!-- Progress bar -->
+<div class="space-y-1.5 mb-3.5">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Kesiapan berkas 65% (3 dari 4 berkas siap)</span>
+<span class="font-semibold text-primary">65%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full transition-all" style="width: 65%;"></div>
+</div>
+</div>
+<!-- Findings Box -->
+<div class="p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 flex items-start gap-2.5 mb-4">
+<span class="material-symbols-outlined text-[18px] text-[#D97706] flex-shrink-0 mt-0.5">report_problem</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+<strong>Catatan temuan:</strong> 1 ketidaksesuaian ejaan nama pada Surat Keterangan Lahir, 1 foto Buku Nikah buram.
+                </p>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between gap-3 pt-3 border-t border-outline-variant/30">
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary text-on-primary hover:bg-[#1357B0] transition-colors font-label-md text-label-md font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[17px]">edit_note</span>
+<span>Lanjutkan Pemeriksaan</span>
+</button>
+<button class="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+                  Detail Draf
+                </button>
+</div>
+</div>
+<!-- Card 2: Kartu Keluarga (KK) (contoh) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)] hover:border-outline transition-all">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-caption text-caption text-[#087F8C] font-medium bg-[#087F8C]/10 px-2 py-0.5 rounded">Pembaruan Data Keluarga · Disdukcapil (contoh)</span>
+<span class="font-caption text-caption text-on-surface-variant">Diperbarui: Kemarin, 14:20 WIB</span>
+</div>
+<h4 class="font-headline-sm text-[18px] font-bold text-primary">Kartu Keluarga (KK) (contoh)</h4>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-secondary border border-secondary-container/40 font-label-sm text-label-sm font-semibold whitespace-nowrap self-start">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                  Draf Persiapan
+                </span>
+</div>
+<!-- Progress bar -->
+<div class="space-y-1.5 mb-3.5">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Kesiapan berkas 40% (2 dokumen terunggah)</span>
+<span class="font-semibold text-primary">40%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-[#087F8C] h-full rounded-full transition-all" style="width: 40%;"></div>
+</div>
+</div>
+<!-- Note -->
+<div class="p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 flex items-start gap-2.5 mb-4">
+<span class="material-symbols-outlined text-[18px] text-outline flex-shrink-0 mt-0.5">info</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Menunggu unggahan Surat Pengantar RT/RW atau SPTJM Kebenaran Data Keluarga.
+                </p>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-between gap-3 pt-3 border-t border-outline-variant/30">
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<span class="material-symbols-outlined text-[17px]">file_upload</span>
+<span>Lanjutkan Draf</span>
+</button>
+<button class="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+                  Detail Draf
+                </button>
+</div>
+</div>
+</section>
+<!-- Section 'Pengajuan Saya' -->
+<section class="space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+<div>
+<h3 class="font-title-md text-title-md font-bold text-primary">Pengajuan Saya</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Catatan pribadi pelacakan berkas yang telah Anda ajukan ke instansi berwenang.</p>
+</div>
+</div>
+<!-- Application Item Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)]">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-caption text-caption text-secondary font-mono font-medium">ID Persiapan JejakMasWowo: JMW-DEMO-001</span>
+</div>
+<h4 class="font-title-md text-title-md font-bold text-primary">Pencatatan Peristiwa Kependudukan (Simulasi)</h4>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+<strong>Nomor Registrasi Resmi:</strong> Belum dicatat (isi setelah menerima tanda terima loket)
+                  </div>
+</div>
+<div class="text-right self-start">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant/60 font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[13px]">person_pin</span>
+                    Catatan warga — belum terkonfirmasi instansi
+                  </span>
+<div class="font-caption text-[11px] text-on-surface-variant/80 mt-1">Sumber: Catatan Mandiri Warga</div>
+</div>
+</div>
+<!-- Timeline snippet -->
+<div class="p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 flex items-center gap-3 mb-4"><span class="material-symbols-outlined text-secondary text-[20px]">history_toggle_off</span><p class="font-body-sm text-body-sm text-on-surface-variant"><strong>Status berkas:</strong> Berkas diserahkan ke loket kelurahan: 28 Okt 2026 · Menunggu verifikasi berkas fisik.</p></div>
+<!-- Action buttons -->
+<div class="flex flex-wrap items-center gap-3 pt-3 border-t border-outline-variant/30">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-colors font-label-md text-label-md font-medium shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_calendar</span>
+<span>Catat Nomor Resmi</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span>Lihat Detail Pengajuan</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<!-- RIGHT RAIL (Narrow column 4 cols) -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Notifikasi & Catatan Sistem -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)]">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-outline-variant/30">
+<h4 class="font-title-md text-title-md font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">notifications_active</span>
+                Notifikasi &amp; Catatan Sistem
+              </h4>
+<span class="font-caption text-caption text-secondary cursor-pointer hover:underline">Tandai Baca</span>
+</div>
+<div class="space-y-4"><div class="flex items-start gap-3"><span class="w-2 h-2 rounded-full bg-secondary flex-shrink-0 mt-1.5"></span><div class="space-y-0.5"><p class="font-body-sm text-body-sm text-primary font-medium"><strong>Pemeriksaan Berkas:</strong> Surat Keterangan Lahir terdeteksi ada perbedaan huruf nama ibu.</p><span class="font-caption text-caption text-on-surface-variant block">28 Okt 2026 · 09:15 WIB</span></div></div><div class="flex items-start gap-3"><span class="w-2 h-2 rounded-full bg-outline flex-shrink-0 mt-1.5"></span><div class="space-y-0.5"><p class="font-body-sm text-body-sm text-on-surface-variant"><strong>Pengingat:</strong> Pastikan membawa dokumen fisik asli saat verifikasi loket.</p><span class="font-caption text-caption text-on-surface-variant block">27 Okt 2026</span></div></div><div class="flex items-start gap-3"><span class="w-2 h-2 rounded-full bg-outline flex-shrink-0 mt-1.5"></span><div class="space-y-0.5"><p class="font-body-sm text-body-sm text-on-surface-variant"><strong>Format Dokumen:</strong> Foto KTP-el saksi harus jelas dan tidak terpotong sudutnya.</p><span class="font-caption text-caption text-on-surface-variant block">26 Okt 2026</span></div></div></div>
+</div>
+<!-- Panduan & Dasar Aturan (Kota Contoh · Simulasi) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)]"><span class="material-symbols-outlined text-[16px] text-secondary">shield</span><span>Kelola persiapan dan dokumenmu dari akun ini · <a class="underline hover:text-primary" href="#">Privasi</a></span></div>
+<!-- Quick Tip Card -->
+<div class="bg-primary-container text-on-primary rounded-xl p-5 shadow-sm space-y-2.5">
+<div class="flex items-center gap-2 text-secondary-fixed">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+<span class="font-label-md text-label-md font-bold">Tips Pra-Loket</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-primary-container leading-relaxed">
+              Selalu gunakan format PDF atau JPG dengan resolusi minimal 300 DPI saat memindai berkas fisik agar lolos verifikasi berkas digital loket.
+            </p>
+</div>
+</div>
+</div>
+<!-- COMPACT FOOTER WITHIN MAIN VIEW -->
+</main>
+</div>
+<!-- FLOATING HELP PILL (Bottom right, closed state) -->
+</body></html>

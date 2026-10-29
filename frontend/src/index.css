@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    color: #172B45;
+    background-color: #F5F7FB;
+  }
+}
+
+/* Canonical Preparation Stepper from DESIGN.md */
+.jmw-progress {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px 24px;
+  border: 1px solid #DDE5EF;
+  border-radius: 12px;
+  background: #fff;
+  margin: 20px 0;
+}
+
+.jmw-step {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.jmw-step:after {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: calc(50% + 24px);
+  right: calc(-50% + 24px);
+  height: 2px;
+  background: #DDE5EF;
+}
+
+.jmw-step:last-child:after {
+  display: none;
+}
+
+.jmw-step.is-complete:after {
+  background: #087F8C;
+}
+
+.jmw-step-dot {
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #DDE5EF;
+  border-radius: 50%;
+  background: #fff;
+  color: #52657A;
+  font: 600 14px/20px Inter, sans-serif;
+  z-index: 1;
+}
+
+.jmw-step-label {
+  font: 500 14px/20px Inter, sans-serif;
+  color: #52657A;
+  white-space: nowrap;
+}
+
+.is-complete .jmw-step-dot {
+  background: #087F8C;
+  border-color: #087F8C;
+  color: #fff;
+}
+
+.is-complete .jmw-step-label {
+  color: #172B45;
+}
+
+.is-current .jmw-step-dot {
+  background: #1769D2;
+  border-color: #1769D2;
+  color: #fff;
+  box-shadow: 0 0 0 3px #E7F0FF;
+}
+
+.is-current .jmw-step-label {
+  font-weight: 700;
+  color: #172B45;
+}

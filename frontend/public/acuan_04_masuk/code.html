@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Masuk Akun · JejakMasWowo (Prototipe Independen)</title>
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-container": "#5494ff",
+            "background": "#f7f9ff",
+            "inverse-on-surface": "#e8f1ff",
+            "primary": "#001733",
+            "on-primary": "#ffffff",
+            "on-background": "#081d2f",
+            "outline": "#74777e",
+            "on-secondary-fixed-variant": "#004491",
+            "outline-variant": "#c4c6ce",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed-dim": "#79d4e2",
+            "primary-fixed-dim": "#b1c8ee",
+            "surface-container-high": "#d9eaff",
+            "inverse-primary": "#b1c8ee",
+            "surface-bright": "#f7f9ff",
+            "secondary": "#005bbe",
+            "on-error-container": "#93000a",
+            "error": "#ba1a1a",
+            "surface": "#f7f9ff",
+            "error-container": "#ffdad6",
+            "primary-fixed": "#d5e3ff",
+            "surface-container-highest": "#d0e4fd",
+            "on-tertiary-fixed": "#001f24",
+            "on-secondary-container": "#002d64",
+            "on-primary-container": "#7e94b8",
+            "on-tertiary-container": "#3fa0ad",
+            "on-primary-fixed": "#011c3a",
+            "surface-tint": "#495f81",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-fixed-variant": "#314868",
+            "on-surface": "#081d2f",
+            "secondary-fixed": "#d7e2ff",
+            "primary-container": "#142c4b",
+            "surface-dim": "#c8dcf5",
+            "tertiary": "#001b1e",
+            "surface-variant": "#d0e4fd",
+            "inverse-surface": "#1f3245",
+            "surface-container": "#e3efff",
+            "tertiary-fixed": "#95f1ff",
+            "on-tertiary-fixed-variant": "#004f57",
+            "tertiary-container": "#003137",
+            "surface-container-low": "#edf4ff",
+            "on-tertiary": "#ffffff",
+            "on-error": "#ffffff",
+            "on-secondary-fixed": "#001a40",
+            "secondary-fixed-dim": "#acc7ff",
+            "on-surface-variant": "#44474e"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin-lg": "3rem",
+            "space-lg": "1.5rem",
+            "margin-sm": "1rem",
+            "gutter-sm": "1rem",
+            "gutter": "1.5rem",
+            "margin": "2rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["Plus Jakarta Sans"],
+            "label-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-mobile": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "caption": ["Inter"],
+            "label-md": ["Inter"],
+            "display": ["Plus Jakarta Sans"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "caption": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500" }],
+            "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen selection:bg-secondary-container selection:text-on-secondary-container font-body-md text-body-md">
+<!-- Desktop Split Screen Canvas (45% / 55%) -->
+<main class="min-h-screen flex flex-col lg:flex-row w-full">
+<!-- LEFT COLUMN (45% width, Deep Navy #142C4B background) -->
+<section class="w-full lg:w-[45%] bg-primary-container text-on-primary flex flex-col justify-between p-6 sm:p-10 lg:p-14 relative overflow-hidden shrink-0 border-r border-outline-variant/20">
+<!-- Ambient Visual Background Gradients -->
+<!-- Top Segment: Disclaimer Pill & Brand Identifier -->
+<div class="relative z-10 space-y-6">
+<!-- Disclaimer Pill -->
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-lowest/10 border border-surface-container-lowest/20 backdrop-blur-md">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed animate-pulse"></span>
+<span class="font-label-sm text-caption text-surface-container-low tracking-wide uppercase">
+            PROTOTIPE INDEPENDEN · Bukan portal resmi pemerintah
+          </span>
+</div>
+<!-- Brand Wordmark -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary-container/20 border border-secondary-container/40 flex items-center justify-center text-secondary-container shadow-inner">
+<span class="material-symbols-outlined text-[24px]">task_alt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold tracking-tight text-on-primary leading-tight">
+              JejakMasWowo
+            </span>
+<span class="font-caption text-caption text-on-primary-container tracking-wider uppercase font-semibold">Panduan dan persiapan layanan warga</span>
+</div>
+</div>
+<!-- Main Narrative & Value Proposition -->
+<div class="pt-4 space-y-3 max-w-xl">
+<h2 class="font-headline-lg text-headline-lg text-on-primary font-bold leading-tight">
+            Persiapanmu tersimpan, langkahmu tetap jelas.
+          </h2>
+<p class="font-body-md text-body-md text-primary-fixed-dim leading-relaxed">
+            Simpan draf persiapan dokumen kependudukan, riwayat pemeriksaan mandiri, dan catatan progres pengajuan Anda secara privat dan terstruktur.
+          </p>
+</div>
+</div>
+<!-- Center Segment: Structured Citizen Infographic Architecture -->
+<div class="relative z-10 my-8 space-y-4 max-w-xl"><div class="text-caption font-semibold tracking-wider uppercase text-primary-fixed-dim pb-1">
+  Contoh Alur Pengurusan
+</div>
+<!-- Step 1 Card -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/5 border border-surface-container-lowest/10 backdrop-blur-sm flex items-start gap-3.5">
+<div class="w-8 h-8 rounded-full bg-secondary-container/20 text-secondary-container flex items-center justify-center shrink-0 mt-0.5 border border-secondary-container/30">
+<span class="font-label-md font-bold">1</span>
+</div>
+<div class="flex-1 min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-primary block">Pahami Layanan</span>
+<p class="font-caption text-caption text-primary-fixed-dim mt-0.5">
+      Pelajari persyaratan, dasar hukum, dan tahapan resmi yang dibutuhkan.
+    </p>
+</div>
+</div>
+<!-- Step 2 Card -->
+<div class="p-4 rounded-xl bg-secondary-container/15 border border-secondary-container/40 flex items-start gap-3.5 shadow-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="font-label-md font-bold">2</span>
+</div>
+<div class="flex-1 min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-primary block">Siapkan Berkas</span>
+<p class="font-caption text-caption text-primary-fixed leading-normal mt-0.5">
+      Lengkapi dan periksa mandiri kelayakan dokumen sebelum diajukan.
+    </p>
+</div>
+</div>
+<!-- Step 3 Card -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/5 border border-surface-container-lowest/10 backdrop-blur-sm flex items-start gap-3.5 opacity-80">
+<div class="w-8 h-8 rounded-full bg-surface-container-lowest/20 text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="font-label-md font-bold">3</span>
+</div>
+<div class="flex-1 min-w-0">
+<span class="font-label-md text-label-md font-semibold text-primary-fixed-dim block">Ajukan Melalui Kanal Resmi</span>
+<p class="font-caption text-caption text-on-primary-container mt-0.5">
+      Serahkan berkas melalui loket atau kanal instansi kependudukan resmi.
+    </p>
+</div>
+</div>
+<!-- Privacy Notice Card -->
+<div class="p-4 rounded-xl bg-surface-container-lowest/5 border border-surface-container-lowest/10 flex items-start gap-3 mt-4">
+<span class="material-symbols-outlined text-secondary-container shrink-0 text-[20px] mt-0.5">shield</span>
+<p class="font-caption text-caption text-primary-fixed-dim leading-relaxed">
+    Kelola persiapan dan dokumenmu dari akun ini. Informasi selengkapnya dapat dilihat di <a class="text-secondary-container hover:underline font-semibold" href="#privasi">Kebijakan Privasi</a>.
+  </p>
+</div></div>
+<!-- Bottom Segment: Legal Authority Metadata -->
+<div class="relative z-10 pt-4 border-t border-surface-container-lowest/15 flex items-center justify-between"><p class="font-caption text-caption text-on-primary-container">
+  © 2026 JejakMasWowo · Panduan &amp; Tata Kelola Berkas Warga
+</p></div>
+</section>
+<!-- RIGHT COLUMN (55% width, Light Clean Background #F5F7FB) -->
+<section class="w-full lg:w-[55%] bg-surface flex flex-col justify-between p-6 sm:p-10 lg:p-14 relative">
+<!-- Top Navigation & Action Bar -->
+<header class="w-full flex items-center justify-between pb-6 border-b border-outline-variant/30">
+<a class="inline-flex items-center gap-2 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-150 group" href="#panduan">
+<span class="material-symbols-outlined text-[20px] transition-transform duration-150 group-hover:-translate-x-1">arrow_back</span>
+<span>Kembali ke panduan</span>
+</a>
+<div class="flex items-center gap-3"><a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant/50 hover:bg-surface-container-low font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-150" href="#bantuan">
+<span class="material-symbols-outlined text-secondary text-[18px]">help_outline</span>
+<span>Butuh bantuan?</span>
+</a></div>
+</header>
+<!-- Center Container: Context Card + Focused Form Panel -->
+<div class="w-full max-w-md mx-auto my-auto py-8 space-y-6">
+<!-- Flow Preservation Context Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-center gap-3 shadow-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container-lowest border border-outline-variant/50 flex items-center justify-center text-secondary shadow-xs">
+<span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+</div>
+<div class="flex-1 min-w-0">
+<span class="font-caption text-caption uppercase tracking-wider text-on-surface-variant block font-semibold">
+              Konteks Sesi Berjalan
+            </span>
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate block">
+              Melanjutkan persiapan: Akta Kelahiran · Kota Contoh · Simulasi
+            </span>
+</div>
+</div>
+<!-- Form Heading & Subtitle -->
+<div class="space-y-1.5">
+<h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">
+            Masuk untuk melanjutkan
+          </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Akun digunakan untuk menyimpan data, dokumen, dan hasil pemeriksaanmu.
+          </p>
+</div>
+<!-- Citizen Authentication Form -->
+<form class="space-y-4" novalidate="" onsubmit="event.preventDefault();">
+<!-- Email Input Group -->
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md font-medium text-primary" for="email">
+              Alamat Email
+            </label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<input class="w-full h-11 pl-11 pr-4 rounded-lg bg-surface-container-lowest border border-outline-variant/60 text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all text-body-md font-body-md shadow-xs" id="email" name="email" placeholder="nama@email.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Input Group -->
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md font-medium text-primary" for="password">
+              Kata Sandi
+            </label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="w-full h-11 pl-11 pr-11 rounded-lg bg-surface-container-lowest border border-outline-variant/60 text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all text-body-md font-body-md shadow-xs" id="password" name="password" placeholder="Masukkan kata sandi" required="" type="password"/>
+<!-- Interactive Eye Toggle Button -->
+<button aria-label="Tampilkan atau sembunyikan kata sandi" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-outline hover:text-on-surface transition-colors" id="togglePassword" onclick="
+                  const input = document.getElementById('password');
+                  const icon = this.querySelector('.material-symbols-outlined');
+                  if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.textContent = 'visibility_off';
+                  } else {
+                    input.type = 'password';
+                    icon.textContent = 'visibility';
+                  }
+                " type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Helper Row: Remember Me & Forgot Password -->
+<div class="flex items-center justify-between pt-1">
+<label class="inline-flex items-center gap-2 cursor-pointer select-none">
+<input class="w-4 h-4 rounded text-secondary border-outline-variant focus:ring-secondary/30 focus:ring-offset-0 cursor-pointer" id="remember" name="remember" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Ingat saya di perangkat ini</span>
+</label>
+<a class="font-label-md text-label-md font-semibold text-secondary hover:underline transition-all" href="#lupa-sandi">
+              Lupa kata sandi?
+            </a>
+</div>
+<!-- Primary Submit CTA -->
+<div class="pt-2">
+<button class="w-full h-11 rounded-lg bg-secondary hover:bg-secondary/90 active:scale-[0.99] text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all shadow-md focus:outline-none focus:ring-3 focus:ring-secondary/30" type="submit">
+<span>Masuk Akun</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</form>
+<!-- Explanatory Trust Notice -->
+<!-- Registration Link -->
+<div class="text-center pt-2">
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Belum punya akun? 
+            <a class="text-secondary font-semibold hover:underline transition-all" href="#daftar">
+              Daftar warga baru
+            </a>
+</p>
+</div>
+</div>
+<!-- Bottom Legal Links Footer -->
+<footer class="w-full pt-6 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4 font-caption text-caption text-on-surface-variant">
+<div class="flex items-center gap-4 flex-wrap">
+<a class="hover:text-primary transition-colors" href="#privasi">Kebijakan Privasi</a>
+<span>·</span>
+<a class="hover:text-primary transition-colors" href="#syarat">Ketentuan Layanan</a>
+<span>·</span>
+<a class="hover:text-primary transition-colors" href="#keterbukaan">Keterbukaan Informasi</a>
+</div>
+<div>
+<span>ID-CIVIC · v0.9.4 Prototype</span>
+</div>
+</footer>
+</section>
+</main>
+<!-- Floating Help Trigger (Bottom Right Corner) -->
+</body></html>
