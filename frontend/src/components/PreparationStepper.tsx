@@ -7,11 +7,11 @@ interface PreparationStepperProps {
 
 export const PreparationStepper: React.FC<PreparationStepperProps> = ({ currentStep }) => {
   const steps = [
-    { num: 1, label: 'Kebutuhan', path: '/layanan/1' },
-    { num: 2, label: 'Data', path: '/persiapan/data' },
-    { num: 3, label: 'Dokumen', path: '/persiapan/dokumen' },
-    { num: 4, label: 'Pemeriksaan', path: '/persiapan/pemeriksaan' },
-    { num: 5, label: 'Ringkasan', path: '/persiapan/ringkasan' },
+    { num: 1, label: '01 Kebutuhan', path: '/panduan' },
+    { num: 2, label: '02 Data Pemohon', path: '/persiapan/data' },
+    { num: 3, label: '03 Unggah Berkas', path: '/persiapan/dokumen' },
+    { num: 4, label: '04 Audit AI Dokumen', path: '/persiapan/pemeriksaan' },
+    { num: 5, label: '05 Ringkasan Kesiapan', path: '/persiapan/ringkasan' },
   ];
 
   return (
@@ -28,7 +28,7 @@ export const PreparationStepper: React.FC<PreparationStepperProps> = ({ currentS
           <Link key={step.num} to={step.path} className={stepClass}>
             <div className="jmw-step-dot">
               {isComplete ? (
-                <span className="material-symbols-outlined text-[18px]">check</span>
+                <span className="material-symbols-outlined text-[14px]">check</span>
               ) : (
                 step.num
               )}

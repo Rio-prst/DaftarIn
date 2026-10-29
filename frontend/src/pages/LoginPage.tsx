@@ -7,6 +7,7 @@ export const LoginPage: React.FC = () => {
   const { setUserRole, showToast, openChat } = useApp();
   const [email, setEmail] = useState('ayu.contoh@email.com');
   const [password, setPassword] = useState('********');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = (role: 'warga' | 'petugas' | 'admin' = 'warga') => {
     setUserRole(role);
@@ -140,7 +141,7 @@ export const LoginPage: React.FC = () => {
 <section className="w-full lg:w-[55%] bg-surface flex flex-col justify-between p-6 sm:p-10 lg:p-14 relative">
 {/*  Top Navigation & Action Bar  */}
 <header className="w-full flex items-center justify-between pb-6 border-b border-outline-variant/30">
-<a className="inline-flex items-center gap-2 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-150 group" href="#/panduan">
+<a className="inline-flex items-center gap-2 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-150 group" href="#/panduan" onClick={(e) => { e.preventDefault(); navigate('/panduan'); }}>
 <span className="material-symbols-outlined text-[20px] transition-transform duration-150 group-hover:-translate-x-1">arrow_back</span>
 <span>Kembali ke panduan</span>
 </a>
@@ -197,13 +198,10 @@ export const LoginPage: React.FC = () => {
 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-outline">
 <span className="material-symbols-outlined text-[20px]">lock</span>
 </div>
-<input className="w-full h-11 pl-11 pr-11 rounded-lg bg-surface-container-lowest border border-outline-variant/60 text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all text-body-md font-body-md shadow-xs" id="password" name="password" placeholder="Masukkan kata sandi" required type="password" value={password} onChange={(e) => setPassword(e.target.value)}/>
+<input className="w-full h-11 pl-11 pr-11 rounded-lg bg-surface-container-lowest border border-outline-variant/60 text-on-surface placeholder:text-outline focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all text-body-md font-body-md shadow-xs" id="password" name="password" placeholder="Masukkan kata sandi" required type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}/>
 {/*  Interactive Eye Toggle Button  */}
-<button aria-label="Tampilkan atau sembunyikan kata sandi" className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-outline hover:text-on-surface transition-colors" id="togglePassword" onClick={() => {
-                  const input = document.getElementById('password') as HTMLInputElement | null;
-                  if (input) input.type = input.type === 'password' ? 'text' : 'password';
-                }} type="button">
-<span className="material-symbols-outlined text-[20px]">visibility</span>
+<button aria-label="Tampilkan atau sembunyikan kata sandi" className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-outline hover:text-on-surface transition-colors cursor-pointer" id="togglePassword" onClick={() => setShowPassword(!showPassword)} type="button">
+<span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
 </button>
 </div>
 </div>
@@ -213,7 +211,7 @@ export const LoginPage: React.FC = () => {
 <input className="w-4 h-4 rounded text-secondary border-outline-variant focus:ring-secondary/30 focus:ring-offset-0 cursor-pointer" id="remember" name="remember" type="checkbox"/>
 <span className="font-body-sm text-body-sm text-on-surface">Ingat saya di perangkat ini</span>
 </label>
-<a className="font-label-md text-label-md font-semibold text-secondary hover:underline transition-all" href="#lupa-sandi">
+<a className="font-label-md text-label-md font-semibold text-secondary hover:underline transition-all" href="#lupa-sandi" onClick={(e) => { e.preventDefault(); showToast('Petunjuk pemulihan kata sandi simulasi dikirimkan ke email Anda.', 'info'); }}>
               Lupa kata sandi?
             </a>
 </div>
@@ -230,20 +228,27 @@ export const LoginPage: React.FC = () => {
 <div className="text-center pt-2">
 <p className="font-body-md text-body-md text-on-surface-variant">
             Belum punya akun? 
-            <a className="text-secondary font-semibold hover:underline transition-all" href="#daftar">
-              Daftar warga baru
-            </a>
+            <button
+              type="button"
+              onClick={() => {
+                handleLogin('warga');
+                showToast('Membuat sesi draf persiapan warga baru...', 'success');
+              }}
+              className="text-secondary font-semibold hover:underline transition-all ml-1 cursor-pointer"
+            >
+              Daftar warga baru (simulasi instan)
+            </button>
 </p>
 </div>
 </div>
 {/*  Bottom Legal Links Footer  */}
 <footer className="w-full pt-6 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4 font-caption text-caption text-on-surface-variant">
 <div className="flex items-center gap-4 flex-wrap">
-<a className="hover:text-primary transition-colors" href="#privasi">Kebijakan Privasi</a>
+<button type="button" onClick={() => showToast('Privasi warga: Berkas diproses privat di peramban lokal untuk simulasi mandiri.', 'info')} className="hover:text-primary transition-colors">Kebijakan Privasi</button>
 <span>·</span>
-<a className="hover:text-primary transition-colors" href="#syarat">Ketentuan Layanan</a>
+<button type="button" onClick={() => showToast('Ketentuan Layanan: Platform ini adalah pendamping pra-loket mandiri tanpa calo.', 'info')} className="hover:text-primary transition-colors">Ketentuan Layanan</button>
 <span>·</span>
-<a className="hover:text-primary transition-colors" href="#keterbukaan">Keterbukaan Informasi</a>
+<button type="button" onClick={() => showToast('Keterbukaan Informasi: Sesuai UU No. 24/2013 dan Permendagri No. 108/2019.', 'info')} className="hover:text-primary transition-colors">Keterbukaan Informasi</button>
 </div>
 <div>
 <span>ID-CIVIC · v0.9.4 Prototype</span>

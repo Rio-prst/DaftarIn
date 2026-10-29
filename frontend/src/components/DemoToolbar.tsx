@@ -14,7 +14,7 @@ interface ScreenMeta {
 const SCREENS: ScreenMeta[] = [
   { num: '01', id: 'landing', title: 'Landing Page Warga', path: '/', acuanFile: '/acuan_01_landing/code.html', roleHint: 'Publik' },
   { num: '02', id: 'katalog', title: 'Katalog & Cari Layanan', path: '/katalog', acuanFile: '/acuan_02_katalog/code.html', roleHint: 'Publik' },
-  { num: '03', id: 'panduan', title: 'Panduan Persyaratan Detail', path: '/layanan/1', acuanFile: '/acuan_03_panduan/code.html', roleHint: 'Publik' },
+  { num: '03', id: 'panduan', title: 'Panduan Persyaratan Detail', path: '/panduan', acuanFile: '/acuan_03_panduan/code.html', roleHint: 'Publik' },
   { num: '04', id: 'masuk', title: 'Masuk Akun Simulasi', path: '/masuk', acuanFile: '/acuan_04_masuk/code.html', roleHint: 'Publik' },
   { num: '05', id: 'dashboard', title: 'Dasbor Mandiri Warga', path: '/dashboard', acuanFile: '/acuan_05_dashboard/code.html', roleHint: 'Warga' },
   { num: '06', id: 'data', title: 'Tahap 2: Formulir Data', path: '/persiapan/data', acuanFile: '/acuan_06_data/code.html', roleHint: 'Warga' },
@@ -30,10 +30,11 @@ export const DemoToolbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUserRole, openChat } = useApp();
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   const currentScreenIndex = SCREENS.findIndex(s =>
-    s.path === location.pathname || (s.path.startsWith('/layanan') && location.pathname.startsWith('/layanan'))
+    s.path === location.pathname ||
+    (s.id === 'panduan' && (location.pathname === '/panduan' || location.pathname.startsWith('/layanan')))
   );
 
   const currentScreen = currentScreenIndex !== -1 ? SCREENS[currentScreenIndex] : SCREENS[0];

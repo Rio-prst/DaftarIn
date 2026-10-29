@@ -9,86 +9,199 @@
   }
 }
 
-/* Canonical Preparation Stepper from DESIGN.md */
+/* ==========================================================================
+   CIVIC FILING TAB STEPPER (Manila Folder Concept — Anti-AI-Slop)
+   ========================================================================== */
 .jmw-progress {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
-  padding: 16px 24px;
-  border: 1px solid #DDE5EF;
-  border-radius: 12px;
-  background: #fff;
-  margin: 20px 0;
+  background: #EBF1F8;
+  border: 1px solid #D1DDEB;
+  border-radius: 14px 14px 0 0;
+  padding: 8px 8px 0 8px;
+  margin: 16px 0 20px 0;
+  gap: 6px;
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .jmw-progress {
+    padding: 6px 6px 0 6px;
+    margin: 12px 0 16px 0;
+    gap: 4px;
+  }
+  .jmw-step {
+    min-width: 100px !important;
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+  }
 }
 
 .jmw-step {
   flex: 1;
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #CBD7E6;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: #DEE8F4;
+  color: #52657A;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  min-width: 130px;
 }
 
-.jmw-step:after {
-  content: "";
-  position: absolute;
-  top: 15px;
-  left: calc(50% + 24px);
-  right: calc(-50% + 24px);
-  height: 2px;
-  background: #DDE5EF;
-}
-
-.jmw-step:last-child:after {
-  display: none;
-}
-
-.jmw-step.is-complete:after {
-  background: #087F8C;
+.jmw-step:hover {
+  background: #E5EFF9;
+  color: #142C4B;
 }
 
 .jmw-step-dot {
-  width: 32px;
-  height: 32px;
-  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #DDE5EF;
-  border-radius: 50%;
-  background: #fff;
-  color: #52657A;
-  font: 600 14px/20px Inter, sans-serif;
-  z-index: 1;
-}
-
-.jmw-step-label {
-  font: 500 14px/20px Inter, sans-serif;
-  color: #52657A;
-  white-space: nowrap;
-}
-
-.is-complete .jmw-step-dot {
-  background: #087F8C;
-  border-color: #087F8C;
-  color: #fff;
-}
-
-.is-complete .jmw-step-label {
-  color: #172B45;
-}
-
-.is-current .jmw-step-dot {
-  background: #1769D2;
-  border-color: #1769D2;
-  color: #fff;
-  box-shadow: 0 0 0 3px #E7F0FF;
-}
-
-.is-current .jmw-step-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
-  color: #172B45;
+  background: #CAD8E8;
+  color: #485B70;
+  transition: all 0.2s ease;
+}
+
+.jmw-step.is-complete {
+  background: #E8F4F0;
+  border-color: #B8DECFA;
+  color: #087F68;
+}
+
+.jmw-step.is-complete .jmw-step-dot {
+  background: #087F68;
+  color: #ffffff;
+}
+
+.jmw-step.is-current {
+  background: #FFFFFF;
+  border-color: #1769D2;
+  border-top: 3px solid #1769D2;
+  color: #142C4B;
+  font-weight: 700;
+  box-shadow: 0 -2px 10px rgba(20, 44, 75, 0.05);
+  margin-bottom: -1px;
+  z-index: 2;
+}
+
+.jmw-step.is-current .jmw-step-dot {
+  background: #1769D2;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   THERMAL RECEIPT STYLES (Struk Bukti Pengajuan)
+   ========================================================================== */
+.thermal-receipt {
+  background: #FFFFFF;
+  border: 1px dashed #CBD7E6;
+  box-shadow: 0 4px 18px rgba(20, 44, 75, 0.06);
+  position: relative;
+}
+
+.receipt-edge-top, .receipt-edge-bottom {
+  position: relative;
+  background: radial-gradient(circle, transparent, transparent 4px, #ffffff 4.5px, #ffffff);
+  background-size: 12px 12px;
+}
+
+/* Wet Stamp Seal (Cap Stempel Basah Miring) */
+.official-wet-stamp {
+  border: 3px double currentColor;
+  border-radius: 12px;
+  padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-10deg);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+  mask-image: radial-gradient(circle, rgba(0,0,0,1) 70%, rgba(0,0,0,0.7) 100%);
+  user-select: none;
+}
+
+/* Smooth Scrolling & Wizard Micro-Animations */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wizard-step-enter {
+  animation: fadeInSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.touch-action-manipulation {
+  touch-action: manipulation;
+}
+
+/* Taxfix-inspired Floating Glassmorphic Badges & Ambient Glow */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 4.5s ease-in-out infinite;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 16px 36px -6px rgba(20, 44, 75, 0.12), 0 6px 16px rgba(20, 44, 75, 0.05);
 }

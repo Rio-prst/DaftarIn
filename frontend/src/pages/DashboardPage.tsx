@@ -4,13 +4,13 @@ import { useApp } from '../context/AppContext';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { openChat } = useApp();
+  const { openChat, showToast } = useApp();
 
   return (
     <div className="bg-background text-on-surface flex antialiased selection:bg-secondary-fixed selection:text-on-secondary-container min-h-screen overflow-x-hidden font-sans">
 
-{/*  LEFT SIDEBAR (Deep navy #142C4B background)  */}
-<aside className="w-[240px] h-[1000px] bg-primary-container text-on-primary flex-shrink-0 flex flex-col justify-between shadow-md z-30">
+{/*  LEFT SIDEBAR (Deep navy #142C4B background, Desktop: 240px, Mobile: hidden)  */}
+<aside className="hidden md:flex w-[240px] bg-primary-container min-h-screen text-on-primary shrink-0 flex-col justify-between shadow-md z-30">
 {/*  Top Segment  */}
 <div>
 {/*  Brand Header  */}
@@ -54,18 +54,18 @@ export const DashboardPage: React.FC = () => {
 <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-container-high/20 text-on-primary-container">1</span>
 </a>
 {/*  Notifikasi  */}
-<a className="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#/dashboard">
+<button type="button" onClick={() => showToast('Semua notifikasi pengurusan berkas telah dibaca.', 'info')} className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all text-left">
 <div className="flex items-center gap-3">
 <span className="material-symbols-outlined text-[20px]">notifications</span>
 <span>Notifikasi</span>
 </div>
 <span className="w-2 h-2 rounded-full bg-error ring-2 ring-primary-container"></span>
-</a>
+</button>
 {/*  Profil & Privasi  */}
-<a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all" href="#/dashboard">
+<button type="button" onClick={() => showToast('Profil akun aktif: Ayu Contoh (Warga Terverifikasi).', 'info')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-primary-container hover:text-on-primary hover:bg-primary/40 font-label-md text-label-md transition-all text-left">
 <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
 <span>Profil &amp; Privasi</span>
-</a>
+</button>
 </nav>
 </div>
 {/*  Bottom Sidebar  */}
@@ -78,10 +78,10 @@ export const DashboardPage: React.FC = () => {
 </div>
 </aside>
 {/*  MAIN CANVAS  */}
-<div className="w-[1040px] h-[1000px] flex flex-col min-w-0 overflow-hidden">
+<div className="flex-1 flex flex-col min-w-0 min-h-screen">
 {/*  Top Notice / Disclaimer Ribbon  */}
 {/*  Topbar on Main Canvas  */}
-<header className="h-[72px] bg-surface-container-lowest border-b border-outline-variant/50 px-8 flex items-center justify-between flex-shrink-0 shadow-[0_1px_3px_rgba(20,44,75,0.03)] z-20"><nav className="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant"><a className="hover:text-secondary transition-colors" href="#/dashboard">Beranda</a><span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span><span className="font-semibold text-primary">Dasbor Warga</span></nav><div className="flex items-center gap-4"><div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant/60 text-on-surface-variant font-label-sm text-label-sm"><span className="material-symbols-outlined text-[15px] text-secondary">location_on</span><span>Kota Contoh · Simulasi</span></div><button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-primary hover:bg-surface-container font-label-sm text-label-sm font-medium transition-all" type="button" onClick={() => openChat()}><span className="material-symbols-outlined text-[16px]">support_agent</span><span>Bantuan</span></button><button className="relative w-9 h-9 rounded-lg border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all" type="button"><span className="material-symbols-outlined text-[20px]">notifications</span><span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span></button><span className="h-6 w-px bg-outline-variant/60"></span><div className="flex items-center gap-3 pl-1"><div className="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-container font-headline-sm text-sm font-bold flex items-center justify-center ring-2 ring-surface-container-high">A</div><div className="text-left"><div className="font-label-md text-label-md font-semibold text-primary leading-tight">Ayu Contoh</div><div className="font-caption text-caption text-on-surface-variant">Warga Terdaftar</div></div></div></div></header>
+<header className="h-[72px] bg-surface-container-lowest border-b border-outline-variant/50 px-8 flex items-center justify-between flex-shrink-0 shadow-[0_1px_3px_rgba(20,44,75,0.03)] z-20"><nav className="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant"><a className="hover:text-secondary transition-colors" href="#/dashboard">Beranda</a><span className="material-symbols-outlined text-[14px] text-outline">chevron_right</span><span className="font-semibold text-primary">Dasbor Warga</span></nav><div className="flex items-center gap-4"><div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant/60 text-on-surface-variant font-label-sm text-label-sm"><span className="material-symbols-outlined text-[15px] text-secondary">location_on</span><span>Kota Contoh · Simulasi</span></div><button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant/60 text-on-surface-variant hover:text-primary hover:bg-surface-container font-label-sm text-label-sm font-medium transition-all" type="button" onClick={() => openChat()}><span className="material-symbols-outlined text-[16px]">support_agent</span><span>Bantuan</span></button><button onClick={() => showToast('Semua notifikasi pengurusan berkas telah dibaca.', 'info')} className="relative w-9 h-9 rounded-lg border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-all" type="button"><span className="material-symbols-outlined text-[20px]">notifications</span><span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span></button><span className="h-6 w-px bg-outline-variant/60"></span><div className="flex items-center gap-3 pl-1"><div className="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-container font-headline-sm text-sm font-bold flex items-center justify-center ring-2 ring-surface-container-high">A</div><div className="text-left"><div className="font-label-md text-label-md font-semibold text-primary leading-tight">Ayu Contoh</div><div className="font-caption text-caption text-on-surface-variant">Warga Terdaftar</div></div></div></div></header>
 {/*  MAIN SCROLLABLE BODY  */}
 <main className="flex-1 min-h-0 overflow-y-auto p-8 w-full space-y-6">
 {/*  DASHBOARD HEADER  */}
@@ -147,10 +147,14 @@ export const DashboardPage: React.FC = () => {
 <h3 className="font-title-md text-title-md font-bold text-primary">Persiapan Saya</h3>
 <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-secondary/10 text-secondary border border-secondary/20">2 Draf Aktif</span>
 </div>
-<a className="font-label-md text-label-md text-secondary hover:underline font-medium inline-flex items-center gap-1" href="#/dashboard">
-                Kelola Semua
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-</a>
+<button
+  type="button"
+  onClick={() => navigate('/pelacakan')}
+  className="font-label-md text-label-md text-secondary hover:underline font-medium inline-flex items-center gap-1"
+>
+  <span>Kelola Semua</span>
+  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
 </div>
 {/*  Card 1: Akta Kelahiran (contoh)  */}
 <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)] hover:border-outline transition-all">
@@ -186,11 +190,11 @@ export const DashboardPage: React.FC = () => {
 </div>
 {/*  Actions  */}
 <div className="flex items-center justify-between gap-3 pt-3 border-t border-outline-variant/30">
-<button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary text-on-primary hover:bg-[#1357B0] transition-colors font-label-md text-label-md font-medium shadow-sm" type="button">
+<button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary text-on-primary hover:bg-[#1357B0] transition-colors font-label-md text-label-md font-medium shadow-sm" type="button" onClick={() => navigate("/persiapan/pemeriksaan")}>
 <span className="material-symbols-outlined text-[17px]">edit_note</span>
 <span>Lanjutkan Pemeriksaan</span>
 </button>
-<button className="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<button className="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button" onClick={() => navigate("/persiapan/data")}>
                   Detail Draf
                 </button>
 </div>
@@ -229,11 +233,11 @@ export const DashboardPage: React.FC = () => {
 </div>
 {/*  Actions  */}
 <div className="flex items-center justify-between gap-3 pt-3 border-t border-outline-variant/30">
-<button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button" onClick={() => navigate("/persiapan/dokumen")}>
 <span className="material-symbols-outlined text-[17px]">file_upload</span>
 <span>Lanjutkan Draf</span>
 </button>
-<button className="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<button className="px-3.5 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button" onClick={() => navigate("/persiapan/data")}>
                   Detail Draf
                 </button>
 </div>
@@ -271,11 +275,11 @@ export const DashboardPage: React.FC = () => {
 <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 flex items-center gap-3 mb-4"><span className="material-symbols-outlined text-secondary text-[20px]">history_toggle_off</span><p className="font-body-sm text-body-sm text-on-surface-variant"><strong>Status berkas:</strong> Berkas diserahkan ke loket kelurahan: 28 Okt 2026 · Menunggu verifikasi berkas fisik.</p></div>
 {/*  Action buttons  */}
 <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-outline-variant/30">
-<button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-colors font-label-md text-label-md font-medium shadow-sm" type="button">
+<button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-colors font-label-md text-label-md font-medium shadow-sm" type="button" onClick={() => navigate("/pelacakan")}>
 <span className="material-symbols-outlined text-[16px]">edit_calendar</span>
 <span>Catat Nomor Resmi</span>
 </button>
-<button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button">
+<button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest border border-outline-variant text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md font-medium" type="button" onClick={() => navigate("/pelacakan")}>
 <span className="material-symbols-outlined text-[16px]">info</span>
 <span>Lihat Detail Pengajuan</span>
 </button>
@@ -292,12 +296,33 @@ export const DashboardPage: React.FC = () => {
 <span className="material-symbols-outlined text-[18px] text-secondary">notifications_active</span>
                 Notifikasi &amp; Catatan Sistem
               </h4>
-<span className="font-caption text-caption text-secondary cursor-pointer hover:underline">Tandai Baca</span>
+<span className="font-caption text-caption text-secondary cursor-pointer hover:underline" onClick={() => showToast("Semua notifikasi ditandai dibaca.", "info")}>Tandai Baca</span>
 </div>
 <div className="space-y-4"><div className="flex items-start gap-3"><span className="w-2 h-2 rounded-full bg-secondary flex-shrink-0 mt-1.5"></span><div className="space-y-0.5"><p className="font-body-sm text-body-sm text-primary font-medium"><strong>Pemeriksaan Berkas:</strong> Surat Keterangan Lahir terdeteksi ada perbedaan huruf nama ibu.</p><span className="font-caption text-caption text-on-surface-variant block">28 Okt 2026 · 09:15 WIB</span></div></div><div className="flex items-start gap-3"><span className="w-2 h-2 rounded-full bg-outline flex-shrink-0 mt-1.5"></span><div className="space-y-0.5"><p className="font-body-sm text-body-sm text-on-surface-variant"><strong>Pengingat:</strong> Pastikan membawa dokumen fisik asli saat verifikasi loket.</p><span className="font-caption text-caption text-on-surface-variant block">27 Okt 2026</span></div></div><div className="flex items-start gap-3"><span className="w-2 h-2 rounded-full bg-outline flex-shrink-0 mt-1.5"></span><div className="space-y-0.5"><p className="font-body-sm text-body-sm text-on-surface-variant"><strong>Format Dokumen:</strong> Foto KTP-el saksi harus jelas dan tidak terpotong sudutnya.</p><span className="font-caption text-caption text-on-surface-variant block">26 Okt 2026</span></div></div></div>
 </div>
 {/*  Panduan & Dasar Aturan (Kota Contoh · Simulasi)  */}
-<div className="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)]"><span className="material-symbols-outlined text-[16px] text-secondary">shield</span><span>Kelola persiapan dan dokumenmu dari akun ini · <a className="underline hover:text-primary" href="#/dashboard">Privasi</a></span></div>
+<div className="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 shadow-[0px_1px_3px_rgba(20,44,75,0.04)] space-y-3">
+  <div className="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+    <h4 className="font-title-md text-title-md font-bold text-primary flex items-center gap-2">
+      <span className="material-symbols-outlined text-[18px] text-secondary">gavel</span>
+      Dasar Regulasi &amp; Hak Warga
+    </h4>
+  </div>
+  <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+    Sesuai <strong>UU No. 24 Tahun 2013 Pasal 79A</strong>, seluruh pengurusan dan penerbitan dokumen kependudukan resmi tidak dipungut biaya (Rp 0).
+  </p>
+  <div className="pt-2 flex items-center justify-between text-caption text-caption border-t border-outline-variant/20">
+    <span className="text-secondary font-medium">Permendagri No. 108/2019</span>
+    <button
+      type="button"
+      onClick={() => navigate('/panduan')}
+      className="text-secondary hover:text-primary font-semibold hover:underline inline-flex items-center gap-1"
+    >
+      <span>Lihat Rujukan</span>
+      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+    </button>
+  </div>
+</div>
 {/*  Quick Tip Card  */}
 <div className="bg-primary-container text-on-primary rounded-xl p-5 shadow-sm space-y-2.5">
 <div className="flex items-center gap-2 text-secondary-fixed">

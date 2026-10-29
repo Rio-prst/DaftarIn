@@ -1,10 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 export const AdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast: _showToast } = useApp();
+  const { showToast } = useApp();
+  const [activeVersion, setActiveVersion] = useState<'v1' | 'v2'>('v2');
+  const [activeTab, setActiveTab] = useState<'info' | 'persyaratan' | 'regulasi' | 'ai' | 'petugas' | 'audit'>('persyaratan');
+  const [isSourceLinked, setIsSourceLinked] = useState<boolean>(false);
+  const [sourceUrl, setSourceUrl] = useState<string>('');
+
+  const handleLinkSource = () => {
+    setIsSourceLinked(true);
+    setSourceUrl('https://layanan.dukcapil.kemendagri.go.id/akta-kelahiran');
+    showToast('Tautan rujukan resmi berhasil diverifikasi & terhubung ke Draf v2!', 'success');
+  };
+
+  const handleSaveDraft = () => {
+    showToast('Konfigurasi draf panduan layanan berhasil disimpan ke basis data!', 'success');
+  };
+
+  const handlePublish = () => {
+    if (!isSourceLinked) {
+      showToast('Wajib menautkan sumber rujukan resmi sebelum publikasi!', 'error');
+      return;
+    }
+    setActiveVersion('v1');
+    showToast('Versi v2 berhasil dipublikasikan menjadi versi aktif!', 'success');
+  };
 
   return (
     <div className="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md text-body-md selection:bg-secondary-fixed selection:text-on-secondary-fixed-variant">
@@ -30,9 +53,9 @@ export const AdminPage: React.FC = () => {
       </div>
 
 {/*  Top Prototype Disclaimer Banner  */}
-<div className="w-[1280px] h-[1000px] flex overflow-hidden">
-{/*  Desktop Admin Sidebar (250px)  */}
-<aside className="w-[240px] h-[1000px] shrink-0 bg-primary-container text-on-primary flex flex-col justify-between border-r border-primary shadow-sm select-none">
+<div className="w-full flex min-h-screen">
+{/*  Desktop Admin Sidebar (240px, Mobile: hidden)  */}
+<aside className="hidden md:flex w-[240px] shrink-0 bg-primary-container min-h-screen text-on-primary flex-col justify-between border-r border-primary shadow-sm select-none">
 <div>
 {/*  Sidebar Brand Header  */}
 <div className="p-5 border-b border-outline-variant/20">
@@ -54,26 +77,46 @@ export const AdminPage: React.FC = () => {
 </div>
 {/*  Navigation Menu  */}
 <nav className="p-3 space-y-1">
-<a className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-secondary text-white font-medium text-sm transition-all shadow-sm" href="#/admin">
-<span className="material-symbols-outlined text-white">domain_verification</span>
-<span>Layanan &amp; Wilayah</span>
-</a>
-<a className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-primary-fixed-dim hover:text-white hover:bg-white/5 font-medium text-sm transition-colors" href="#/admin">
-<span className="material-symbols-outlined">menu_book</span>
-<span>Sumber Informasi</span>
-</a>
-<a className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-primary-fixed-dim hover:text-white hover:bg-white/5 font-medium text-sm transition-colors" href="#/admin">
-<span className="material-symbols-outlined">psychology_alt</span>
-<span>Aturan Pemeriksaan AI</span>
-</a>
-<a className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-primary-fixed-dim hover:text-white hover:bg-white/5 font-medium text-sm transition-colors" href="#/admin">
-<span className="material-symbols-outlined">manage_accounts</span>
-<span>Akun Petugas</span>
-</a>
-<a className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-primary-fixed-dim hover:text-white hover:bg-white/5 font-medium text-sm transition-colors" href="#/admin">
-<span className="material-symbols-outlined">receipt_long</span>
-<span>Audit Rekam Jejak</span>
-</a>
+<button
+  onClick={() => { setActiveTab('info'); showToast('Membuka Informasi Layanan & Wilayah.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'info' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">domain_verification</span>
+  <span>Layanan &amp; Wilayah</span>
+</button>
+<button
+  onClick={() => { setActiveTab('regulasi'); showToast('Membuka Sumber Informasi & Regulasi.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'regulasi' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">menu_book</span>
+  <span>Sumber Informasi</span>
+</button>
+<button
+  onClick={() => { setActiveTab('ai'); showToast('Membuka Aturan Pemeriksaan AI & Ambang Batas.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'ai' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">psychology_alt</span>
+  <span>Aturan Pemeriksaan AI</span>
+</button>
+<button
+  onClick={() => { setActiveTab('petugas'); showToast('Membuka Manajemen Akun Petugas Loket.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'petugas' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+  <span>Akun Petugas</span>
+</button>
+<button
+  onClick={() => { setActiveTab('audit'); showToast('Membuka Audit Rekam Jejak Sistem.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'audit' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+  <span>Audit Rekam Jejak</span>
+</button>
 </nav>
 </div>
 {/*  Sidebar Footer Reminder Card  */}
@@ -91,9 +134,9 @@ export const AdminPage: React.FC = () => {
 </div>
 </aside>
 {/*  Main Workspace Container  */}
-<div className="w-[1040px] h-[1000px] flex flex-col min-w-0 bg-surface overflow-hidden">
+<div className="flex-1 flex flex-col min-w-0 min-h-screen bg-surface overflow-x-hidden">
 {/*  Topbar Header  */}
-<header className="h-[72px] shrink-0 bg-surface-container-lowest border-b border-outline-variant/40 px-6 flex items-center justify-between z-20">
+<header className="h-[72px] shrink-0 bg-surface-container-lowest border-b border-outline-variant/40 px-4 sm:px-6 flex items-center justify-between z-20 overflow-x-auto">
 {/*  Breadcrumbs  */}
 <div className="flex items-center gap-2 text-sm">
 <span className="text-on-surface-variant font-body-sm">Administrasi Layanan</span>
@@ -123,7 +166,7 @@ export const AdminPage: React.FC = () => {
 </div>
 </header>
 {/*  Main Body Content  */}
-<main className="flex-1 min-h-0 overflow-y-auto p-8 w-full space-y-6">
+<main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-8 w-full space-y-6">
 {/*  Top Title & Version Control Header Section  */}
 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2 border-b border-outline-variant/30">
 <div>
@@ -140,31 +183,31 @@ export const AdminPage: React.FC = () => {
 </div>
 {/*  Version Selector Chips  */}
 <div className="flex items-center gap-2 bg-surface-container p-1.5 rounded-lg border border-outline-variant/60">
-<button className="px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+<button onClick={() => { setActiveVersion('v1'); showToast('Beralih ke tampilan Versi Terbit (v1 Aktif).', 'info'); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeVersion === 'v1' ? 'bg-white text-primary shadow-sm border border-outline-variant/40' : 'text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               Versi terbit: v1 (Aktif)
             </button>
-<button className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-secondary shadow-sm border border-outline-variant/40 flex items-center gap-1.5">
+<button onClick={() => { setActiveVersion('v2'); showToast('Beralih ke mode penyuntingan Draf (v2).', 'info'); }} className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${activeVersion === 'v2' ? 'bg-white text-secondary shadow-sm border border-outline-variant/40' : 'text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
               Draf: v2 (Sedang diedit)
             </button>
 </div>
 </div>
 {/*  Secondary Tab Navigation  */}
-<div className="border-b border-outline-variant/50 flex gap-8">
-<button className="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+<div className="border-b border-outline-variant/50 flex gap-4 sm:gap-8 overflow-x-auto pb-1">
+<button onClick={() => setActiveTab('info')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'info' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="material-symbols-outlined text-sm">info</span>
             Informasi Dasar
           </button>
-<button className="pb-3 text-sm font-semibold text-secondary border-b-2 border-secondary flex items-center gap-2">
+<button onClick={() => setActiveTab('persyaratan')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'persyaratan' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="material-symbols-outlined text-sm">folder_open</span>
-            Persyaratan &amp; Dokumen (Aktif)
+            Persyaratan &amp; Dokumen
           </button>
-<button className="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+<button onClick={() => setActiveTab('regulasi')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'regulasi' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="material-symbols-outlined text-sm">gavel</span>
             Sumber Regulasi Rujukan
           </button>
-<button className="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-2">
+<button onClick={() => setActiveTab('ai')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'ai' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="material-symbols-outlined text-sm">smart_toy</span>
             Aturan Pemeriksaan AI
           </button>
@@ -173,6 +216,119 @@ export const AdminPage: React.FC = () => {
 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 {/*  MAIN EDITOR PANEL (Left Column - 65%)  */}
 <div className="lg:col-span-8 space-y-6">
+
+{/* TAB 1: INFORMASI DASAR */}
+{activeTab === 'info' && (
+  <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-6 civic-card-shadow space-y-5">
+    <div className="flex items-center gap-2 pb-3 border-b border-[#DDE5EF]">
+      <span className="material-symbols-outlined text-secondary text-2xl">info</span>
+      <h3 className="font-title-md text-base font-bold text-primary">Informasi Layanan &amp; Kebijakan Pelayanan Warga</h3>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+      <div>
+        <label className="block font-bold text-primary mb-1">Nama Layanan Publik</label>
+        <input type="text" readOnly value="Penerbitan Akta Kelahiran Baru" className="w-full h-10 px-3 bg-slate-50 border border-[#CBD7E6] rounded-lg font-semibold text-primary" />
+      </div>
+      <div>
+        <label className="block font-bold text-primary mb-1">Kode Identifikasi Standar (SIAK)</label>
+        <input type="text" readOnly value="SIAK-LAK-2026-001" className="w-full h-10 px-3 bg-slate-50 border border-[#CBD7E6] rounded-lg font-mono text-primary" />
+      </div>
+      <div>
+        <label className="block font-bold text-primary mb-1">Instansi Pembina Teknis</label>
+        <input type="text" readOnly value="Dinas Kependudukan dan Pencatatan Sipil" className="w-full h-10 px-3 bg-slate-50 border border-[#CBD7E6] rounded-lg text-primary" />
+      </div>
+      <div>
+        <label className="block font-bold text-primary mb-1">Standar Waktu Penyelesaian (SLA)</label>
+        <input type="text" readOnly value="1 - 3 Hari Kerja Sejak Berkas Diverifikasi" className="w-full h-10 px-3 bg-slate-50 border border-[#CBD7E6] rounded-lg text-primary" />
+      </div>
+      <div className="md:col-span-2">
+        <label className="block font-bold text-primary mb-1">Tarif Retribusi / Biaya Resmi</label>
+        <input type="text" readOnly value="Rp 0 (100% Gratis - UU No. 24/2013 Pasal 79A)" className="w-full h-10 px-3 bg-emerald-50 border border-emerald-200 font-bold text-emerald-800 rounded-lg" />
+      </div>
+      <div className="md:col-span-2">
+        <label className="block font-bold text-primary mb-1">Deskripsi Ringkas Layanan untuk Warga</label>
+        <textarea rows={3} readOnly value="Panduan persiapan mandiri dokumen pelaporan kelahiran anak sebelum diajukan ke dinas atau loket kecamatan. Membantu warga memeriksa kelengkapan draf agar proses pengajuan tidak tertolak akibat berkas tercecer atau salah ejaan nama." className="w-full p-3 bg-slate-50 border border-[#CBD7E6] rounded-lg text-primary leading-relaxed" />
+      </div>
+    </div>
+  </div>
+)}
+
+{/* TAB 3: REGULASI RUJUKAN */}
+{activeTab === 'regulasi' && (
+  <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-6 civic-card-shadow space-y-5">
+    <div className="flex items-center gap-2 pb-3 border-b border-[#DDE5EF]">
+      <span className="material-symbols-outlined text-secondary text-2xl">gavel</span>
+      <h3 className="font-title-md text-base font-bold text-primary">Dasar Hukum &amp; Payung Regulasi Resmi</h3>
+    </div>
+    <div className="space-y-3 font-sans text-xs">
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl flex items-start gap-3">
+        <span className="material-symbols-outlined text-secondary text-xl mt-0.5">menu_book</span>
+        <div>
+          <div className="font-bold text-sm text-[#142C4B]">Undang-Undang No. 24 Tahun 2013</div>
+          <div className="text-slate-600 mt-1">Perubahan atas UU No. 23 Tahun 2006 tentang Administrasi Kependudukan. Menetapkan bahwa pengurusan dan penerbitan dokumen kependudukan tidak dipungut biaya (Rp 0 / Gratis).</div>
+        </div>
+      </div>
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl flex items-start gap-3">
+        <span className="material-symbols-outlined text-secondary text-xl mt-0.5">menu_book</span>
+        <div>
+          <div className="font-bold text-sm text-[#142C4B]">Peraturan Presiden No. 96 Tahun 2018</div>
+          <div className="text-slate-600 mt-1">Persyaratan dan Tata Cara Pendaftaran Penduduk dan Pencatatan Sipil. Menyederhanakan berkas dengan penghapusan surat pengantar RT/RW untuk penerbitan akta kelahiran.</div>
+        </div>
+      </div>
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl flex items-start gap-3">
+        <span className="material-symbols-outlined text-secondary text-xl mt-0.5">menu_book</span>
+        <div>
+          <div className="font-bold text-sm text-[#142C4B]">Permendagri No. 108 &amp; 109 Tahun 2019</div>
+          <div className="text-slate-600 mt-1">Standar formulir, format blangko kertas putih HVS 80gr ber-barcode TTE BSrE, dan mekanisme Surat Pernyataan Tanggung Jawab Mutlak (SPTJM).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* TAB 4: ATURAN PEMERIKSAAN AI */}
+{activeTab === 'ai' && (
+  <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-6 civic-card-shadow space-y-5">
+    <div className="flex items-center gap-2 pb-3 border-b border-[#DDE5EF]">
+      <span className="material-symbols-outlined text-secondary text-2xl">smart_toy</span>
+      <h3 className="font-title-md text-base font-bold text-primary">Konfigurasi Mesin OCR &amp; Kebijakan Audit Otomatis</h3>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl space-y-2">
+        <div className="font-bold text-primary flex items-center justify-between">
+          <span>Threshold Keyakinan OCR (Confidence)</span>
+          <span className="px-2 py-0.5 bg-blue-100 text-secondary rounded font-mono font-bold">85%</span>
+        </div>
+        <p className="text-slate-600">Batas toleransi kepastian teks. Jika keyakinan kata di bawah 85%, sistem menandai temuan sebagai "Perlu Perhatian Pemohon".</p>
+      </div>
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl space-y-2">
+        <div className="font-bold text-primary flex items-center justify-between">
+          <span>Validasi NIK 16 Digit &amp; Kode Wilayah</span>
+          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono font-bold">Aktif</span>
+        </div>
+        <p className="text-slate-600">Pemeriksaan struktur NIK: 2 digit provinsi, 2 digit kab/kota, 2 digit kecamatan, 6 digit tanggal lahir, 4 digit nomor urut.</p>
+      </div>
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl space-y-2">
+        <div className="font-bold text-primary flex items-center justify-between">
+          <span>Penyelarasan Ejaan Nama (Levenshtein &le; 1)</span>
+          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono font-bold">Aktif</span>
+        </div>
+        <p className="text-slate-600">Mendeteksi ketidaksesuaian typo (contoh: Ayu Conto vs Ayu Contoh) dan memberikan saran koreksi mandiri [citizen_corrected].</p>
+      </div>
+      <div className="p-4 bg-slate-50 border border-[#CBD7E6] rounded-xl space-y-2">
+        <div className="font-bold text-primary flex items-center justify-between">
+          <span>Deteksi Cap &amp; Barcode Fisik Dokumen</span>
+          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-mono font-bold">Warning Only</span>
+        </div>
+        <p className="text-slate-600">Mendeteksi stempel faskes basah atau barcode TTE. Mengeluarkan peringatan jika gambar buram atau terpotong saat dipindai.</p>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* TAB 2: PERSYARATAN & DOKUMEN (DEFAULT) */}
+{activeTab === 'persyaratan' && (
+<>
 {/*  Metadata & Source Linkage Card  */}
 <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-5 civic-card-shadow">
 <div className="flex items-center justify-between mb-4">
@@ -181,8 +337,14 @@ export const AdminPage: React.FC = () => {
 <h3 className="font-title-md text-title-md text-primary">Tautan &amp; Validasi Rujukan Resmi</h3>
 </div>
 {/*  Status Sumber Pill  */}
-<span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-300"><span className="material-symbols-outlined text-xs">warning</span>
-                  Sumber resmi belum ditautkan pada contoh simulasi</span>
+<span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${
+  isSourceLinked
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+    : 'bg-amber-50 text-amber-700 border-amber-300'
+}`}>
+  <span className="material-symbols-outlined text-xs">{isSourceLinked ? 'verified' : 'warning'}</span>
+  {isSourceLinked ? 'Sumber resmi terhubung: Portal Kemendagri' : 'Sumber resmi belum ditautkan pada contoh simulasi'}
+</span>
 </div>
 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 <div className="md:col-span-2">
@@ -190,10 +352,10 @@ export const AdminPage: React.FC = () => {
                     Tautan Sumber Formulir Resmi (Wajib untuk v2)
                   </label>
 <div className="relative">
-<input className="w-full h-10 px-3.5 text-xs bg-slate-50 border border-[#DDE5EF] rounded-lg text-primary placeholder-[#8A9BA8] focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all font-body-sm italic" placeholder="Belum ditautkan — contoh simulasi (URL sumber resmi daerah belum diverifikasi)" readOnly type="text" value=""/>
-<button className="absolute right-2 top-2 px-2.5 py-1 text-[11px] font-semibold bg-white border border-[#CBD7E6] text-primary rounded hover:bg-slate-100 transition-colors">
-                      Hubungkan
-                    </button>
+<input className="w-full h-10 px-3.5 text-xs bg-slate-50 border border-[#DDE5EF] rounded-lg text-primary placeholder-[#8A9BA8] focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all font-body-sm italic" placeholder="Belum ditautkan — contoh simulasi (URL sumber resmi daerah belum diverifikasi)" readOnly type="text" value={isSourceLinked ? (sourceUrl || 'https://layanan.dukcapil.kemendagri.go.id/akta-kelahiran') : ''}/>
+<button onClick={handleLinkSource} className={`absolute right-2 top-2 px-2.5 py-1 text-[11px] font-semibold border rounded transition-colors shadow-xs ${isSourceLinked ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-white text-primary border-[#CBD7E6] hover:bg-slate-100'}`} type="button">
+  {isSourceLinked ? '✓ Terhubung' : 'Hubungkan'}
+</button>
 </div>
 </div>
 <div>
@@ -318,7 +480,7 @@ export const AdminPage: React.FC = () => {
                         </span>
 </td>
 <td className="py-3.5 px-4 text-center">
-<button className="px-2.5 py-1 text-xs font-semibold text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 rounded border border-amber-300 transition-colors">
+<button onClick={handleLinkSource} className="px-2.5 py-1 text-xs font-semibold text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 rounded border border-amber-300 transition-colors" type="button">
                           Tautkan Sumber
                         </button>
 </td>
@@ -331,7 +493,7 @@ export const AdminPage: React.FC = () => {
 <span className="text-xs text-on-surface-variant font-body-sm italic">
                   Menampilkan konfigurasi parameter per 28 Okt 2026.
                 </span>
-<button className="px-3.5 py-2 rounded-lg border border-[#DDE5EF] bg-white text-primary text-xs font-semibold hover:bg-slate-100 flex items-center gap-2 transition-all shadow-sm">
+<button onClick={() => showToast('Dokumen persyaratan ilustratif baru berhasil ditambahkan ke draf konfigurasi v2.', 'success')} className="px-3.5 py-2 rounded-lg border border-[#DDE5EF] bg-white text-primary text-xs font-semibold hover:bg-slate-100 flex items-center gap-2 transition-all shadow-sm" type="button">
 <span className="material-symbols-outlined text-sm font-bold text-secondary">add</span>
                   + Tambah Dokumen Persyaratan Ilustratif
                 </button>
@@ -362,6 +524,8 @@ export const AdminPage: React.FC = () => {
                 ID Audit: ADM-JMW-20261028-041
               </span>
 </div>
+</>
+)}
 </div>
 {/*  RIGHT WORKFLOW & PUBLISHING PANEL (Right Column - 35%)  */}
 <div className="lg:col-span-4 space-y-6">
@@ -436,20 +600,26 @@ export const AdminPage: React.FC = () => {
 {/*  Publishing Actions  */}
 <div className="mt-6 pt-4 border-t border-[#DDE5EF] space-y-2.5">
 <div className="grid grid-cols-2 gap-2">
-<button className="w-full py-2 px-3 text-xs font-semibold text-primary bg-white hover:bg-slate-50 border border-[#CBD7E6] rounded-lg transition-colors shadow-sm">
+<button onClick={handleSaveDraft} className="w-full py-2 px-3 text-xs font-semibold text-primary bg-white hover:bg-slate-50 border border-[#CBD7E6] rounded-lg transition-colors shadow-sm cursor-pointer" type="button">
                     Simpan Draf
                   </button>
-<button className="w-full py-2 px-3 text-xs font-semibold text-primary bg-white hover:bg-slate-50 border border-[#CBD7E6] rounded-lg transition-colors shadow-sm">
+<button onClick={() => navigate('/panduan')} className="w-full py-2 px-3 text-xs font-semibold text-primary bg-white hover:bg-slate-50 border border-[#CBD7E6] rounded-lg transition-colors shadow-sm cursor-pointer" type="button">
                     Pratinjau Tampilan Warga
                   </button>
 </div>
 <div className="relative group">
-<button className="w-full py-2.5 px-4 text-xs font-bold text-slate-400 bg-slate-200 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 border border-slate-300" disabled>
-<span className="material-symbols-outlined text-base">lock</span>
+<button onClick={handlePublish} className={`w-full py-2.5 px-4 text-xs font-bold rounded-lg flex items-center justify-center gap-2 border transition-all ${
+  isSourceLinked
+    ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-md cursor-pointer'
+    : 'text-slate-400 bg-slate-200 border-slate-300 cursor-not-allowed'
+}`} disabled={!isSourceLinked} type="button">
+<span className="material-symbols-outlined text-base">{isSourceLinked ? 'check_circle' : 'lock'}</span>
                     Publikasikan Versi v2
                   </button>
 <div className="mt-1.5 text-center text-[11px] text-amber-800 font-caption bg-amber-50/80 p-1.5 rounded border border-amber-200/60">
-                    Tombol nonaktif hingga seluruh sumber rujukan yang diwajibkan diverifikasi.
+                    {isSourceLinked
+                      ? '✓ Seluruh kriteria rujukan resmi terpenuhi. Versi v2 siap dipublikasikan.'
+                      : 'Tombol nonaktif hingga sumber rujukan resmi dihubungkan.'}
                   </div>
 </div>
 </div>

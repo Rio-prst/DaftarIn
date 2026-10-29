@@ -1,297 +1,655 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { PreparationStepper } from '../components/PreparationStepper';
 
 export const PreparationDataPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast: _showToast, openChat } = useApp();
+  const { formData, setFormData, showToast, openChat } = useApp();
+
+  // Wizard Sub-Step (1 to 4)
+  const [subStep, setSubStep] = useState<number>(1);
+  const [targetWho, setTargetWho] = useState<'anak' | 'sendiri'>('anak');
+  const [faskes, setFaskes] = useState<'rsud' | 'non_faskes'>('rsud');
+  const [marriageStatus, setMarriageStatus] = useState<'tercatat' | 'siri'>('tercatat');
+  const [isClassicView, setIsClassicView] = useState<boolean>(false);
+
+  // Auto-fill Ayu Contoh
+  const handleLoadDemo = () => {
+    setFormData({
+      nama_lengkap: 'Ayu Contoh',
+      nik: '3275012345670001',
+      no_kk: '3275010908120005',
+      telepon: '081298765432',
+      alamat: 'Jl. Melati No. 12, RT 02/05, Kota Contoh',
+      alasan: 'Penerbitan akta kelahiran pertama untuk anak kandung.',
+    });
+    showToast('Data contoh "Ayu Contoh" berhasil dimuat ke formulir!', 'success');
+  };
+
+  const handleNextSubStep = () => {
+    if (subStep < 4) {
+      setSubStep((prev) => prev + 1);
+    } else {
+      navigate('/persiapan/dokumen');
+    }
+  };
+
+  const handlePrevSubStep = () => {
+    if (subStep > 1) {
+      setSubStep((prev) => prev - 1);
+    } else {
+      navigate('/panduan');
+    }
+  };
 
   return (
-    <div className="bg-[#F5F7FB] text-on-surface flex min-h-screen font-sans">
+    <div className="bg-[#F5F7FB] text-on-surface flex min-h-screen font-sans selection:bg-[#1769D2] selection:text-white">
+      {/* Left Sidebar (Desktop: 240px, Mobile: hidden with mobile drawer) */}
+      <aside className="hidden md:flex w-[240px] bg-[#142C4B] text-white flex-col shrink-0 min-h-screen">
+        <div className="h-[72px] px-5 flex items-center gap-3 border-b border-[#233F66]">
+          <div className="w-8 h-8 rounded bg-[#1769D2] flex items-center justify-center text-white shadow-sm">
+            <span className="material-symbols-outlined text-white text-[20px]">fact_check</span>
+          </div>
+          <div>
+            <div className="font-heading font-bold text-base tracking-tight leading-none text-white">
+              JejakMasWowo
+            </div>
+            <div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+          </div>
+        </div>
 
-{/*  Left Sidebar (fixed width 240px)  */}
-<aside className="w-[240px] h-[1000px] shrink-0 bg-[#142C4B] text-white flex flex-col z-30">
-{/*  Brand Block height 72px  */}
-<div className="h-[72px] px-5 flex items-center gap-3 border-b border-[#233F66]">
-<div className="w-8 h-8 rounded bg-[#1769D2] flex items-center justify-center text-white">
-<span className="material-symbols-outlined text-white">fact_check</span>
-</div>
-<div>
-<div className="font-heading font-bold text-base tracking-tight leading-none text-white">JejakMasWowo</div>
-<div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
-</div>
-</div>
-{/*  Navigation Rows (height 44px, 8px gap, 16px horizontal margin)  */}
-<nav className="flex-1 py-4 px-4 space-y-2">
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/dashboard" onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">dashboard</span>
-<span>Dashboard</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/katalog" onClick={(e) => { e.preventDefault(); navigate("/katalog"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">search</span>
-<span>Cari Layanan</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-semibold bg-[#1769D2] text-white shadow-sm" href="#/persiapan/data" onClick={(e) => { e.preventDefault(); navigate("/persiapan/data"); }}>
-<span className="material-symbols-outlined text-white">assignment</span>
-<span>Persiapan Saya</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/pelacakan" onClick={(e) => { e.preventDefault(); navigate("/pelacakan"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">send</span>
-<span>Pengajuan Saya</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
-<span className="material-symbols-outlined text-[#C3D4EA]">notifications</span>
-<span>Notifikasi</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
-<span className="material-symbols-outlined text-[#C3D4EA]">manage_accounts</span>
-<span>Profil &amp; Privasi</span>
-</a>
-</nav>
-{/*  Sidebar Bottom: Keluar & Prototipe · Simulasi  */}
-<div className="p-4 border-t border-[#233F66]">
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
-<span className="material-symbols-outlined text-[#C3D4EA]">logout</span>
-<span>Keluar</span>
-</a>
-<div className="px-3 pt-3 text-[12px] text-[#7E98B9]">Prototipe · Simulasi</div>
-</div>
-</aside>
-{/*  Main Region (starts x240)  */}
-<div className="w-[1040px] h-[1000px] flex flex-col min-w-0 shrink-0 overflow-hidden">
-{/*  Topbar (height 72px, white, border-bottom)  */}
-<header className="h-[72px] shrink-0 bg-white border-b border-[#DDE5EF] px-8 flex items-center justify-between z-20">
-{/*  Breadcrumb  */}
-<div className="flex items-center gap-2 text-sm text-[#52657A]">
-<span>Persiapan</span>
-<span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span>Akta Kelahiran</span>
-<span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span className="font-medium text-[#172B45]">Data</span>
-</div>
-{/*  Right Controls: Location, Bantuan inline, Bell, Avatar  */}
-<div className="flex items-center gap-3">
-<div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F7FB] border border-[#DDE5EF] rounded-full text-xs font-medium text-[#52657A]">
-<span className="material-symbols-outlined text-[#52657A] text-[16px]">location_on</span>
-<span>Kota Contoh · Simulasi</span>
-</div>
-<button className="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-1.5 transition" type="button" onClick={() => openChat()}>
-<span className="material-symbols-outlined text-[#52657A] text-[18px]">help_outline</span>
-<span>Bantuan</span>
-</button>
-<button className="w-9 h-9 rounded-lg border border-[#DDE5EF] bg-white text-[#52657A] flex items-center justify-center hover:bg-[#F5F7FB] transition" type="button">
-<span className="material-symbols-outlined text-[18px]">notifications</span>
-</button>
-<div className="flex items-center gap-2 pl-2 border-l border-[#DDE5EF]">
-<div className="w-8 h-8 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-semibold text-xs">AC</div>
-<span className="text-sm font-semibold text-[#172B45]">Ayu Contoh</span>
-</div>
-</div>
-</header>
-{/*  Page Content (inner margin 32px, bottom padding 96px for action bar)  */}
-<main className="flex-1 min-h-0 overflow-y-auto p-8 w-full box-border">
-{/*  Page-heading block  */}
-<div>
-<h1 className="text-[28px] leading-[36px] font-bold text-[#172B45]">Lengkapi data pengurusan</h1>
-<p className="text-[16px] leading-[24px] text-[#52657A] mt-2">Akta Kelahiran (contoh) · Kota Contoh · Persiapan JMW-DEMO-001</p>
-</div>
-{/*  Preparation Stepper (Immutable labels & canonical CSS)  */}
-<div className="jmw-progress">
-{/*  1. Kebutuhan (completed)  */}
-<div className="jmw-step is-complete">
-<div className="jmw-step-dot">
-<span className="material-symbols-outlined text-white text-[18px]">check</span>
-</div>
-<div className="jmw-step-label">Kebutuhan</div>
-</div>
-{/*  2. Data (current)  */}
-<div className="jmw-step is-current">
-<div className="jmw-step-dot">2</div>
-<div className="jmw-step-label">Data</div>
-</div>
-{/*  3. Dokumen  */}
-<div className="jmw-step">
-<div className="jmw-step-dot">3</div>
-<div className="jmw-step-label">Dokumen</div>
-</div>
-{/*  4. Pemeriksaan  */}
-<div className="jmw-step">
-<div className="jmw-step-dot">4</div>
-<div className="jmw-step-label">Pemeriksaan</div>
-</div>
-{/*  5. Ringkasan  */}
-<div className="jmw-step">
-<div className="jmw-step-dot">5</div>
-<div className="jmw-step-label">Ringkasan</div>
-</div>
-</div>
-{/*  Grid 2/3 Form + 1/3 Context Card (gap 24px)  */}
-<div className="grid grid-cols-12 gap-6 items-start">
-{/*  2/3 Form Column (col-span-8)  */}
-<div className="col-span-8 space-y-6">
-{/*  Card 1: Skenario Pengurusan  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-6">
-<h2 className="font-heading text-[20px] leading-[28px] font-semibold text-[#172B45]">Kondisi Pengurusan</h2>
-<p className="text-[13px] leading-[20px] text-[#52657A] mt-1">Pilih kondisi yang sesuai agar daftar dokumen persyaratan dapat disesuaikan.</p>
-<div className="mt-5 space-y-4">
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-2">Pengajuan untuk siapa?</label>
-<div className="grid grid-cols-2 gap-3">
-<label className="border-2 border-[#1769D2] bg-[#E7F0FF]/30 rounded-lg p-3 flex items-start gap-3 cursor-pointer">
-<input defaultChecked className="mt-1 text-[#1769D2] focus:ring-0" name="target" type="radio"/>
-<div>
-<div className="text-sm font-semibold text-[#172B45]">Anak / Anggota Keluarga</div>
-<div className="text-xs text-[#52657A] mt-0.5">Mewakili anak kandung atau anggota keluarga dalam satu KK.</div>
-</div>
-</label>
-<label className="border border-[#DDE5EF] hover:border-[#8DA0B6] rounded-lg p-3 flex items-start gap-3 cursor-pointer">
-<input className="mt-1 text-[#1769D2] focus:ring-0" name="target" type="radio"/>
-<div>
-<div className="text-sm font-semibold text-[#172B45]">Diri Sendiri</div>
-<div className="text-xs text-[#52657A] mt-0.5">Mengurus dokumen atas nama pribadi yang bersangkutan.</div>
-</div>
-</label>
-</div>
-</div>
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-2">Jenis pengurusan</label>
-<div className="grid grid-cols-2 gap-3">
-<label className="border-2 border-[#1769D2] bg-[#E7F0FF]/30 rounded-lg p-3 flex items-start gap-3 cursor-pointer">
-<input defaultChecked className="mt-1 text-[#1769D2] focus:ring-0" name="jenis" type="radio"/>
-<div>
-<div className="text-sm font-semibold text-[#172B45]">Baru (Penerbitan Pertama)</div>
-<div className="text-xs text-[#52657A] mt-0.5">Pencatatan kelahiran baru yang belum pernah memiliki akta.</div>
-</div>
-</label>
-<label className="border border-[#DDE5EF] hover:border-[#8DA0B6] rounded-lg p-3 flex items-start gap-3 cursor-pointer">
-<input className="mt-1 text-[#1769D2] focus:ring-0" name="jenis" type="radio"/>
-<div>
-<div className="text-sm font-semibold text-[#172B45]">Perubahan / Pembetulan</div>
-<div className="text-xs text-[#52657A] mt-0.5">Perbaikan kekeliruan penulisan nama atau data orang tua.</div>
-</div>
-</label>
-</div>
-</div>
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-2">Tempat kelahiran</label>
-<div className="space-y-2">
-<label className="border-2 border-[#1769D2] bg-[#E7F0FF]/30 rounded-lg p-3 flex items-center gap-3 cursor-pointer">
-<input defaultChecked className="text-[#1769D2] focus:ring-0" name="faskes" type="radio"/>
-<span className="text-sm font-medium text-[#172B45]">Kelahiran di faskes (RS, Puskesmas, atau Bidan bersertifikat)</span>
-</label>
-<label className="border border-[#DDE5EF] hover:border-[#8DA0B6] rounded-lg p-3 flex items-center gap-3 cursor-pointer">
-<input className="text-[#1769D2] focus:ring-0" name="faskes" type="radio"/>
-<span className="text-sm font-medium text-[#172B45]">Kelahiran di rumah / tanpa faskes (memerlukan SPTJM Kebenaran Kelahiran)</span>
-</label>
-</div>
-</div>
-</div>
-</div>
-{/*  Card 2: Data Identitas Draf  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-6">
-<h2 className="font-heading text-[20px] leading-[28px] font-semibold text-[#172B45]">Data untuk Persiapan Mandiri</h2>
-<p className="text-[13px] leading-[20px] text-[#52657A] mt-1">Data digunakan untuk mencocokkan ejaan formulir dengan teks pada berkas fisik.</p>
-<div className="mt-5 space-y-4">
-<div className="grid grid-cols-2 gap-4">
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-1">Nama lengkap pemohon</label>
-<input className="w-full h-11 px-3 bg-white border border-[#DDE5EF] rounded-lg text-sm text-[#172B45] focus:outline-none focus:border-[#1769D2]" type="text" value="Ayu Contoh"/>
-<span className="text-[13px] leading-[20px] text-[#52657A] mt-1 block">Penanggung jawab draf persiapan.</span>
-</div>
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-1">Email kontak</label>
-<input className="w-full h-11 px-3 bg-white border border-[#DDE5EF] rounded-lg text-sm text-[#172B45] focus:outline-none focus:border-[#1769D2]" type="email" value="ayu.contoh@email.simulasi"/>
-<span className="text-[13px] leading-[20px] text-[#52657A] mt-1 block">Untuk catatan dan notifikasi simulasi.</span>
-</div>
-</div>
-<div className="grid grid-cols-2 gap-4">
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-1">Nama calon bayi / anak</label>
-<input className="w-full h-11 px-3 bg-white border border-[#DDE5EF] rounded-lg text-sm text-[#172B45] focus:outline-none focus:border-[#1769D2]" type="text" value="Ayu Contoh"/>
-<span className="text-[13px] leading-[20px] text-[#52657A] mt-1 block">Nama yang akan dicocokkan dengan surat lahir.</span>
-</div>
-<div>
-<label className="block text-[14px] leading-[20px] font-semibold text-[#172B45] mb-1">Wilayah pengurusan</label>
-<select className="w-full h-11 px-3 bg-white border border-[#DDE5EF] rounded-lg text-sm text-[#172B45] focus:outline-none focus:border-[#1769D2]">
-<option >Kota Contoh (Simulasi)</option>
-</select>
-<span className="text-[13px] leading-[20px] text-[#52657A] mt-1 block">Menentukan cakupan panduan loket setempat.</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-{/*  1/3 Context Card Column (col-span-4)  */}
-<div className="col-span-4 space-y-5">
-{/*  Summary card  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-5">
-<h3 className="font-heading text-base font-semibold text-[#172B45] pb-3 border-b border-[#DDE5EF]">Ringkasan Penyesuaian</h3>
-<div className="py-3 text-sm space-y-2 border-b border-[#DDE5EF]">
-<div className="flex justify-between">
-<span className="text-[#52657A]">Layanan:</span>
-<span className="font-medium text-[#172B45]">Akta Kelahiran</span>
-</div>
-<div className="flex justify-between">
-<span className="text-[#52657A]">Wilayah:</span>
-<span className="font-medium text-[#172B45]">Kota Contoh</span>
-</div>
-<div className="flex justify-between">
-<span className="text-[#52657A]">ID Draf:</span>
-<span className="font-mono text-xs font-semibold text-[#1769D2]">JMW-DEMO-001</span>
-</div>
-</div>
-<div className="pt-4">
-<div className="text-xs font-semibold uppercase text-[#52657A] tracking-wider mb-2">Dokumen yang diperlukan:</div>
-<ul className="text-sm space-y-2 text-[#172B45]">
-<li className="flex items-center gap-2">
-<span className="material-symbols-outlined text-[#087F68] text-[18px]">check_circle</span>
-<span>Surat Keterangan Lahir (Faskes)</span>
-</li>
-<li className="flex items-center gap-2">
-<span className="material-symbols-outlined text-[#087F68] text-[18px]">check_circle</span>
-<span>Buku Nikah / Kutipan Akta</span>
-</li>
-<li className="flex items-center gap-2">
-<span className="material-symbols-outlined text-[#087F68] text-[18px]">check_circle</span>
-<span>Kartu Keluarga (KK) Orang Tua</span>
-</li>
-<li className="flex items-center gap-2">
-<span className="material-symbols-outlined text-[#087F68] text-[18px]">check_circle</span>
-<span>KTP-el Saksi &amp; Orang Tua</span>
-</li>
-</ul>
-</div>
-</div>
-{/*  Note card  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-5">
-<div className="flex items-start gap-2.5">
-<span className="material-symbols-outlined text-[#1769D2] text-[20px] mt-0.5">info</span>
-<div className="text-xs leading-[18px] text-[#52657A]">
-                Kelola persiapan dan dokumenmu dari akun ini. Informasi disimpan untuk mempermudah pengecekan mandiri sebelum kamu membawa berkas ke instansi.
+        <nav className="flex-1 py-4 px-3 space-y-1">
+          <a
+            className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition"
+            href="#/dashboard"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/dashboard');
+            }}
+          >
+            <span className="material-symbols-outlined text-[#C3D4EA] text-[20px]">dashboard</span>
+            <span>Dashboard</span>
+          </a>
+          <a
+            className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition"
+            href="#/katalog"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/katalog');
+            }}
+          >
+            <span className="material-symbols-outlined text-[#C3D4EA] text-[20px]">search</span>
+            <span>Cari Layanan</span>
+          </a>
+          <a
+            className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-semibold bg-[#1769D2] text-white shadow-sm"
+            href="#/persiapan/data"
+          >
+            <span className="material-symbols-outlined text-white text-[20px]">assignment</span>
+            <span>Persiapan Saya</span>
+          </a>
+          <a
+            className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition"
+            href="#/pelacakan"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/pelacakan');
+            }}
+          >
+            <span className="material-symbols-outlined text-[#C3D4EA] text-[20px]">send</span>
+            <span>Pengajuan Saya</span>
+          </a>
+        </nav>
+
+        <div className="p-4 border-t border-[#233F66] space-y-2">
+          <button
+            className="h-[40px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition w-full"
+            type="button"
+            onClick={() => navigate('/')}
+          >
+            <span className="material-symbols-outlined text-[#C3D4EA] text-[18px]">logout</span>
+            <span>Keluar</span>
+          </button>
+          <div className="text-[11px] text-[#7E98B9] flex items-center gap-1.5 pt-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span>Mode Persiapan Mandiri</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Region */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* Topbar */}
+        <header className="h-[72px] bg-white border-b border-[#DDE5EF] px-4 sm:px-8 flex items-center justify-between shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-2 text-sm text-[#52657A]">
+            <span>Persiapan</span>
+            <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+            <span>Akta Kelahiran</span>
+            <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+            <span className="font-semibold text-[#172B45]">Data Pemohon</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* View Mode Switcher (Taxfix Conversational vs Classic Form) */}
+            <button
+              onClick={() => setIsClassicView(!isClassicView)}
+              className="px-3 py-1.5 rounded-lg border border-[#CBD7E6] text-xs font-semibold text-[#142C4B] hover:bg-[#F5F7FB] transition flex items-center gap-1.5 shadow-xs"
+              type="button"
+              title="Ganti antara mode tanya-jawab santai dan formulir penuh"
+            >
+              <span className="material-symbols-outlined text-[16px] text-[#1769D2]">
+                {isClassicView ? 'chat' : 'format_list_bulleted'}
+              </span>
+              <span>{isClassicView ? 'Mode Panduan Santai (Taxfix)' : 'Formulir Lengkap'}</span>
+            </button>
+
+            <button
+              className="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-1.5 transition"
+              type="button"
+              onClick={() => openChat()}
+            >
+              <span className="material-symbols-outlined text-[#52657A] text-[18px]">help_outline</span>
+              <span>Bantuan</span>
+            </button>
+            <div className="flex items-center gap-2 pl-2 border-l border-[#DDE5EF]">
+              <div className="w-8 h-8 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-semibold text-xs">
+                {formData.nama_lengkap ? formData.nama_lengkap.slice(0, 2).toUpperCase() : 'AC'}
               </div>
-</div>
-</div>
-</div>
-</div>
-</main>
-{/*  Bottom Action Bar (height 64px, white, border-top, fixed bottom aligned to x240+)  */}
-<div className="h-[64px] shrink-0 bg-white border-t border-[#DDE5EF] px-8 flex items-center justify-between z-20">
-<button className="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-2 transition" type="button" onClick={() => navigate("/panduan")}>
-<span className="material-symbols-outlined text-[#52657A]">arrow_back</span>
-<span>Kembali</span>
-</button>
-<div className="flex items-center gap-3">
-<button className="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">
-          Simpan draf
-        </button>
-<button className="h-[44px] px-4 rounded-lg bg-[#1769D2] text-white text-sm font-semibold hover:bg-[#1257B0] flex items-center gap-2 shadow-sm transition" type="button" onClick={() => navigate("/persiapan/dokumen")}>
-<span>Lanjut ke Dokumen</span>
-<span className="material-symbols-outlined text-white">arrow_forward</span>
-</button>
-</div>
-</div>
-</div>
+              <span className="text-sm font-semibold text-[#172B45]">{formData.nama_lengkap || 'Ayu Contoh'}</span>
+            </div>
+          </div>
+        </header>
 
+        {/* Page Content */}
+        <main className="p-4 sm:p-8 w-full flex-1 overflow-y-auto">
+          {/* Header Title */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-[28px] leading-[36px] font-bold text-[#172B45] font-display">
+                Lengkapi Data Pengurusan
+              </h1>
+              <p className="text-[14px] text-[#52657A] mt-1">
+                Layanan: <strong>Akta Kelahiran (contoh)</strong> · Sesi: <span className="font-mono text-[#142C4B]">JMW-PREP-20261028-001</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleLoadDemo}
+                className="px-3.5 py-1.5 bg-[#EBF1F8] hover:bg-[#D5E6FF] text-[#1769D2] border border-[#CBD7E6] rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                type="button"
+              >
+                <span>⚡ Isi Otomatis Data Contoh (Ayu Contoh)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Stepper Folder Tabs */}
+          <PreparationStepper currentStep={2} />
+
+          {/* MODE 1: TAXFIX-STYLE CONVERSATIONAL WIZARD */}
+          {!isClassicView ? (
+            <div className="max-w-2xl mx-auto py-4 space-y-6">
+              {/* Progress Indicator Card */}
+              <div className="bg-white border border-[#DDE5EF] rounded-2xl p-5 shadow-xs flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-xs font-mono font-bold text-[#1769D2] uppercase tracking-wider">
+                    LANGKAH {subStep} DARI 4
+                  </div>
+                  <div className="text-sm font-bold text-[#142C4B]">
+                    {subStep === 1 && 'Subjek Pengurusan Dokumen'}
+                    {subStep === 2 && 'Tempat Persalinan / Kelahiran'}
+                    {subStep === 3 && 'Status Pernikahan Orang Tua'}
+                    {subStep === 4 && 'Biodata Pemohon & Bayi'}
+                  </div>
+                </div>
+
+                {/* Pill Progress Bar */}
+                <div className="w-36 bg-[#EBF1F8] h-2.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-[#1769D2] h-full rounded-full transition-all duration-300 ease-out"
+                    style={{ width: `${(subStep / 4) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* CARD STEP 1: PENGURUSAN UNTUK SIAPA */}
+              {subStep === 1 && (
+                <div className="bg-white border-2 border-[#CBD7E6] rounded-2xl p-7 shadow-sm space-y-5 wizard-step-enter">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 1</span>
+                    <h2 className="text-2xl font-bold text-[#142C4B] font-display">
+                      Pengajuan akta ini untuk siapa?
+                    </h2>
+                    <p className="text-xs text-[#52657A]">
+                      Pilih subjek pengurusan agar sistem dapat memvalidasi hubungan keluarga di Kartu Keluarga.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setTargetWho('anak')}
+                      className={`p-5 rounded-xl border-2 text-left transition-all ${
+                        targetWho === 'anak'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-[#142C4B] text-white flex items-center justify-center mb-3">
+                        <span className="material-symbols-outlined text-[22px]">family_restroom</span>
+                      </div>
+                      <div className="font-bold text-base text-[#142C4B]">Anak / Anggota Keluarga</div>
+                      <p className="text-xs text-[#52657A] mt-1 leading-relaxed">
+                        Mendaftarkan akta untuk anak kandung yang baru lahir dalam satu susunan KK orang tua.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTargetWho('sendiri')}
+                      className={`p-5 rounded-xl border-2 text-left transition-all ${
+                        targetWho === 'sendiri'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-[#142C4B] text-white flex items-center justify-center mb-3">
+                        <span className="material-symbols-outlined text-[22px]">person</span>
+                      </div>
+                      <div className="font-bold text-base text-[#142C4B]">Diri Sendiri</div>
+                      <p className="text-xs text-[#52657A] mt-1 leading-relaxed">
+                        Mengurus penerbitan kutipan akta kelahiran atas nama pemohon pribadi yang bersangkutan.
+                      </p>
+                    </button>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={handleNextSubStep}
+                      className="px-6 py-3 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
+                      type="button"
+                    >
+                      <span>Lanjutkan</span>
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD STEP 2: TEMPAT PERSALINAN */}
+              {subStep === 2 && (
+                <div className="bg-white border-2 border-[#CBD7E6] rounded-2xl p-7 shadow-sm space-y-5 wizard-step-enter">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 2</span>
+                    <h2 className="text-2xl font-bold text-[#142C4B] font-display">
+                      Di mana tempat persalinan / kelahiran berlangsung?
+                    </h2>
+                    <p className="text-xs text-[#52657A]">
+                      Tempat kelahiran menentukan jenis surat pembuktian lahir yang wajib dilampirkan.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setFaskes('rsud')}
+                      className={`w-full p-4 rounded-xl border-2 text-left flex items-start gap-4 transition-all ${
+                        faskes === 'rsud'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-emerald-700 text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[20px]">local_hospital</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-[#142C4B]">
+                          Fasilitas Kesehatan Resmi (RSUD, RS Swasta, Puskesmas, Klinik, Bidan)
+                        </div>
+                        <p className="text-xs text-[#52657A] mt-0.5">
+                          Memerlukan Surat Keterangan Kelahiran (SKK) asli berstempel faskes dan tanda tangan dokter/bidan penolong.
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFaskes('non_faskes')}
+                      className={`w-full p-4 rounded-xl border-2 text-left flex items-start gap-4 transition-all ${
+                        faskes === 'non_faskes'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-amber-700 text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[20px]">home</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-[#142C4B]">
+                          Kelahiran di Luar Fasilitas Medis (Rumah / Tempat Lain)
+                        </div>
+                        <p className="text-xs text-[#52657A] mt-0.5">
+                          Memerlukan Surat Pernyataan Tanggung Jawab Mutlak (SPTJM) Kebenaran Data Kelahiran bermeterai.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="pt-4 flex items-center justify-between">
+                    <button
+                      onClick={handlePrevSubStep}
+                      className="px-4 py-2.5 rounded-xl border border-[#CBD7E6] text-xs font-bold text-[#52657A] hover:bg-slate-50 transition"
+                      type="button"
+                    >
+                      ← Sebelumnya
+                    </button>
+                    <button
+                      onClick={handleNextSubStep}
+                      className="px-6 py-3 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
+                      type="button"
+                    >
+                      <span>Lanjutkan</span>
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD STEP 3: STATUS PERNIKAHAN */}
+              {subStep === 3 && (
+                <div className="bg-white border-2 border-[#CBD7E6] rounded-2xl p-7 shadow-sm space-y-5 wizard-step-enter">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 3</span>
+                    <h2 className="text-2xl font-bold text-[#142C4B] font-display">
+                      Bagaimana status perkawinan orang tua pada Kartu Keluarga?
+                    </h2>
+                    <p className="text-xs text-[#52657A]">
+                      Menentukan hubungan hukum anak dan pencantuman nama ayah pada kutipan akta resmi.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setMarriageStatus('tercatat')}
+                      className={`w-full p-4 rounded-xl border-2 text-left flex items-start gap-4 transition-all ${
+                        marriageStatus === 'tercatat'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-sky-700 text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-[#142C4B]">
+                          Kawin Tercatat (Buku Nikah KUA / Akta Perkawinan Catatan Sipil)
+                        </div>
+                        <p className="text-xs text-[#52657A] mt-0.5">
+                          Status suami-istri sah secara agama dan negara. Akta mencantumkan nama ayah dan ibu kandung.
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setMarriageStatus('siri')}
+                      className={`w-full p-4 rounded-xl border-2 text-left flex items-start gap-4 transition-all ${
+                        marriageStatus === 'siri'
+                          ? 'border-[#1769D2] bg-[#EBF1F8] shadow-sm ring-2 ring-[#1769D2]/30'
+                          : 'border-[#DDE5EF] hover:border-[#94A3B8] bg-white'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-slate-700 text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="material-symbols-outlined text-[20px]">assignment_late</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm text-[#142C4B]">
+                          Kawin Belum Tercatat / Belum Memiliki Buku Nikah Resmi
+                        </div>
+                        <p className="text-xs text-[#52657A] mt-0.5">
+                          Memerlukan SPTJM Kebenaran Pasangan Suami Istri (Format Permendagri No. 108/2019).
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="pt-4 flex items-center justify-between">
+                    <button
+                      onClick={handlePrevSubStep}
+                      className="px-4 py-2.5 rounded-xl border border-[#CBD7E6] text-xs font-bold text-[#52657A] hover:bg-slate-50 transition"
+                      type="button"
+                    >
+                      ← Sebelumnya
+                    </button>
+                    <button
+                      onClick={handleNextSubStep}
+                      className="px-6 py-3 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
+                      type="button"
+                    >
+                      <span>Lanjutkan</span>
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD STEP 4: FORM BIODATA PEMOHON & BAYI */}
+              {subStep === 4 && (
+                <div className="bg-white border-2 border-[#CBD7E6] rounded-2xl p-7 shadow-sm space-y-5 wizard-step-enter">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 4</span>
+                    <h2 className="text-2xl font-bold text-[#142C4B] font-display">
+                      Konfirmasi Data Identitas Draf
+                    </h2>
+                    <p className="text-xs text-[#52657A]">
+                      Data ini akan dicocokkan dengan teks hasil pindaian OCR pada dokumen fisik Anda.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 pt-1 font-sans">
+                    <div>
+                      <label className="block text-xs font-bold text-[#142C4B] mb-1">
+                        Nama Lengkap Pemohon (Sesuai KTP Fisik)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.nama_lengkap}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, nama_lengkap: e.target.value }))
+                        }
+                        placeholder="Contoh: Ayu Contoh"
+                        className="w-full h-11 px-3.5 bg-white border border-[#CBD7E6] rounded-xl text-sm font-semibold text-[#142C4B] focus:outline-none focus:border-[#1769D2] focus:ring-2 focus:ring-[#1769D2]/20"
+                      />
+                      <span className="text-[11px] text-[#52657A] mt-1 block">
+                        Pastikan ejaan persis sama dengan KTP asli untuk menghindari ketidaksesuaian saat OCR.
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-[#142C4B]">
+                            NIK Pemohon (16 Digit)
+                          </label>
+                          {formData.nik.length === 16 ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              ✓ 16 Digit
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-[#52657A]">
+                              {formData.nik.length}/16 Digit
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={formData.nik}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, nik: e.target.value.replace(/\D/g, '') }))
+                          }
+                          placeholder="3275012345670001"
+                          className={`w-full h-11 px-3.5 bg-white border rounded-xl text-sm font-mono text-[#142C4B] focus:outline-none focus:ring-2 ${
+                            formData.nik.length === 16
+                              ? 'border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20'
+                              : 'border-[#CBD7E6] focus:border-[#1769D2] focus:ring-[#1769D2]/20'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-[#142C4B]">
+                            Nomor Kartu Keluarga (KK)
+                          </label>
+                          {formData.no_kk.length === 16 ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                              ✓ 16 Digit
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-[#52657A]">
+                              {formData.no_kk.length}/16 Digit
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={formData.no_kk}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, no_kk: e.target.value.replace(/\D/g, '') }))
+                          }
+                          placeholder="3275010908120005"
+                          className={`w-full h-11 px-3.5 bg-white border rounded-xl text-sm font-mono text-[#142C4B] focus:outline-none focus:ring-2 ${
+                            formData.no_kk.length === 16
+                              ? 'border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20'
+                              : 'border-[#CBD7E6] focus:border-[#1769D2] focus:ring-[#1769D2]/20'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#142C4B] mb-1">
+                        Nomor WhatsApp / Kontak Notifikasi
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.telepon}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, telepon: e.target.value }))
+                        }
+                        placeholder="081298765432"
+                        className="w-full h-11 px-3.5 bg-white border border-[#CBD7E6] rounded-xl text-sm font-mono text-[#142C4B] focus:outline-none focus:border-[#1769D2] focus:ring-2 focus:ring-[#1769D2]/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex items-center justify-between border-t border-[#DDE5EF]">
+                    <button
+                      onClick={handlePrevSubStep}
+                      className="px-4 py-2.5 rounded-xl border border-[#CBD7E6] text-xs font-bold text-[#52657A] hover:bg-slate-50 transition"
+                      type="button"
+                    >
+                      ← Sebelumnya
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!formData.nama_lengkap.trim() || !formData.nik.trim()) {
+                          showToast('Mohon lengkapi Nama Lengkap dan NIK (16 digit) pemohon.', 'warning');
+                          return;
+                        }
+                        showToast('Data pemohon berhasil dikonfirmasi!', 'success');
+                        navigate('/persiapan/dokumen');
+                      }}
+                      className="px-6 py-3 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
+                      type="button"
+                    >
+                      <span>Lanjut ke Unggah Berkas</span>
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* MODE 2: CLASSIC FULL FORM */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-8 space-y-6">
+                <div className="bg-white border border-[#DDE5EF] rounded-xl p-6 space-y-4 shadow-xs">
+                  <h2 className="font-heading text-lg font-bold text-[#142C4B]">
+                    Formulir Lengkap Data Pemohon
+                  </h2>
+                  <div className="space-y-4 text-xs font-sans">
+                    <div>
+                      <label className="block font-bold text-[#142C4B] mb-1">Nama Lengkap</label>
+                      <input
+                        type="text"
+                        value={formData.nama_lengkap}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, nama_lengkap: e.target.value }))
+                        }
+                        className="w-full h-10 px-3 border border-[#CBD7E6] rounded-lg text-sm text-[#142C4B]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-[#142C4B] mb-1">NIK</label>
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={formData.nik}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, nik: e.target.value }))
+                          }
+                          className="w-full h-10 px-3 border border-[#CBD7E6] rounded-lg text-sm font-mono text-[#142C4B]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-[#142C4B] mb-1">No KK</label>
+                        <input
+                          type="text"
+                          maxLength={16}
+                          value={formData.no_kk}
+                          onChange={(e) =>
+                            setFormData((prev) => ({ ...prev, no_kk: e.target.value }))
+                          }
+                          className="w-full h-10 px-3 border border-[#CBD7E6] rounded-lg text-sm font-mono text-[#142C4B]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-white border border-[#DDE5EF] rounded-xl p-5 space-y-3 shadow-xs">
+                  <h3 className="font-bold text-sm text-[#142C4B]">Ringkasan Draf</h3>
+                  <div className="text-xs space-y-2 text-[#52657A]">
+                    <div className="flex justify-between">
+                      <span>Layanan:</span>
+                      <strong className="text-[#142C4B]">Akta Kelahiran</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pemohon:</span>
+                      <strong className="text-[#142C4B]">{formData.nama_lengkap}</strong>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate('/persiapan/dokumen')}
+                    className="w-full h-10 bg-[#1769D2] text-white rounded-lg font-bold text-xs mt-2"
+                    type="button"
+                  >
+                    Lanjut ke Dokumen →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
