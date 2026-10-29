@@ -21,19 +21,23 @@ Catatan: database tetap dikelola di **Supabase** (PostgreSQL), sedangkan **Prism
 
 ```
 DaftarIn/
-├─ frontend/         # Next.js + Tailwind CSS
-├─ backend/          # NestJS API
-│  └─ docs/PRD.md    # Source of truth produk
+├─ frontend/            # Next.js + Tailwind CSS (menyusul)
+├─ backend/             # NestJS API (standalone)
+│  ├─ docs/PRD.md       # Source of truth produk
+│  ├─ src/              # Kode aplikasi
+│  └─ package.json
+├─ .gitignore
+├─ .nvmrc
 └─ README.md
 ```
 
-## Cara Menjalankan
+`frontend/` dan `backend/` dikelola sebagai project terpisah: masing-masing memiliki `node_modules`, lockfile, environment, dan proses deploy sendiri.
 
-> Perintah di bawah masih berupa placeholder karena `package.json` dan konfigurasi workspace **belum tersedia**. Sesuaikan setelah scaffold frontend/backend dibuat.
+## Cara Menjalankan
 
 ### Prasyarat
 
-- Node.js 20+
+- Node.js 22+
 - pnpm
 - Git
 - Project Supabase (PostgreSQL)
@@ -46,38 +50,52 @@ git clone <url-repo>
 cd DaftarIn
 ```
 
-### 2. Install
+### 2. Install backend
 
 ```bash
+cd backend
 pnpm install
 ```
 
 ### 3. Konfigurasi environment
 
-Salin `.env.example` menjadi `.env` pada `backend/` dan `frontend/`, lalu isi kredensial Supabase, Redis, dan variabel lain yang dibutuhkan.
+Salin `backend/.env.example` menjadi `backend/.env` (file contoh dibuat pada tahap konfigurasi backend), lalu isi kredensial Supabase, Redis, dan variabel lain yang dibutuhkan.
 
 ### 4. Siapkan database
 
-```bash
-pnpm --filter backend prisma generate
-pnpm --filter backend prisma migrate dev
-```
-
-### 5. Jalankan
+Perintah ini tersedia setelah konfigurasi Prisma dibuat.
 
 ```bash
-# Terminal 1 — backend
-pnpm --filter backend start:dev
-
-# Terminal 2 — frontend
-pnpm --filter frontend dev
+cd backend
+pnpm prisma:generate
+pnpm prisma:migrate
 ```
+
+### 5. Jalankan backend
+
+```bash
+cd backend
+pnpm start:dev
+```
+
+Backend berjalan di `http://localhost:3000`.
+
+### 6. Jalankan frontend (setelah scaffold tersedia)
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Frontend direncanakan berjalan di `http://localhost:3001`.
 
 ## Progress Saat Ini
 
-Status mengacu pada prioritas implementasi di PRD (bagian 21). Implementasi kode belum dimulai; repo saat ini baru berisi PRD.
+Status mengacu pada prioritas implementasi di PRD (bagian 21). Backend sudah di-scaffold dan dependensinya sudah dideklarasikan; fitur produk belum diimplementasikan.
 
 - [x] **Spesifikasi produk** — PRD v1.0 selesai (`backend/docs/PRD.md`)
+- [x] **Fondasi backend** — scaffold NestJS 11 + daftar dependensi (`backend/package.json`)
 - [ ] **P0 — Inti** — landing page, katalog/panduan bersumber, pertanyaan kebutuhan, autentikasi, dashboard, persiapan, unggah dokumen, pemeriksaan AI, hasil/revisi, kanal resmi, pencatatan pengajuan
 - [ ] **P0 — Kejujuran pelacakan** — linimasa bersumber, pemisahan nomor persiapan dan nomor resmi, mode simulasi berlabel
 - [ ] **P0 — Pengelolaan** — panduan/aturan berversi, pembatasan akses, akun petugas simulasi
