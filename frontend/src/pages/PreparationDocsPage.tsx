@@ -5,7 +5,7 @@ import { PreparationStepper } from '../components/PreparationStepper';
 
 export const PreparationDocsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { formData, showToast, openChat } = useApp();
+  const { selectedService, formData, showToast, openChat } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   interface DocItem {
@@ -59,6 +59,17 @@ export const PreparationDocsPage: React.FC = () => {
     fileInputRef.current?.click();
   };
 
+  const handleSimulateUploadExample = () => {
+    setDocs((prev) =>
+      prev.map((d) =>
+        d.id === 'nikah'
+          ? { ...d, fileName: 'buku-nikah-legalisir-contoh.pdf', size: '1.2 MB', pages: '4 halaman', uploaded: true }
+          : d
+      )
+    );
+    showToast('Berkas contoh "Buku Nikah Legalisir" berhasil dimuat (Kesiapan 100%)!', 'success');
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const f = e.target.files[0];
@@ -99,8 +110,8 @@ export const PreparationDocsPage: React.FC = () => {
 <span className="material-symbols-outlined text-white">fact_check</span>
 </div>
 <div>
-<div className="font-heading font-bold text-base tracking-tight leading-none text-white">JejakMasWowo</div>
-<div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+<div className="font-heading font-black text-base tracking-tight leading-none text-white">DaftarIn</div>
+<div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">JejakMasWowo · Layanan Warga</div>
 </div>
 </div>
 {/*  Navigation Rows (height 44px, 8px gap, 16px horizontal margin)  */}
@@ -147,9 +158,9 @@ export const PreparationDocsPage: React.FC = () => {
 <div className="flex items-center gap-2 text-sm text-[#52657A]">
 <span>Persiapan</span>
 <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span>Akta Kelahiran</span>
+<span className="font-medium text-[#172B45]">{selectedService?.name || 'Akta Kelahiran'}</span>
 <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span className="font-medium text-[#172B45]">Dokumen</span>
+<span className="font-semibold text-[#1769D2]">Dokumen</span>
 </div>
 {/*  Right Controls: Location, Bantuan inline, Bell, Avatar  */}
 <div className="flex items-center gap-3">
@@ -174,11 +185,24 @@ export const PreparationDocsPage: React.FC = () => {
 </header>
 {/*  Page Content (inner margin 32px, bottom padding 96px for action bar)  */}
 <input ref={fileInputRef} onChange={handleFileChange} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
-<main className="flex-1 p-4 sm:p-8 w-full" style={{ flex: '1', minHeight: '0', overflowY: 'auto', boxSizing: 'border-box' }}>
+<main className="flex-1 p-4 sm:p-8 pb-28 w-full overflow-y-auto">
 {/*  Page-heading block  */}
-<div>
-<h1 className="text-[28px] leading-[36px] font-bold text-[#172B45]">Unggah dokumen</h1>
-<p className="text-[16px] leading-[24px] text-[#52657A] mt-2">Akta Kelahiran (contoh) · Kota Contoh · Persiapan JMW-DEMO-001</p>
+<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div>
+    <h1 className="text-[28px] leading-[36px] font-bold text-[#172B45]">Unggah dokumen</h1>
+    <p className="text-[14px] leading-[22px] text-[#52657A] mt-1">
+      {selectedService?.name || 'Penerbitan Akta Kelahiran Baru (contoh)'} · Kota Contoh · Persiapan JMW-DEMO-001
+    </p>
+  </div>
+  {!docs.find((d) => d.id === 'nikah')?.uploaded && (
+    <button
+      onClick={handleSimulateUploadExample}
+      className="px-3.5 py-1.5 bg-[#EBF1F8] hover:bg-[#D5E6FF] text-[#1769D2] border border-[#CBD7E6] rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
+      type="button"
+    >
+      <span>⚡ Simulasikan Berkas Lengkap (3/3)</span>
+    </button>
+  )}
 </div>
 {/*  Preparation Stepper (Step 3 active)  */}
 <PreparationStepper currentStep={3} />

@@ -70,10 +70,12 @@ export const TrackingPage: React.FC = () => {
               <span className="material-symbols-outlined text-white text-[20px]">fact_check</span>
             </div>
             <div>
-              <div className="font-heading font-bold text-base tracking-tight leading-none text-white">
-                JejakMasWowo
+              <div className="font-heading font-black text-base tracking-tight leading-none text-white">
+                DaftarIn
               </div>
-              <div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+              <div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">
+                JejakMasWowo · Layanan Warga
+              </div>
             </div>
           </div>
 
@@ -404,36 +406,6 @@ export const TrackingPage: React.FC = () => {
                   <p className="text-xs text-[#52657A]">
                     Catatan ini dicatat secara mandiri oleh pemohon untuk pengingat tahapan fisik dan ditandai dengan label <strong>[Catatan Warga]</strong>.
                   </p>
-
-                  {/* Add Note Form */}
-                  {showAddNote && (
-                    <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl space-y-3">
-                      <div className="font-bold text-xs text-[#142C4B]">Tambah Catatan atau Pengingat Mandiri</div>
-                      <textarea
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="Contoh: Sudah konfirmasi ke loket 3, fotokopi buku nikah legalisir sudah diserahkan..."
-                        rows={3}
-                        className="w-full p-3 bg-white border border-[#CBD7E6] rounded-lg text-xs font-sans text-[#142C4B] focus:outline-none focus:border-[#1769D2]"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => { setShowAddNote(false); setNoteText(''); }}
-                          className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                          Batal
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveNote}
-                          className="px-4 py-1.5 rounded-lg bg-[#1769D2] hover:bg-[#1257B0] text-white text-xs font-bold shadow-xs"
-                        >
-                          Simpan Catatan
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   <div className="space-y-3">
                     {customNotes.map((cn) => (

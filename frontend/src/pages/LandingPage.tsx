@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import heroWomanImg from '../assets/taxfix_hero_woman.png';
+import heroEnzyImg from '../assets/hero_enzy.png';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -9,50 +9,57 @@ export const LandingPage: React.FC = () => {
 
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [selectedService, setSelectedService] = useState<'akta' | 'kk' | 'ktp'>('akta');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate('/katalog' + (searchQuery.trim() ? `?q=${encodeURIComponent(searchQuery.trim())}` : ''));
+  };
 
   return (
-    <div className="bg-white text-[#142C4B] antialiased min-h-screen flex flex-col font-sans selection:bg-[#1769D2] selection:text-white overflow-x-hidden">
+    <div className="bg-white text-[#142C4B] antialiased min-h-screen flex flex-col font-sans selection:bg-[#1769D2] selection:text-white">
       {/* 1. TOP ANNOUNCEMENT RIBBON — DEEP CIVIC NAVY */}
-      <div className="bg-[#142C4B] text-white px-4 py-2 text-xs border-b border-[#233F66]">
+      <div className="bg-[#142C4B] text-white px-4 py-2.5 text-xs border-b border-[#233F66]">
         <div className="max-w-6xl mx-auto w-full flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#1769D2] text-white font-black text-[10px] tracking-wider uppercase font-mono shadow-xs">
-              100% GRATIS
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#1769D2] text-white font-bold text-[10px] tracking-wider uppercase font-mono shadow-xs">
+              100% gratis
             </span>
-            <span className="text-slate-200 text-[11px] sm:text-xs">
-              Sesuai UU No. 24/2013: Pengurusan berkas kependudukan resmi Rp 0 (bebas biaya &amp; tanpa calo).
+            <span className="text-slate-200 text-xs font-medium">
+              Sesuai UU No. 24/2013: Pengurusan berkas kependudukan resmi Rp 0 (bebas biaya dan tanpa calo).
             </span>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-sky-200 font-mono">
+          <div className="flex items-center gap-2 text-xs text-sky-200 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>Standar SIAK Disdukcapil</span>
           </div>
         </div>
       </div>
 
-      {/* 2. MINIMALIST NAVBAR — CIVIC BLUE & NAVY */}
+      {/* 2. MINIMALIST BESPOKE NAVBAR */}
       <header className="bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] sticky top-0 z-40 transition-all">
         <div className="w-full px-6 max-w-6xl mx-auto flex items-center justify-between h-[72px]">
-          {/* Logo Brand: JejakMasWowo with Cobalt Accent */}
+          {/* Logo Brand: JejakMasWowo */}
           <div
             onClick={() => navigate('/')}
-            className="flex items-center gap-2.5 cursor-pointer group"
+            className="flex items-center gap-2.5 cursor-pointer group select-none"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-bold shadow-sm transition-colors">
-              <span className="material-symbols-outlined text-[20px]">fact_check</span>
+            <div className="w-9 h-9 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-bold shadow-xs transition-colors">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
             <div className="flex flex-col">
               <span className="font-display font-black text-xl tracking-tight leading-none text-[#142C4B]">
-                DaftarIn
+                JejakMasWowo
               </span>
-              <span className="text-[10px] font-bold text-[#1769D2] tracking-wider uppercase">
-                JejakMasWowo · Layanan Warga
+              <span className="text-[10px] font-semibold text-[#1769D2] tracking-wider uppercase mt-0.5 font-mono">
+                Layanan warga mandiri
               </span>
             </div>
           </div>
 
-          {/* Nav Links */}
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#52657A]">
             <a
               href="#/katalog"
@@ -62,203 +69,139 @@ export const LandingPage: React.FC = () => {
               }}
               className="hover:text-[#1769D2] transition-colors"
             >
-              Katalog Layanan
+              Katalog layanan
             </a>
-            <a
-              href="#cara-kerja"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('cara-kerja')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="hover:text-[#1769D2] transition-colors"
-            >
-              Cara Kerja
+            <a href="#cara-kerja" className="hover:text-[#1769D2] transition-colors">
+              Alur verifikasi
             </a>
-            <a
-              href="#kenapa-kami"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('kenapa-kami')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="hover:text-[#1769D2] transition-colors"
-            >
-              Kenapa JejakMasWowo
+            <a href="#dasar-hukum" className="hover:text-[#1769D2] transition-colors">
+              Dasar regulasi
             </a>
             <button
               onClick={openChat}
               className="hover:text-[#1769D2] transition-colors flex items-center gap-1.5"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px] text-[#1769D2]">smart_toy</span>
+              <svg className="w-4 h-4 text-[#1769D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+              </svg>
               <span>Tanya Mas Wowo AI</span>
             </button>
           </nav>
 
-          {/* Action Header: Login + Cobalt Pill Button + Mobile Hamburger */}
+          {/* Action Header: Unified Pill Button System */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/masuk')}
-              className="hidden sm:inline-block text-sm font-bold text-[#52657A] hover:text-[#142C4B] px-2 py-1.5 transition"
+              className="text-sm font-bold text-[#52657A] hover:text-[#142C4B] px-4 py-2 transition"
               type="button"
             >
               Masuk
             </button>
             <button
               onClick={() => navigate('/panduan')}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:scale-105 active:scale-95 transition-all"
+              className="px-6 py-2.5 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
               type="button"
             >
-              Mulai Gratis
-            </button>
-            {/* Mobile Hamburger Toggle Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-[#142C4B] hover:bg-slate-100 transition"
-              aria-label="Navigasi Menu Mobile"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[24px]">
-                {mobileMenuOpen ? 'close' : 'menu'}
-              </span>
+              Mulai gratis
             </button>
           </div>
         </div>
-
-        {/* Mobile Dropdown Drawer */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-[#E2E8F0] px-6 py-4 space-y-3 shadow-lg">
-            <a
-              href="#/katalog"
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-                navigate('/katalog');
-              }}
-              className="block text-sm font-semibold text-[#142C4B] py-2 border-b border-slate-100"
-            >
-              Katalog Layanan
-            </a>
-            <a
-              href="#cara-kerja"
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-                document.getElementById('cara-kerja')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="block text-sm font-semibold text-[#142C4B] py-2 border-b border-slate-100"
-            >
-              Cara Kerja
-            </a>
-            <a
-              href="#kenapa-kami"
-              onClick={(e) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-                document.getElementById('kenapa-kami')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="block text-sm font-semibold text-[#142C4B] py-2 border-b border-slate-100"
-            >
-              Kenapa JejakMasWowo
-            </a>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openChat();
-              }}
-              className="w-full text-left flex items-center gap-2 text-sm font-semibold text-[#1769D2] py-2 border-b border-slate-100"
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[18px]">smart_toy</span>
-              <span>Tanya Mas Wowo AI</span>
-            </button>
-            <div className="pt-2 flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigate('/masuk');
-                }}
-                className="flex-1 py-2 rounded-lg border border-[#CBD7E6] text-xs font-bold text-[#142C4B] text-center"
-                type="button"
-              >
-                Masuk
-              </button>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigate('/dashboard');
-                }}
-                className="flex-1 py-2 rounded-lg bg-[#142C4B] text-white text-xs font-bold text-center"
-                type="button"
-              >
-                Dasbor Warga
-              </button>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* 3. HERO SECTION (TAXFIX COMPOSITION + CIVIC BLUE & NAVY PALETTE) */}
-      <section className="relative pt-10 pb-16 md:pt-14 md:pb-20 overflow-hidden bg-gradient-to-b from-[#EBF3FF] via-[#F4F7FD] to-white border-b border-[#E2E8F0]">
+      {/* 3. HERO SECTION (EDITORIAL CIVIC CRAFT + AUTHENTIC INDONESIAN HERO + TAXFIX HARMONY) */}
+      <section className="relative pt-10 pb-16 md:pt-14 md:pb-24 overflow-hidden bg-gradient-to-r from-white via-[#F8FAFD] to-[#E9F3F2] border-b border-[#E2E8F0]">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left Column: Bold Headline & Empathy Copy */}
-            <div className="lg:col-span-6 space-y-6 text-left">
-              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-[58px] leading-[1.06] tracking-tight text-[#142C4B]">
-                Urus berkas kependudukan tanpa drama.
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+            {/* Left Column (7 cols): Editorial Headline & Unified Taxfix-style CTA */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              {/* Civic Pill Tag */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#CBD7E6] shadow-xs text-xs font-semibold text-[#142C4B]">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Asisten audit berkas kependudukan pra-loket</span>
+              </div>
+
+              {/* H1 with Latin Serif Italic Accent */}
+              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-[54px] leading-[1.1] tracking-tight text-[#142C4B]">
+                Urus dokumen kependudukan,{' '}
+                <span className="font-latin text-[#1769D2] font-normal text-[1.12em] block sm:inline">
+                  tanpa drama dan bolak-balik.
+                </span>
               </h1>
 
+              {/* Subhead */}
               <p className="text-base sm:text-lg text-[#52657A] leading-relaxed max-w-xl">
-                Dengan panduan mandiri JejakMasWowo, seluruh persyaratan Akta Kelahiran, KK, dan KTP-el diperiksa otomatis sebelum ke loket dinas. Duduk santai, verifikator sistem kami memastikan dokumenmu langsung sah sekali datang.
+                Pra-verifikasi mandiri ejaan nama KTP-el, nomor Kartu Keluarga, dan kelengkapan dokumen sebelum ke loket dinas. Bebas calo dan Rp 0 resmi sesuai amanat UU No. 24/2013.
               </p>
 
-              {/* White Pill Button with Cobalt Blue Arrow Circle */}
-              <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Search & Actions Bar with Unified Pill Button System */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-xl">
+                <form onSubmit={handleSearchSubmit} className="flex-1 bg-white p-1.5 rounded-full border-2 border-[#CBD7E6] shadow-xs flex items-center gap-2 focus-within:border-[#1769D2] transition-colors">
+                  <div className="flex-1 flex items-center gap-2 pl-3">
+                    <svg className="w-4 h-4 text-[#52657A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Cari syarat (misal: Akta Kelahiran, KK, KTP)..."
+                      className="w-full text-xs sm:text-sm font-medium outline-none text-[#142C4B] placeholder:text-slate-400 bg-transparent"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-full bg-[#142C4B] hover:bg-[#1769D2] text-white text-xs font-bold uppercase tracking-wider shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xs"
+                  >
+                    Cari
+                  </button>
+                </form>
+
+                {/* Unified Master CTA Button (Taxfix Capsule style with nested arrow) */}
                 <button
                   onClick={() => navigate('/panduan')}
-                  className="group inline-flex items-center justify-between gap-6 pl-7 pr-2.5 py-2.5 rounded-full bg-white hover:bg-slate-50 border border-[#CBD5E1] text-[#142C4B] font-bold text-base shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-6 py-3 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white text-xs font-bold uppercase tracking-wider shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm flex items-center justify-center gap-2.5"
                   type="button"
                 >
-                  <span>Sekarang mulai gratis</span>
-                  <span className="w-10 h-10 rounded-full bg-[#1769D2] text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform shadow-xs shrink-0">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <span>Mulai cek berkas</span>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                     </svg>
-                  </span>
+                  </div>
                 </button>
               </div>
 
-              {/* Micro-Badges under CTA */}
-              <div className="pt-2 space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-[#142C4B]">
-                  <span className="px-2 py-0.5 rounded-full bg-[#E7F0FF] text-[#1769D2] font-black text-[10px] tracking-wider uppercase font-mono border border-[#C5DCFA]">
-                    BARU
-                  </span>
-                  <span className="text-[#52657A] font-medium">
-                    Sekarang tersedia fitur audit ejaan nama KTP vs Kartu Keluarga otomatis!
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-[#52657A]">
-                  <span className="text-amber-500 font-bold">★ 4.9/5</span>
-                  <span>
-                    <strong>+14.200 dokumen warga</strong> telah diperiksa mandiri dan lolos loket tanpa penolakan.
-                  </span>
-                </div>
+              {/* Clean Micro Indicators (Zero Emojis) */}
+              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-[#52657A] font-medium">
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  <span>Rp 0 bebas retribusi (UU 24/2013)</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-[#1769D2] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-6.75 6.75l-4.5-4.5 4.5-4.5m13.5 0l4.5 4.5-4.5 4.5" />
+                  </svg>
+                  <span>Privasi lokal peramban</span>
+                </span>
               </div>
             </div>
 
-            {/* Right Column: Hero Visual with Localized Floating Glass Badge */}
-            <div className="lg:col-span-6 relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[560px]">
+            {/* Right Column (5 cols): AUTHENTIC INDONESIAN FIGURE DIRECTLY IN HERO BACKGROUND (NO CARD CONTAINER!) */}
+            <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-[420px]">
+                {/* Photo of genuine Indonesian personality, seamless blend into canvas */}
                 <img
-                  src={heroWomanImg}
-                  alt="Warga santai menikmati es krim karena urusan dokumen sudah beres"
-                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-md block"
+                  src={heroEnzyImg}
+                  alt="Warga Indonesia tersenyum ramah menyiapkan dokumen kependudukan secara mandiri"
+                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-sm block"
                 />
 
-                {/* Floating Glassmorphic Overlay Badge */}
-                <div className="absolute left-[20%] bottom-[19%] sm:left-[22%] sm:bottom-[20%] z-20 glass-card rounded-2xl p-3 sm:p-4 flex items-center gap-3 shadow-xl border border-white/80 max-w-[260px] sm:max-w-[280px]">
-                  <div className="w-10 h-10 rounded-full bg-white shadow-xs text-slate-800 flex items-center justify-center font-bold shrink-0">
+                {/* Floating Glassmorphic Badge directly over photo (Taxfix benchmark) */}
+                <div className="absolute left-[6%] bottom-[10%] sm:left-[8%] sm:bottom-[12%] z-20 glass-card rounded-2xl p-3.5 flex items-center gap-3 shadow-xl border border-white/80 max-w-[270px]">
+                  <div className="w-10 h-10 rounded-xl bg-white shadow-xs text-slate-800 flex items-center justify-center font-bold shrink-0">
                     <svg className="w-5 h-5 text-[#142C4B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                     </svg>
@@ -266,12 +209,12 @@ export const LandingPage: React.FC = () => {
                   <div className="text-left font-sans">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-bold text-[#142C4B] tracking-tight">
-                        Target Selesai
+                        Target selesai loket
                       </span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     </div>
-                    <span className="font-display font-extrabold text-base sm:text-lg text-[#087F68] tracking-tight block">
-                      1 - 2 Hari Kerja
+                    <span className="font-display font-extrabold text-base text-[#087F68] tracking-tight block">
+                      1 – 2 hari kerja
                     </span>
                   </div>
                 </div>
@@ -281,228 +224,218 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. SERVICE SELECTOR (FAST SIMULATOR) */}
+      {/* 4. FAST SERVICE SELECTION (INTERACTIVE CIVIC DOSSIER — ZERO EMOJIS, UNIFIED PILL TABS) */}
       <section className="py-16 px-6 max-w-6xl mx-auto w-full" id="kenapa-kami">
-        <div className="bg-white rounded-3xl border border-[#E2E8F0] p-8 md:p-12 shadow-sm space-y-8">
+        <div className="bg-white rounded-3xl border border-[#CBD7E6] p-8 md:p-12 shadow-sm space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="px-3 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
-              SIMULATOR KEBUTUHAN CEPAT
+            <span className="px-3.5 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
+              NAVIGASI PENGURUSAN MANDIRI
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#142C4B]">
-              Mau Mengurus Apa Hari Ini?
+              Pilih Dokumen yang Ingin Kamu Siapkan
             </h2>
             <p className="text-xs sm:text-sm text-[#52657A]">
-              Pilih dokumen yang ingin kamu siapkan untuk melihat panduan berkas &amp; estimasi waktu secara langsung.
+              Pilih jenis berkas untuk melihat daftar periksa fisik, estimasi pengerjaan, dan kanal pengajuan resmi.
             </p>
           </div>
 
-          {/* Interactive Service Toggle Pills */}
+          {/* Unified Pill Buttons for Service Selector (Zero Emojis!) */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => setSelectedService('akta')}
-              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'akta'
                   ? 'bg-[#142C4B] text-white shadow-md scale-105'
-                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#E2E8F0]'
+                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
               }`}
             >
-              <span>👶</span>
-              <span>Akta Kelahiran Baru</span>
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              <span>Penerbitan akta kelahiran baru</span>
             </button>
 
             <button
               type="button"
               onClick={() => setSelectedService('kk')}
-              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'kk'
                   ? 'bg-[#142C4B] text-white shadow-md scale-105'
-                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#E2E8F0]'
+                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
               }`}
             >
-              <span>👨‍👩‍👧‍👦</span>
-              <span>Pembaruan Kartu Keluarga</span>
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+              </svg>
+              <span>Pembaruan kartu keluarga (KK)</span>
             </button>
 
             <button
               type="button"
               onClick={() => setSelectedService('ktp')}
-              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'ktp'
                   ? 'bg-[#142C4B] text-white shadow-md scale-105'
-                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#E2E8F0]'
+                  : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
               }`}
             >
-              <span>🪪</span>
-              <span>KTP-el Baru / Penggantian</span>
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+              </svg>
+              <span>Penerbitan KTP-el baru / rusak</span>
             </button>
           </div>
 
-          {/* Dynamic Result Card */}
+          {/* Dossier Requirements Overview */}
           <div className="bg-[#F8FAFD] border border-[#CBD7E6] rounded-2xl p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-left">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold text-[#52657A] uppercase tracking-wider block">
-                Dokumen Wajib Dibawa
+              <span className="text-[11px] font-bold text-[#52657A] uppercase tracking-wider block font-mono">
+                Berkas fisik wajib
               </span>
               <div className="font-bold text-base text-[#142C4B]">
-                {selectedService === 'akta' && '3 Dokumen Fisik Asli'}
-                {selectedService === 'kk' && '2 Dokumen Kependudukan'}
-                {selectedService === 'ktp' && '1 Dokumen KK Terbaru'}
+                {selectedService === 'akta' && '3 dokumen fisik inti'}
+                {selectedService === 'kk' && '2 dokumen kependudukan'}
+                {selectedService === 'ktp' && '1 salinan KK terbaru'}
               </div>
               <p className="text-xs text-[#52657A]">
-                {selectedService === 'akta' && 'Surat Lahir RSUD, Kartu Keluarga, dan Buku Nikah Orang Tua.'}
-                {selectedService === 'kk' && 'KK Asli Lama dan berkas mutasi data (Buku Nikah / Ijazah).'}
-                {selectedService === 'ktp' && 'Salinan KK terbaru & fisik KTP lama (jika rusak).'}
+                {selectedService === 'akta' && 'Surat Kelahiran Faskes (RSUD), Kartu Keluarga, dan Buku Nikah Orang Tua.'}
+                {selectedService === 'kk' && 'Kartu Keluarga asli lama dan surat bukti mutasi (Buku Nikah / Ijazah).'}
+                {selectedService === 'ktp' && 'Salinan KK ber-barcode TTE dan fisik KTP lama (jika rusak).'}
               </p>
             </div>
 
             <div className="space-y-1 md:border-l md:border-r md:border-[#CBD7E6] md:px-6">
-              <span className="text-[11px] font-bold text-[#52657A] uppercase tracking-wider block">
-                Biaya &amp; Standar Waktu
+              <span className="text-[11px] font-bold text-[#52657A] uppercase tracking-wider block font-mono">
+                Biaya &amp; standar waktu
               </span>
               <div className="font-bold text-base text-[#087F68] flex items-center gap-1.5">
-                <span>Rp 0 (Gratis Penuh)</span>
+                <span>Rp 0 (gratis sesuai UU)</span>
               </div>
               <p className="text-xs text-[#52657A]">
-                Standar penerbitan: <strong>1 - 2 Hari Kerja</strong> setelah berkas diverifikasi petugas loket.
+                Standar penyelesaian: <strong>1 – 2 hari kerja</strong> setelah berkas fisik diverifikasi loket.
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => navigate('/panduan')}
-                className="w-full py-3.5 px-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-xs transition flex items-center justify-center gap-2"
+                className="w-full py-3.5 px-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 type="button"
               >
-                <span>Lihat Panduan &amp; Mulai Cek</span>
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
+                <span>Lihat panduan &amp; mulai cek</span>
+                <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </div>
               </button>
               <span className="text-[10px] text-center text-[#52657A]">
-                Bebas diakses tanpa perlu login.
+                Bebas diakses tanpa perlu membuat akun di awal.
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. 4 LANGKAH SANTAI MENUJU DOKUMEN SAH */}
+      {/* 5. ALUR 4 TAHAP PROSEDURAL */}
       <section id="cara-kerja" className="py-16 px-6 max-w-6xl mx-auto space-y-12 w-full text-center">
         <div className="space-y-2 max-w-2xl mx-auto">
-          <span className="px-3 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
-            STEP-BY-STEP PRAKTIS
+          <span className="px-3.5 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
+            SISTEMATIKA PROSES
           </span>
           <h2 className="text-3xl font-extrabold font-display text-[#142C4B]">
-            4 Langkah Mudah Menuju Dokumen Sah
+            4 Tahap Dari Rumah Hingga Selesai di Loket
           </h2>
           <p className="text-xs sm:text-sm text-[#52657A]">
-            Tinggalkan cara lama yang bikin pusing. Siapkan berkasmu santai lewat HP.
+            Setiap langkah dirancang untuk meminimalisir kesalahan administratif sebelum pengajuan resmi.
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-          <div className="bg-[#F8FAFD] rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] hover:bg-white transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-sky-100 text-[#1769D2] flex items-center justify-center font-bold text-base">
-              1
+          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
+              01
             </div>
-            <h3 className="font-bold text-base text-[#142C4B]">Pilih Layanan</h3>
+            <h3 className="font-bold text-base text-[#142C4B]">Pilih kebutuhan layanan</h3>
             <p className="text-xs text-[#52657A] leading-relaxed">
-              Jawab pertanyaan santai untuk menentukan jenis formulir dan kondisi yang kamu butuhkan.
+              Tentukan jenis permohonan melalui kuesioner panduan sederhana untuk mengetahui daftar berkas wajib.
             </p>
           </div>
 
-          <div className="bg-[#F8FAFD] rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] hover:bg-white transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#087F68] flex items-center justify-center font-bold text-base">
-              2
+          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
+              02
             </div>
-            <h3 className="font-bold text-base text-[#142C4B]">Foto Berkas dari HP</h3>
+            <h3 className="font-bold text-base text-[#142C4B]">Unggah foto berkas fisik</h3>
             <p className="text-xs text-[#52657A] leading-relaxed">
-              Cukup ambil foto KTP, Kartu Keluarga, atau surat kelahiranmu dengan pencahayaan yang jelas.
+              Ambil pindaian dokumen menggunakan kamera HP Anda pada permukaan datar dengan pencahayaan merata.
             </p>
           </div>
 
-          <div className="bg-[#F8FAFD] rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] hover:bg-white transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#D97706] flex items-center justify-center font-bold text-base">
-              3
+          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
+              03
             </div>
-            <h3 className="font-bold text-base text-[#142C4B]">AI Audit Kesalahan</h3>
+            <h3 className="font-bold text-base text-[#142C4B]">Pemeriksaan AI &amp; ejaan</h3>
             <p className="text-xs text-[#52657A] leading-relaxed">
-              Model AI langsung mendeteksi jika ada perbedaan ejaan huruf atau foto yang terpotong.
+              Model OCR membandingkan nama pada formulir terhadap dokumen fisik untuk memastikan keselarasan data.
             </p>
           </div>
 
-          <div className="bg-[#F8FAFD] rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] hover:bg-white transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#9333EA] flex items-center justify-center font-bold text-base">
-              4
+          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
+              04
             </div>
-            <h3 className="font-bold text-base text-[#142C4B]">Bawa Struk ke Loket</h3>
+            <h3 className="font-bold text-base text-[#142C4B]">Serahkan ke loket resmi</h3>
             <p className="text-xs text-[#52657A] leading-relaxed">
-              Cetak struk bukti tanda terima digital kami, serahkan ke petugas loket, langsung beres!
+              Bawa susunan berkas rapi bersama tanda terima ke loket pelayanan kelurahan atau kantor Disdukcapil.
             </p>
           </div>
         </div>
       </section>
 
-      {/* 6. CERITA WARGA */}
-      <section id="testimoni" className="py-16 bg-[#F8FAFD] border-y border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 space-y-10">
-          <div className="text-center space-y-2">
+      {/* 6. CIVIC TRANSPARENCY & LEGAL BASIS */}
+      <section id="dasar-hukum" className="py-16 bg-white border-y border-[#E2E8F0]">
+        <div className="max-w-6xl mx-auto px-6 space-y-8">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#142C4B]">
-              Cerita Warga yang Sudah Lolos Sekali Datang
+              Komitmen Transparansi &amp; Integritas Publik
             </h2>
             <p className="text-xs sm:text-sm text-[#52657A]">
-              Dengar langsung pengalaman mereka yang menghemat waktu dan tenaga.
+              JejakMasWowo adalah instrumen literasi tata kelola berkas sipil mandiri, bukan perantara ilegal.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-2xl bg-white border border-[#CBD7E6] space-y-3 shadow-xs">
-              <div className="text-amber-500 text-sm font-bold">★★★★★</div>
-              <p className="text-xs text-[#142C4B] leading-relaxed italic">
-                "Waktu ngurus akta anak pertama, biasanya orang cerita bolak-balik 3 kali karena typo nama di surat lahir RS. Pas pake JejakMasWowo langsung ketahuan hurufnya kurang satu. Mantap banget!"
+            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-2.5">
+              <svg className="w-6 h-6 text-[#1769D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+              </svg>
+              <h3 className="font-bold text-sm text-[#142C4B]">Regulasi resmi negara</h3>
+              <p className="text-xs text-[#52657A] leading-relaxed">
+                Seluruh panduan mengacu pada Undang-Undang No. 24 Tahun 2013 dan Permendagri No. 108 Tahun 2019 mengenai standar pencatatan sipil nasional.
               </p>
-              <div className="pt-2 border-t border-[#F1F5F9] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#1769D2] text-white font-bold flex items-center justify-center text-xs">
-                  AP
-                </div>
-                <div>
-                  <div className="font-bold text-xs text-[#142C4B]">Ayu Puspita (24 thn)</div>
-                  <div className="text-[10px] text-[#52657A]">Ibu Rumah Tangga · Akta Kelahiran</div>
-                </div>
-              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white border border-[#CBD7E6] space-y-3 shadow-xs">
-              <div className="text-amber-500 text-sm font-bold">★★★★★</div>
-              <p className="text-xs text-[#142C4B] leading-relaxed italic">
-                "Gue kerja kantoran jadi cuti itu mahal. Pake fitur tanya jawab santainya langsung ngerti bedanya surat pindah domisili antar-provinsi. Ke dukcapil cuma 20 menit langsung kelar."
+            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-2.5">
+              <svg className="w-6 h-6 text-[#087F68]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+              <h3 className="font-bold text-sm text-[#142C4B]">Tanpa pungutan liar</h3>
+              <p className="text-xs text-[#52657A] leading-relaxed">
+                Pengurusan mandiri di loket pemerintah tidak dikenakan biaya apapun. Hindari pihak-pihak yang menjanjikan jalur cepat dengan imbalan materi.
               </p>
-              <div className="pt-2 border-t border-[#F1F5F9] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#142C4B] text-white font-bold flex items-center justify-center text-xs">
-                  BS
-                </div>
-                <div>
-                  <div className="font-bold text-xs text-[#142C4B]">Budi Santoso (29 thn)</div>
-                  <div className="text-[10px] text-[#52657A]">Karyawan Swasta · Pembaruan KK</div>
-                </div>
-              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white border border-[#CBD7E6] space-y-3 shadow-xs">
-              <div className="text-amber-500 text-sm font-bold">★★★★★</div>
-              <p className="text-xs text-[#142C4B] leading-relaxed italic">
-                "Fitur struk thermal sama cap stempel verifikasinya keren parah! Pas dibawa ke kelurahan, bapak petugasnya langsung paham susunan dokumen kita udah rapi."
+            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-2.5">
+              <svg className="w-6 h-6 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <h3 className="font-bold text-sm text-[#142C4B]">Kedaulatan data warga</h3>
+              <p className="text-xs text-[#52657A] leading-relaxed">
+                Data input disimpan secara aman di sesi peramban Anda. Platform tidak menjual atau membagikan identitas pribadi Anda kepada pihak komersial.
               </p>
-              <div className="pt-2 border-t border-[#F1F5F9] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-xs">
-                  RD
-                </div>
-                <div>
-                  <div className="font-bold text-xs text-[#142C4B]">Rizky Darmawan (21 thn)</div>
-                  <div className="text-[10px] text-[#52657A]">Mahasiswa · KTP-el Pemula</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -512,7 +445,7 @@ export const LandingPage: React.FC = () => {
       <section id="faq" className="py-16 px-6 max-w-3xl mx-auto space-y-8 w-full text-left">
         <div className="text-center space-y-2">
           <span className="text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
-            FAQ
+            Pertanyaan umum
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#142C4B]">
             Pertanyaan yang Sering Diajukan
@@ -527,13 +460,13 @@ export const LandingPage: React.FC = () => {
               type="button"
             >
               <span>Apakah ada biaya menggunakan JejakMasWowo?</span>
-              <span className={`material-symbols-outlined text-slate-500 transition-transform ${openFaq === 0 ? 'rotate-180' : ''}`}>
-                expand_more
-              </span>
+              <svg className={`w-5 h-5 text-slate-500 transition-transform ${openFaq === 0 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
             </button>
             {openFaq === 0 && (
               <div className="px-5 pb-5 pt-1 text-xs text-[#52657A] border-t border-slate-100 leading-relaxed">
-                <strong>100% Gratis!</strong> Sesuai UU No. 24/2013, seluruh pelayanan administrasi kependudukan di Indonesia bebas retribusi. Kami tidak pernah memungut biaya apapun.
+                <strong>100% gratis!</strong> Sesuai UU No. 24/2013, seluruh pelayanan administrasi kependudukan di Indonesia bebas retribusi (Rp 0). Platform ini tidak memungut biaya apapun.
               </div>
             )}
           </div>
@@ -544,14 +477,14 @@ export const LandingPage: React.FC = () => {
               className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-[#142C4B] hover:bg-slate-50 transition"
               type="button"
             >
-              <span>Apakah dokumen saya aman?</span>
-              <span className={`material-symbols-outlined text-slate-500 transition-transform ${openFaq === 1 ? 'rotate-180' : ''}`}>
-                expand_more
-              </span>
+              <span>Apakah foto berkas saya langsung dikirim ke kantor pemerintah?</span>
+              <svg className={`w-5 h-5 text-slate-500 transition-transform ${openFaq === 1 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
             </button>
             {openFaq === 1 && (
               <div className="px-5 pb-5 pt-1 text-xs text-[#52657A] border-t border-slate-100 leading-relaxed">
-                Sangat aman. Pemrosesan OCR dilakukan sementara di perangkat Anda dan kami tidak menyimpan salinan data sensitif atau memperjualbelikannya kepada pihak ketiga.
+                Tidak. JejakMasWowo berfungsi sebagai instrumen audit awal mandiri. Berkas fisik tetap Anda serahkan langsung ke loket pelayanan terpadu atau diunggah ke website resmi dinas kependudukan daerah.
               </div>
             )}
           </div>
@@ -562,25 +495,25 @@ export const LandingPage: React.FC = () => {
               className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-[#142C4B] hover:bg-slate-50 transition"
               type="button"
             >
-              <span>Apakah AI menggantikan petugas loket?</span>
-              <span className={`material-symbols-outlined text-slate-500 transition-transform ${openFaq === 2 ? 'rotate-180' : ''}`}>
-                expand_more
-              </span>
+              <span>Apakah pemeriksaan AI menjamin berkas pasti diterima petugas?</span>
+              <svg className={`w-5 h-5 text-slate-500 transition-transform ${openFaq === 2 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
             </button>
             {openFaq === 2 && (
               <div className="px-5 pb-5 pt-1 text-xs text-[#52657A] border-t border-slate-100 leading-relaxed">
-                Tidak. AI hanya membantu persiapan berkas awal agar tidak ada yang kurang. Keputusan sah penerimaan berkas tetap dilakukan oleh petugas verifikator resmi Disdukcapil.
+                Pemeriksaan AI bersifat pendampingan teknis pra-loket untuk mencegah kesalahan ejaan umum. Keputusan sah penerimaan berkas sepenuhnya berada di bawah otoritas petugas verifikator resmi Disdukcapil.
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* 8. BOTTOM HERO CTA — DEEP NAVY WITH COBALT BUTTON */}
+      {/* 8. BOTTOM HERO CTA */}
       <section className="bg-[#142C4B] text-white py-16 px-6 text-center">
         <div className="max-w-4xl mx-auto space-y-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold font-display leading-tight text-white">
-            Sudah Siap Mengurus Dokumen Tanpa Ragu?
+            Sudah Siap Menyiapkan Dokumen Tanpa Ragu?
           </h2>
           <p className="text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
             Hanya butuh 3 menit untuk memeriksa kelengkapan berkasmu. Gratis, aman, dan langsung jelas langkahnya.
@@ -588,13 +521,15 @@ export const LandingPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={() => navigate('/panduan')}
-              className="px-8 py-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-sm shadow-xl transition active:scale-95 flex items-center gap-2"
+              className="px-8 py-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-sm shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
               type="button"
             >
-              <span>Mulai Persiapan Mandiri</span>
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+              <span>Mulai persiapan mandiri</span>
+              <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </div>
             </button>
           </div>
         </div>
@@ -603,10 +538,13 @@ export const LandingPage: React.FC = () => {
       {/* 9. FOOTER */}
       <footer className="bg-[#0B1E36] text-white/70 border-t border-[#1C3B61] py-10 px-6 text-xs">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-display font-black text-base text-white">
-              JejakMasWowo
-            </span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1769D2] flex items-center justify-center text-white font-bold">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="font-bold text-sm text-white">JejakMasWowo</span>
             <span className="text-slate-400">· Portal Literasi Mandiri Dokumen Kependudukan Warga</span>
           </div>
           <div className="text-slate-400">

@@ -5,7 +5,7 @@ import { PreparationStepper } from '../components/PreparationStepper';
 
 export const PreparationDataPage: React.FC = () => {
   const navigate = useNavigate();
-  const { formData, setFormData, showToast, openChat } = useApp();
+  const { selectedService, formData, setFormData, showToast, openChat } = useApp();
 
   // Wizard Sub-Step (1 to 4)
   const [subStep, setSubStep] = useState<number>(1);
@@ -52,10 +52,12 @@ export const PreparationDataPage: React.FC = () => {
             <span className="material-symbols-outlined text-white text-[20px]">fact_check</span>
           </div>
           <div>
-            <div className="font-heading font-bold text-base tracking-tight leading-none text-white">
-              JejakMasWowo
+            <div className="font-heading font-black text-base tracking-tight leading-none text-white">
+              DaftarIn
             </div>
-            <div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+            <div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">
+              JejakMasWowo · Layanan Warga
+            </div>
           </div>
         </div>
 
@@ -125,9 +127,9 @@ export const PreparationDataPage: React.FC = () => {
           <div className="flex items-center gap-2 text-sm text-[#52657A]">
             <span>Persiapan</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span>Akta Kelahiran</span>
+            <span className="font-medium text-[#172B45]">{selectedService?.name || 'Akta Kelahiran'}</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span className="font-semibold text-[#172B45]">Data Pemohon</span>
+            <span className="font-semibold text-[#1769D2]">Data Pemohon</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -170,7 +172,7 @@ export const PreparationDataPage: React.FC = () => {
                 Lengkapi Data Pengurusan
               </h1>
               <p className="text-[14px] text-[#52657A] mt-1">
-                Layanan: <strong>Akta Kelahiran (contoh)</strong> · Sesi: <span className="font-mono text-[#142C4B]">JMW-PREP-20261028-001</span>
+                Layanan: <strong>{selectedService?.name || 'Penerbitan Akta Kelahiran Baru (contoh)'}</strong> · Sesi: <span className="font-mono text-[#142C4B]">JMW-PREP-20261028-001</span>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -264,7 +266,15 @@ export const PreparationDataPage: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="pt-4 flex justify-end">
+                  <div className="pt-4 flex items-center justify-between border-t border-[#DDE5EF]">
+                    <button
+                      onClick={() => navigate('/panduan')}
+                      className="px-4 py-2.5 rounded-xl border border-[#CBD7E6] text-xs font-bold text-[#52657A] hover:bg-slate-50 transition flex items-center gap-1.5"
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                      <span>Kembali ke Panduan</span>
+                    </button>
                     <button
                       onClick={handleNextSubStep}
                       className="px-6 py-3 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition"
@@ -438,14 +448,23 @@ export const PreparationDataPage: React.FC = () => {
               {/* CARD STEP 4: FORM BIODATA PEMOHON & BAYI */}
               {subStep === 4 && (
                 <div className="bg-white border-2 border-[#CBD7E6] rounded-2xl p-7 shadow-sm space-y-5 wizard-step-enter">
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 4</span>
-                    <h2 className="text-2xl font-bold text-[#142C4B] font-display">
-                      Konfirmasi Data Identitas Draf
-                    </h2>
-                    <p className="text-xs text-[#52657A]">
-                      Data ini akan dicocokkan dengan teks hasil pindaian OCR pada dokumen fisik Anda.
-                    </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold text-[#1769D2] uppercase tracking-wider">Pertanyaan 4</span>
+                      <h2 className="text-2xl font-bold text-[#142C4B] font-display">
+                        Konfirmasi Data Identitas Draf
+                      </h2>
+                      <p className="text-xs text-[#52657A]">
+                        Data ini akan dicocokkan dengan teks hasil pindaian OCR pada dokumen fisik Anda.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLoadDemo}
+                      className="px-3 py-1.5 bg-[#EBF1F8] hover:bg-[#D5E6FF] text-[#1769D2] border border-[#CBD7E6] rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
+                    >
+                      <span>⚡ Muat Draf Ayu Contoh</span>
+                    </button>
                   </div>
 
                   <div className="space-y-4 pt-1 font-sans">

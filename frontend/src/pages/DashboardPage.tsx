@@ -20,8 +20,8 @@ export const DashboardPage: React.FC = () => {
 <span className="material-symbols-outlined text-[20px] material-symbols-fill">task_alt</span>
 </div>
 <div>
-<h1 className="font-headline-sm text-[17px] font-bold text-on-primary tracking-tight leading-none">JejakMasWowo</h1>
-<p className="font-caption text-caption text-on-primary-container mt-1">Panduan dan persiapan layanan warga</p>
+<h1 className="font-headline-sm text-[18px] font-black text-on-primary tracking-tight leading-none">DaftarIn</h1>
+<p className="font-caption text-[10px] text-sky-200 mt-1 uppercase font-semibold">JejakMasWowo · Layanan Warga</p>
 </div>
 </div>
 </div>

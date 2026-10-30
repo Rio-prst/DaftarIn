@@ -64,8 +64,8 @@ export const AdminPage: React.FC = () => {
 <span className="material-symbols-outlined font-bold">verified_user</span>
 </div>
 <div>
-<div className="font-headline-sm text-headline-sm font-bold tracking-tight text-white leading-tight">JejakMasWowo</div>
-<div className="font-caption text-caption text-primary-fixed-dim leading-none mt-0.5">Admin &amp; Kurasi Aturan</div>
+<div className="font-headline-sm text-headline-sm font-black tracking-tight text-white leading-tight">DaftarIn</div>
+<div className="font-caption text-[10px] text-sky-200 uppercase font-semibold leading-none mt-0.5">JejakMasWowo · Admin Regulasi</div>
 </div>
 </div>
 <div className="mt-3">
@@ -84,6 +84,14 @@ export const AdminPage: React.FC = () => {
 >
   <span className="material-symbols-outlined text-[20px]">domain_verification</span>
   <span>Layanan &amp; Wilayah</span>
+</button>
+<button
+  onClick={() => { setActiveTab('persyaratan'); showToast('Membuka Persyaratan & Dokumen Layanan.', 'info'); }}
+  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium text-sm transition-all text-left ${activeTab === 'persyaratan' ? 'bg-secondary text-white shadow-sm' : 'text-primary-fixed-dim hover:text-white hover:bg-white/5'}`}
+  type="button"
+>
+  <span className="material-symbols-outlined text-[20px]">folder_open</span>
+  <span>Persyaratan &amp; Dokumen</span>
 </button>
 <button
   onClick={() => { setActiveTab('regulasi'); showToast('Membuka Sumber Informasi & Regulasi.', 'info'); }}
@@ -210,6 +218,14 @@ export const AdminPage: React.FC = () => {
 <button onClick={() => setActiveTab('ai')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'ai' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
 <span className="material-symbols-outlined text-sm">smart_toy</span>
             Aturan Pemeriksaan AI
+          </button>
+<button onClick={() => setActiveTab('petugas')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'petugas' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
+<span className="material-symbols-outlined text-sm">manage_accounts</span>
+            Akun Petugas
+          </button>
+<button onClick={() => setActiveTab('audit')} className={`pb-3 text-sm flex items-center gap-2 transition-colors ${activeTab === 'audit' ? 'font-semibold text-secondary border-b-2 border-secondary' : 'font-medium text-on-surface-variant hover:text-primary'}`} type="button">
+<span className="material-symbols-outlined text-sm">receipt_long</span>
+            Audit Rekam Jejak
           </button>
 </div>
 {/*  2-Column Workspace  */}
@@ -414,9 +430,13 @@ export const AdminPage: React.FC = () => {
                         </span>
 </td>
 <td className="py-3.5 px-4 text-center">
-<button className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors">
-                          Ubah
-                        </button>
+<button
+  type="button"
+  onClick={() => showToast('Membuka editor parameter Surat Keterangan Lahir.', 'info')}
+  className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors"
+>
+  Ubah
+</button>
 </td>
 </tr>
 {/*  Row 2  */}
@@ -424,21 +444,25 @@ export const AdminPage: React.FC = () => {
 <td className="py-3.5 px-4 font-semibold text-primary">
 <div className="flex items-center gap-2">
 <span className="material-symbols-outlined text-secondary text-base">import_contacts</span>
-                          Buku Nikah / Akta Perkawinan (contoh)
-                        </div>
+  Buku Nikah / Akta Perkawinan (contoh)
+</div>
 </td>
 <td className="py-3.5 px-4 text-on-surface-variant">Pencatatan pertama orang tua</td>
 <td className="py-3.5 px-4 text-primary font-medium">Validasi nomor registrasi kutipan nikah</td>
 <td className="py-3.5 px-4">
 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
 <span className="material-symbols-outlined text-xs">check_circle</span>
-                          Lengkap (Tersedia rujukan contoh)
-                        </span>
+  Lengkap (Tersedia rujukan contoh)
+</span>
 </td>
 <td className="py-3.5 px-4 text-center">
-<button className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors">
-                          Ubah
-                        </button>
+<button
+  type="button"
+  onClick={() => showToast('Membuka editor parameter Buku Nikah / Kutipan Perkawinan.', 'info')}
+  className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors"
+>
+  Ubah
+</button>
 </td>
 </tr>
 {/*  Row 3  */}
@@ -446,21 +470,25 @@ export const AdminPage: React.FC = () => {
 <td className="py-3.5 px-4 font-semibold text-primary">
 <div className="flex items-center gap-2">
 <span className="material-symbols-outlined text-secondary text-base">badge</span>
-                          Kartu Keluarga (KK) (contoh)
-                        </div>
+  Kartu Keluarga (KK) (contoh)
+</div>
 </td>
 <td className="py-3.5 px-4 text-on-surface-variant">Penambahan anggota keluarga baru</td>
 <td className="py-3.5 px-4 text-primary font-medium">Pengecekan NIK orang tua &amp; alamat terdaftar</td>
 <td className="py-3.5 px-4">
 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
 <span className="material-symbols-outlined text-xs">check_circle</span>
-                          Lengkap (Tersedia rujukan contoh)
-                        </span>
+  Lengkap (Tersedia rujukan contoh)
+</span>
 </td>
 <td className="py-3.5 px-4 text-center">
-<button className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors">
-                          Ubah
-                        </button>
+<button
+  type="button"
+  onClick={() => showToast('Membuka editor parameter Kartu Keluarga (KK).', 'info')}
+  className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-secondary-fixed/30 rounded border border-secondary/30 transition-colors"
+>
+  Ubah
+</button>
 </td>
 </tr>
 {/*  Row 4 (Warning State)  */}
@@ -525,6 +553,241 @@ export const AdminPage: React.FC = () => {
               </span>
 </div>
 </>
+)}
+
+{/* TAB 5: AKUN PETUGAS VERIFIKASI */}
+{activeTab === 'petugas' && (
+  <div className="space-y-6">
+    <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-6 civic-card-shadow space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DDE5EF]">
+        <div>
+          <h3 className="font-title-md text-base font-bold text-primary flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary">manage_accounts</span>
+            <span>Manajemen Akun Petugas Loket &amp; Verifikator SIAK</span>
+          </h3>
+          <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+            Otorisasi meja kerja pelayanan kependudukan terpadu. Verifikator hanya dapat memproses pengajuan yang dibagikan secara sah oleh warga pemohon.
+          </p>
+        </div>
+        <button
+          onClick={() => showToast('Formulir penambahan akun petugas baru dibuka.', 'info')}
+          className="px-3.5 py-2 bg-secondary hover:bg-[#1257B0] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-xs self-start"
+          type="button"
+        >
+          <span className="material-symbols-outlined text-[16px]">person_add</span>
+          <span>+ Tambah Petugas</span>
+        </button>
+      </div>
+
+      {/* Metrics Summary Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div className="p-3 bg-slate-50 border border-[#CBD7E6] rounded-xl">
+          <span className="text-on-surface-variant block text-[11px]">Total Petugas</span>
+          <span className="text-lg font-bold text-primary font-mono mt-0.5 block">3 Orang</span>
+        </div>
+        <div className="p-3 bg-slate-50 border border-[#CBD7E6] rounded-xl">
+          <span className="text-on-surface-variant block text-[11px]">Loket Operasional</span>
+          <span className="text-lg font-bold text-secondary font-mono mt-0.5 block">2 Loket Aktif</span>
+        </div>
+        <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+          <span className="text-emerald-800 block text-[11px] font-medium">Sertifikasi BSrE TTE</span>
+          <span className="text-lg font-bold text-emerald-800 font-mono mt-0.5 block">100% Valid</span>
+        </div>
+        <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl">
+          <span className="text-blue-900 block text-[11px] font-medium">Kepatuhan SOP</span>
+          <span className="text-lg font-bold text-blue-900 font-mono mt-0.5 block">0 Pelanggaran</span>
+        </div>
+      </div>
+
+      {/* Officers Table */}
+      <div className="overflow-x-auto rounded-xl border border-[#DDE5EF]">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-50 border-b border-[#DDE5EF] text-[11px] font-bold text-primary uppercase tracking-wider">
+              <th className="py-3 px-4">Nama Petugas &amp; NIP</th>
+              <th className="py-3 px-4">Penugasan Loket</th>
+              <th className="py-3 px-4">Peran Sistem</th>
+              <th className="py-3 px-4">Status Akun</th>
+              <th className="py-3 px-4">Beban Kerja</th>
+              <th className="py-3 px-4 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#DDE5EF]">
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4">
+                <div className="font-bold text-primary">Budi Santoso, S.Kom</div>
+                <div className="text-[11px] text-on-surface-variant font-mono">NIP: 198503142010011002</div>
+              </td>
+              <td className="py-3 px-4 font-semibold text-secondary">Loket 3 (Terpadu)</td>
+              <td className="py-3 px-4 text-on-surface-variant">Verifikator Utama Adminduk</td>
+              <td className="py-3 px-4">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Aktif Bertugas
+                </span>
+              </td>
+              <td className="py-3 px-4 font-mono font-medium text-primary">3 Berkas Aktif</td>
+              <td className="py-3 px-4 text-center">
+                <button
+                  onClick={() => navigate('/petugas')}
+                  className="px-2.5 py-1 text-xs font-semibold text-secondary hover:bg-blue-50 rounded border border-blue-200 transition"
+                  type="button"
+                >
+                  Buka Meja
+                </button>
+              </td>
+            </tr>
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4">
+                <div className="font-bold text-primary">Siti Rahmawati, S.STP</div>
+                <div className="text-[11px] text-on-surface-variant font-mono">NIP: 199108222014022001</div>
+              </td>
+              <td className="py-3 px-4 font-semibold text-secondary">Loket 1 (Pendaftaran)</td>
+              <td className="py-3 px-4 text-on-surface-variant">Verifikator Berkas Kelahiran</td>
+              <td className="py-3 px-4">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Aktif Bertugas
+                </span>
+              </td>
+              <td className="py-3 px-4 font-mono font-medium text-primary">5 Selesai Hari Ini</td>
+              <td className="py-3 px-4 text-center">
+                <button
+                  onClick={() => showToast('Detail akun Siti Rahmawati dibuka.', 'info')}
+                  className="px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:text-primary hover:bg-slate-100 rounded border border-slate-200 transition"
+                  type="button"
+                >
+                  Detail
+                </button>
+              </td>
+            </tr>
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4">
+                <div className="font-bold text-primary">Ahmad Fauzi, S.AP</div>
+                <div className="text-[11px] text-on-surface-variant font-mono">NIP: 198811052012011004</div>
+              </td>
+              <td className="py-3 px-4 font-semibold text-slate-600">Loket 2 (Mutasi SIAK)</td>
+              <td className="py-3 px-4 text-on-surface-variant">Spesialis Validasi Dokumen SIAK</td>
+              <td className="py-3 px-4">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Mode Siaga
+                </span>
+              </td>
+              <td className="py-3 px-4 font-mono font-medium text-primary">1 Antrean</td>
+              <td className="py-3 px-4 text-center">
+                <button
+                  onClick={() => showToast('Detail akun Ahmad Fauzi dibuka.', 'info')}
+                  className="px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:text-primary hover:bg-slate-100 rounded border border-slate-200 transition"
+                  type="button"
+                >
+                  Detail
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* TAB 6: AUDIT REKAM JEJAK SISTEM (ZERO-PII COMPLIANCE) */}
+{activeTab === 'audit' && (
+  <div className="space-y-6">
+    <div className="bg-surface-container-lowest rounded-xl border border-[#DDE5EF] p-6 civic-card-shadow space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#DDE5EF]">
+        <div>
+          <h3 className="font-title-md text-base font-bold text-primary flex items-center gap-2">
+            <span className="material-symbols-outlined text-secondary">receipt_long</span>
+            <span>Rekam Jejak Audit Sistem Adminduk &amp; Integritas AI</span>
+          </h3>
+          <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+            Log mutasi draf, pemeriksaan OCR, dan tindak lanjut petugas dicatat secara kriptografis tanpa mengekspos data pribadi warga (UU PDP No. 27/2022).
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => showToast('Log audit berhasil diekspor sebagai JSON.', 'success')}
+            className="px-3 py-1.5 bg-white border border-[#CBD7E6] text-primary rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-slate-50 transition"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[15px] text-secondary">download</span>
+            <span>Ekspor JSON</span>
+          </button>
+          <button
+            onClick={() => showToast('Laporan kepatuhan audit dicetak (PDF).', 'success')}
+            className="px-3 py-1.5 bg-secondary text-white rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-[#1257B0] transition"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[15px]">print</span>
+            <span>Cetak PDF</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Log Table */}
+      <div className="overflow-x-auto rounded-xl border border-[#DDE5EF]">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-slate-50 border-b border-[#DDE5EF] text-[11px] font-bold text-primary uppercase tracking-wider">
+              <th className="py-3 px-4">Waktu (WIB)</th>
+              <th className="py-3 px-4">Entitas Operator</th>
+              <th className="py-3 px-4">Kategori Aksi</th>
+              <th className="py-3 px-4">Target Berkas</th>
+              <th className="py-3 px-4">Keterangan Audit</th>
+              <th className="py-3 px-4 font-mono">Hash Integritas</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#DDE5EF]">
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4 font-mono text-[11px]">28 Okt 2026, 11:50</td>
+              <td className="py-3 px-4 font-semibold text-purple-700">ADMIN-REGULASI</td>
+              <td className="py-3 px-4 font-medium text-primary">Pemutakhiran Parameter</td>
+              <td className="py-3 px-4 font-mono text-secondary">RULES-v2-DRAFT</td>
+              <td className="py-3 px-4 text-on-surface-variant">Penyesuaian threshold confidence OCR ke 85%</td>
+              <td className="py-3 px-4 font-mono text-[10px] text-slate-500">41bc9a7...d901</td>
+            </tr>
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4 font-mono text-[11px]">28 Okt 2026, 11:46</td>
+              <td className="py-3 px-4 font-semibold text-secondary">PETUGAS-LOKET-3</td>
+              <td className="py-3 px-4 font-medium text-amber-700">Catatan Perbaikan</td>
+              <td className="py-3 px-4 font-mono text-secondary">APP-2026-8812</td>
+              <td className="py-3 px-4 text-on-surface-variant">Permintaan pindaian ulang stempel faskes buram</td>
+              <td className="py-3 px-4 font-mono text-[10px] text-slate-500">90cd3e1...14e8</td>
+            </tr>
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4 font-mono text-[11px]">28 Okt 2026, 11:44</td>
+              <td className="py-3 px-4 font-semibold text-emerald-700">PEMOHON-AYU</td>
+              <td className="py-3 px-4 font-medium text-emerald-700">Penyelarasan Mandiri</td>
+              <td className="py-3 px-4 font-mono text-secondary">FORM-PREP-001</td>
+              <td className="py-3 px-4 text-on-surface-variant">Ejaan nama diselaraskan menjadi "Ayu Contoh" [citizen_corrected]</td>
+              <td className="py-3 px-4 font-mono text-[10px] text-slate-500">a21b8c4...77f0</td>
+            </tr>
+            <tr className="hover:bg-slate-50/60 transition">
+              <td className="py-3 px-4 font-mono text-[11px]">28 Okt 2026, 11:42</td>
+              <td className="py-3 px-4 font-semibold text-blue-700">SISTEM-OCR-v2</td>
+              <td className="py-3 px-4 font-medium text-primary">Audit Forensik OCR</td>
+              <td className="py-3 px-4 font-mono text-secondary">SKK-2026-X-0884</td>
+              <td className="py-3 px-4 text-on-surface-variant">Deteksi selisih ejaan huruf nama pada blangko SKK</td>
+              <td className="py-3 px-4 font-mono text-[10px] text-slate-500">e8f921d...31b2</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Compliance Callout */}
+      <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-3 text-xs text-emerald-900">
+        <span className="material-symbols-outlined text-emerald-600 text-[20px] shrink-0 mt-0.5">verified_user</span>
+        <div>
+          <span className="font-bold">Kepatuhan UU Pelindungan Data Pribadi (UU No. 27/2022):</span>
+          <p className="mt-0.5 text-emerald-800 leading-relaxed">
+            Data dokumen dan gambar berkas tersimpan pada penyimpanan terisolasi sisi pengguna (browser lokal). Server audit hanya mencatat hash verifikasi kriptografis, status penyelarasan, dan stempel waktu tanpa mentransmisikan biodata rahasia warga.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 )}
 </div>
 {/*  RIGHT WORKFLOW & PUBLISHING PANEL (Right Column - 35%)  */}

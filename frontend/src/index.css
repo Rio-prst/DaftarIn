@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,6 +10,22 @@
     color: #172B45;
     background-color: #F5F7FB;
   }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ==========================================================================
@@ -86,7 +105,7 @@
 
 .jmw-step.is-complete {
   background: #E8F4F0;
-  border-color: #B8DECFA;
+  border-color: #B8DECF;
   color: #087F68;
 }
 
@@ -204,4 +223,29 @@ html {
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 16px 36px -6px rgba(20, 44, 75, 0.12), 0 6px 16px rgba(20, 44, 75, 0.05);
+}
+
+/* Editorial Latin Serif Italic Accent (Anti-AI-Slop) */
+.font-latin {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Print Stylesheet for Physical Struk & Dossier */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  aside, header, nav, .jmw-progress, button, .no-print {
+    display: none !important;
+  }
+  .thermal-receipt {
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
 }

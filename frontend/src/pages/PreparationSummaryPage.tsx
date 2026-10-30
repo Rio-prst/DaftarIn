@@ -59,10 +59,12 @@ export const PreparationSummaryPage: React.FC = () => {
             <span className="material-symbols-outlined text-white text-[20px]">fact_check</span>
           </div>
           <div>
-            <div className="font-heading font-bold text-base tracking-tight leading-none text-white">
-              JejakMasWowo
+            <div className="font-heading font-black text-base tracking-tight leading-none text-white">
+              DaftarIn
             </div>
-            <div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+            <div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">
+              JejakMasWowo · Layanan Warga
+            </div>
           </div>
         </div>
 
@@ -139,9 +141,9 @@ export const PreparationSummaryPage: React.FC = () => {
           <div className="flex items-center gap-2 text-sm text-[#52657A]">
             <span>Persiapan</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span>Akta Kelahiran</span>
+            <span className="font-medium text-[#172B45]">{selectedService?.name || 'Akta Kelahiran'}</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span className="font-semibold text-[#172B45]">Ringkasan Kesiapan</span>
+            <span className="font-semibold text-[#1769D2]">Ringkasan Kesiapan</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -175,10 +177,10 @@ export const PreparationSummaryPage: React.FC = () => {
                 Tinjau Kesiapan Berkas Pengajuan
               </h1>
               <p className="text-[14px] text-[#52657A] mt-1">
-                Layanan: <strong>Akta Kelahiran (contoh)</strong> · Ref: <span className="font-mono text-[#142C4B]">PREP-2026-000001</span>
+                Layanan: <strong>{selectedService?.name || 'Penerbitan Akta Kelahiran Baru (contoh)'}</strong> · Ref: <span className="font-mono text-[#142C4B]">PREP-2026-000001</span>
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#ECF8F3] text-[#087F68] border border-[#B8DECFA] shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#ECF8F3] text-[#087F68] border border-[#B8DECF] shadow-xs">
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
               <span>Status Kesiapan: 100% Siap Diajukan</span>
             </div>
@@ -214,7 +216,7 @@ export const PreparationSummaryPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[#52657A] block text-[11px]">Subjek Layanan:</span>
-                    <span className="font-medium text-[#142C4B]">Penerbitan Kutipan Akta Kelahiran Baru</span>
+                    <span className="font-medium text-[#142C4B]">{selectedService?.name || 'Penerbitan Kutipan Akta Kelahiran Baru'}</span>
                   </div>
                   <div>
                     <span className="text-[#52657A] block text-[11px]">Lokasi Loket Tujuan:</span>
@@ -291,8 +293,12 @@ export const PreparationSummaryPage: React.FC = () => {
             </div>
 
             {/* Right: Thermal Receipt Struk Bukti Kesiapan (5 cols) */}
-            <div className="lg:col-span-5">
-              <div className="thermal-receipt rounded-2xl p-6 border-2 border-dashed border-[#CBD7E6] bg-white relative overflow-hidden font-mono text-xs text-[#1E293B]">
+            <div className="lg:col-span-5 w-full">
+              <div className="thermal-receipt rounded-2xl p-6 border-2 border-dashed border-[#CBD7E6] bg-white relative overflow-hidden font-mono text-xs text-[#1E293B] shadow-sm">
+                {/* Watermark Logo */}
+                <div className="absolute right-[-20px] bottom-[-20px] w-48 h-48 rounded-full border-8 border-slate-100 flex items-center justify-center opacity-40 pointer-events-none select-none">
+                  <span className="font-bold text-slate-300 text-3xl font-sans uppercase">SIAK</span>
+                </div>
                 {/* Official Receipt Header */}
                 <div className="text-center pb-4 border-b border-dashed border-slate-300 space-y-1">
                   <div className="w-10 h-10 rounded-full bg-[#142C4B] text-white flex items-center justify-center mx-auto mb-2 shadow-xs">

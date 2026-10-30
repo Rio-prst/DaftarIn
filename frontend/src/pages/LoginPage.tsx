@@ -69,10 +69,10 @@ export const LoginPage: React.FC = () => {
 <span className="material-symbols-outlined text-[24px]">task_alt</span>
 </div>
 <div className="flex flex-col">
-<span className="font-headline-md text-headline-md font-bold tracking-tight text-on-primary leading-tight">
-              JejakMasWowo
+<span className="font-headline-md text-headline-md font-black tracking-tight text-on-primary leading-tight">
+              DaftarIn
             </span>
-<span className="font-caption text-caption text-on-primary-container tracking-wider uppercase font-semibold">Panduan dan persiapan layanan warga</span>
+<span className="font-caption text-[10px] text-sky-200 tracking-wider uppercase font-semibold">JejakMasWowo · Layanan Warga</span>
 </div>
 </div>
 {/*  Main Narrative & Value Proposition  */}

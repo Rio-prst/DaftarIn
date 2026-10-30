@@ -240,8 +240,8 @@ export const OfficerPage: React.FC = () => {
                   <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
                 </div>
                 <div>
-                  <span className="font-display font-bold text-base tracking-tight text-white block leading-tight">JejakMasWowo</span>
-                  <span className="text-[11px] text-[#A6BCD7] block">Meja Kerja Petugas</span>
+                  <span className="font-display font-black text-base tracking-tight text-white block leading-tight">DaftarIn</span>
+                  <span className="text-[10px] text-sky-200 block uppercase font-semibold">JejakMasWowo · Portal Petugas</span>
                 </div>
               </div>
             </div>

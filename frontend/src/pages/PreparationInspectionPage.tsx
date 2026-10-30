@@ -5,7 +5,7 @@ import { PreparationStepper } from '../components/PreparationStepper';
 
 export const PreparationInspectionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast, openChat } = useApp();
+  const { selectedService, showToast, openChat } = useApp();
 
   // Forensic Inspector State
   const [zoom, setZoom] = useState(100);
@@ -35,10 +35,12 @@ export const PreparationInspectionPage: React.FC = () => {
             <span className="material-symbols-outlined text-white text-[20px]">fact_check</span>
           </div>
           <div>
-            <div className="font-heading font-bold text-base tracking-tight leading-none text-white">
-              JejakMasWowo
+            <div className="font-heading font-black text-base tracking-tight leading-none text-white">
+              DaftarIn
             </div>
-            <div className="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+            <div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">
+              JejakMasWowo · Layanan Warga
+            </div>
           </div>
         </div>
 
@@ -117,9 +119,9 @@ export const PreparationInspectionPage: React.FC = () => {
           <div className="flex items-center gap-2 text-sm text-[#52657A]">
             <span>Persiapan</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span>Akta Kelahiran</span>
+            <span className="font-medium text-[#172B45]">{selectedService?.name || 'Akta Kelahiran'}</span>
             <span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-            <span className="font-semibold text-[#172B45]">Audit AI Dokumen</span>
+            <span className="font-semibold text-[#1769D2]">Audit AI Dokumen</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -153,7 +155,7 @@ export const PreparationInspectionPage: React.FC = () => {
                 Hasil Pemeriksaan Dokumen (Audit Forensik OCR)
               </h1>
               <p className="text-[14px] text-[#52657A] mt-1">
-                Ref. ID: <strong className="font-mono text-[#142C4B]">PREP-2026-000001</strong> · Evaluasi Ketentuan Persyaratan Akta Kelahiran
+                Ref. ID: <strong className="font-mono text-[#142C4B]">PREP-2026-000001</strong> · Evaluasi Ketentuan Persyaratan {selectedService?.name || 'Penerbitan Akta Kelahiran Baru'}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -269,7 +271,7 @@ export const PreparationInspectionPage: React.FC = () => {
 
               {/* Light-Table Canvas Surface */}
               <div
-                className={`p-6 min-h-[500px] flex items-center justify-center overflow-hidden relative select-none ${
+                className={`p-6 min-h-[500px] flex items-center justify-center overflow-x-auto overflow-y-hidden relative select-none ${
                   contrastFilter ? 'bg-[#0F1722]' : 'bg-[#1E2A3B]'
                 }`}
                 style={{

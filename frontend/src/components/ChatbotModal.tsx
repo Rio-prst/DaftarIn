@@ -49,14 +49,14 @@ export const ChatbotModal: React.FC<{ isOpen?: boolean; onClose?: () => void }> 
   isOpen: propIsOpen,
   onClose: propOnClose,
 }) => {
-  const { isChatOpen, closeChat } = useApp();
+  const { user, isChatOpen, closeChat } = useApp();
   const isOpen = propIsOpen !== undefined ? propIsOpen : isChatOpen;
   const onClose = propOnClose || closeChat;
 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'bot',
-      text: 'Halo Ayu Contoh! Saya **Mas Wowo**, asisten cerdas regulasi dan persiapan berkas kependudukan. Ada pertanyaan seputar persyaratan, temuan AI, atau alur pengajuan ke loket?',
+      text: `Halo ${user?.name || 'Warga'}! Saya **Mas Wowo**, asisten cerdas regulasi dan persiapan berkas kependudukan. Ada pertanyaan seputar persyaratan, temuan AI, atau alur pengajuan ke loket?`,
       sources: ['Standar Pelayanan Adminduk JejakMasWowo'],
       time: 'Baru saja',
     },

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp, DEFAULT_SERVICES, type ServiceDetail } from '../context/AppContext';
 
 interface ExtendedServiceItem extends ServiceDetail {
@@ -69,6 +69,7 @@ const CATALOG_ITEMS: ExtendedServiceItem[] = [
 
 export const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openChat, setSelectedService, showToast } = useApp();
 
   const [category, setCategory] = useState<'semua' | 'kependudukan' | 'surat' | 'pencatatan'>('semua');
@@ -78,6 +79,16 @@ export const CatalogPage: React.FC = () => {
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+
+  // Sync Search Query from URL parameters (e.g. from Landing Page Hero search)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      setSearchQuery(q);
+      showToast(`Menerapkan pencarian: "${q}"`, 'info');
+    }
+  }, [location.search]);
 
   // Filtering Logic
   const filteredServices = useMemo(() => {
@@ -114,6 +125,9 @@ export const CatalogPage: React.FC = () => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (searchQuery.trim()) {
+      showToast(`Pencarian "${searchQuery.trim()}": ${filteredServices.length} layanan ditemukan.`, 'info');
+    }
   };
 
   const handleSwitchRegion = (regionName: string) => {
