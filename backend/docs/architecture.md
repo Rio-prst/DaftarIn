@@ -31,7 +31,7 @@ Baseline adalah **modular monolith** NestJS. Pemisahan proses worker dilakukan h
 | Keputusan | Alasan | Konsekuensi |
 |---|---|---|
 | Modular monolith di `backend/` | Tim kecil, domain masih erat, deploy sederhana | Batas modul harus disiplin; jangan akses repository modul lain |
-| REST JSON dengan prefix `/api/v1` | Sesuai kontrak API dan mudah diuji | Perubahan breaking harus lewat versi baru |
+| REST JSON dengan prefix `/api` | Sesuai kontrak API dan mudah diuji | Tidak ada versioning lewat path; perubahan breaking harus ditangani secara kompatibel atau mekanisme lain |
 | Zod + `nestjs-zod` | Satu sumber tipe dan validasi, tanpa `class-validator` | DTO dibuat dengan `createZodDto`; schema Zod menjadi kontrak runtime |
 | Auth custom di NestJS | Kebutuhan cookie, rotasi refresh, dan audit lebih terkontrol | Tidak memakai Supabase Auth/JWT; sesi disimpan di tabel sendiri |
 | Access JWT + refresh token opaque | Access singkat, refresh dapat dicabut dan dirotasi | Perlu tabel sesi, hash token, dan perlindungan CSRF |
@@ -296,7 +296,7 @@ Jika input berubah saat pemeriksaan berjalan, hasil tetap disimpan sebagai histo
 
 ### 10.1 Konvensi
 
-- Base path: `/api/v1`.
+- Base path: `/api`.
 - Swagger: `/api/docs`.
 - JSON memakai `snake_case`.
 - ID berupa UUID.

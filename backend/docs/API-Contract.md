@@ -43,15 +43,15 @@ API mendukung alur utama:
 
 ## 2. Konvensi API
 
-### 2.1 Base URL dan versi
+### 2.1 Base URL
 
 Base URL untuk lingkungan deployment ditentukan saat implementasi:
 
 ```text
-https://{api-host}/api/v1
+https://{api-host}/api
 ```
 
-Semua path dalam dokumen ini relatif terhadap `/api/v1`.
+Semua path dalam dokumen ini relatif terhadap `/api`.
 
 ### 2.2 Format
 
@@ -605,7 +605,7 @@ Jangan menyertakan dokumen, nomor identitas lengkap, atau rincian sensitif pada 
 
 ## 5. Matriks endpoint
 
-Prefix semua endpoint: `/api/v1`.
+Prefix semua endpoint: `/api`.
 
 | Modul | Method | Endpoint | Akses | Tujuan |
 |---|---|---|---|---|
