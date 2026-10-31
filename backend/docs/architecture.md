@@ -403,7 +403,7 @@ generator client {
 
 - Gunakan Supabase **Session Pooler** port `5432` dengan `sslmode=require`.
 - Hindari transaction pooler port `6543` untuk baseline karena interaksi dengan migrasi dan transaksi perlu diuji lebih dulu.
-- `DIRECT_URL` hanya dipakai jika migrasi memerlukannya; jangan menganggap sama dengan `DATABASE_URL`.
+- `DIRECT_URL` dipakai Prisma CLI untuk `prisma migrate` / `prisma db push`; runtime tetap memakai `DATABASE_URL`.
 - Kredensial hanya di `.env`; `.env` tidak di-commit.
 
 ### 11.3 Aturan repository
@@ -502,6 +502,7 @@ Semua env divalidasi Zod saat bootstrap. Contoh nama variabel:
 | `NODE_ENV` | Ya | `development`, `test`, `production` |
 | `PORT` | Tidak | Default `3000` |
 | `DATABASE_URL` | Ya | Supabase Session Pooler 5432, `sslmode=require` |
+| `DIRECT_URL` | Ya | Direct connection untuk Prisma CLI (`migrate` / `db push`) |
 | `DATABASE_URL_TEST` | Untuk test | Database test terpisah |
 | `SUPABASE_URL` | Ya | URL project |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ya | Hanya server, jangan pernah dikirim ke frontend |
