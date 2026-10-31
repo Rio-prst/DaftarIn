@@ -3,7 +3,8 @@ INFORMASI BRANCH DAN PERUBAHAN DAFTARIN
 
 REPOSITORY DAN IDENTITAS
 Repository: https://github.com/Rio-prst/DaftarIn
-Branch baru: codex/frontend-flow-and-responsive-fixes
+Branch aktif: feat/frontend
+Branch penyimpanan awal: codex/frontend-flow-and-responsive-fixes
 Branch asal lokal: feat/frontend
 Commit dasar: 29e5432
 Akun GitHub untuk push: XakiTooo
@@ -14,18 +15,20 @@ STATUS PUBLIKASI TERAKHIR
 Branch dan perubahan sudah berhasil dipush ke repository yang sama.
 Tanggal publikasi: 31 Oktober 2026 (WIB).
 Akun untuk push: XakiTooo.
-Branch remote: origin/codex/frontend-flow-and-responsive-fixes.
-Tautan: https://github.com/Rio-prst/DaftarIn/tree/codex/frontend-flow-and-responsive-fixes
+Branch remote aktif: origin/feat/frontend.
+Tautan: https://github.com/Rio-prst/DaftarIn/tree/feat/frontend
 Commit implementasi frontend: 1c3e1d6.
 Riwayat: percobaan awal ditolak GitHub dengan HTTP 403 karena akun XakiTooo
 belum memiliki akses tulis. Setelah akses diperbarui, push ulang berhasil.
-Tidak dibuat fork dan tidak dilakukan perubahan pada branch remote lain.
+Sesuai permintaan terbaru, perubahan telah diteruskan ke feat/frontend
+secara fast-forward. Branch penyimpanan awal tetap tersedia.
 
 TUJUAN BRANCH
 Menyimpan seluruh pembaruan frontend lokal yang telah dikerjakan, termasuk
 penyempurnaan alur warga/petugas/admin dan perbaikan hasil pengujian browser.
-Branch dibuat dari kondisi kerja lokal saat ini. Branch asal dan main tidak
-digabungkan atau ditimpa. Tidak ada deploy produksi dalam pekerjaan ini.
+Perubahan awal disimpan pada branch terpisah, kemudian feat/frontend
+dimajukan ke perubahan tersebut tanpa force push. Tidak ada deploy produksi
+dalam pekerjaan ini.
 
 RINGKASAN PERUBAHAN
 1. Frontend React + Vite + Tailwind CSS dengan navigasi publik dan ruang akun

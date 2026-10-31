@@ -1,6 +1,6 @@
 # Progres frontend DaftarIn
 
-Dilanjutkan dan diperbarui 31 Oktober 2026. Seluruh pembaruan frontend disiapkan pada branch baru `codex/frontend-flow-and-responsive-fixes`, berasal dari `feat/frontend`. Informasi branch dan lingkup perubahan tersedia di `INFORMASI-BRANCH.txt`; laporan teks biasa tersedia di `frontend/docs/LAPORAN-PEMBARUAN.txt`.
+Dilanjutkan dan diperbarui 31 Oktober 2026. Seluruh pembaruan frontend telah dipush ke `feat/frontend`, setelah sebelumnya disimpan pada branch `codex/frontend-flow-and-responsive-fixes`. Informasi branch dan lingkup perubahan tersedia di `INFORMASI-BRANCH.txt`; laporan teks biasa tersedia di `frontend/docs/LAPORAN-PEMBARUAN.txt`.
 
 ## Perbaikan hasil pengujian browser (31 Oktober 2026)
 
