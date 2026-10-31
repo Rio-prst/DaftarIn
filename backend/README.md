@@ -1,98 +1,144 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DaftarIn Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API untuk **DaftarIn**, aplikasi persiapan dan pemantauan pengajuan layanan publik. Backend ini menangani katalog layanan, persiapan warga, pemeriksaan dokumen, status pengajuan, notifikasi, dan audit.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Status saat ini: fondasi NestJS dan dependensi sudah disiapkan. Schema Prisma, konfigurasi environment, dan modul fitur belum diimplementasikan.
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Komponen | Teknologi |
+|---|---|
+| Runtime | Node.js 22, TypeScript |
+| Framework | NestJS 11 |
+| Validasi | Zod 4 + `nestjs-zod` |
+| Database | PostgreSQL Supabase + Prisma 7 |
+| Auth | JWT access token + refresh session, cookie `httpOnly` |
+| Storage | Supabase Storage (bucket privat) |
+| Queue | Redis + BullMQ |
+| Dokumentasi API | Swagger |
 
-## Project setup
+## Prasyarat
+
+- Node.js 22
+- pnpm
+- Database PostgreSQL/Supabase
+- Docker Desktop untuk Redis lokal, atau Redis yang sudah berjalan
+
+## Setup
 
 ```bash
-$ pnpm install
+pnpm install
+cp .env.example .env
 ```
 
-## Compile and run the project
+Buka `.env` lalu sesuaikan kredensial. Daftar variabel lengkap ada di [`docs/architecture.md`](docs/architecture.md) bagian 13. Variabel utama:
+
+| Variabel | Keterangan |
+|---|---|
+| `DATABASE_URL` | Supabase Session Pooler port `5432`, `sslmode=require` |
+| `SUPABASE_URL` | URL project Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Hanya untuk server |
+| `SUPABASE_STORAGE_BUCKET` | Bucket privat dokumen |
+| `JWT_ACCESS_SECRET` | Secret minimal 32 byte acak |
+| `CORS_ORIGIN` | Origin frontend yang diizinkan |
+| `REDIS_URL` | Koneksi Redis untuk BullMQ |
+
+Jangan commit file `.env` atau kredensial apa pun.
+
+## Menjalankan Redis dan BullMQ
+
+```bash
+# jalankan Redis di background
+docker compose up -d
+
+# cek status container
+docker compose ps
+```
+
+BullMQ adalah library yang berjalan di dalam proses NestJS. Container yang dijalankan hanya Redis sebagai backend queue, jadi tidak ada container BullMQ terpisah. Jalankan Redis sebelum backend agar worker dapat terhubung.
+
+```bash
+# lihat log Redis
+docker compose logs -f redis
+
+# hentikan Redis tanpa menghapus data
+docker compose down
+
+# hentikan Redis dan hapus volume data
+docker compose down -v
+```
+
+Jika memakai Redis di luar Docker, sesuaikan `REDIS_URL` di `.env`.
+
+## Menjalankan aplikasi
 
 ```bash
 # development
-$ pnpm run start
+pnpm start:dev
 
-# watch mode
-$ pnpm run start:dev
+# build
+pnpm build
 
-# production mode
-$ pnpm run start:prod
+# production
+pnpm start:prod
 ```
 
-## Run tests
+Backend berjalan di `http://localhost:3000`. Base path API yang direncanakan adalah `/api`, dengan Swagger di `/api/docs`.
+
+## Prisma
+
+Schema Prisma dan migrasi belum dibuat. Setelah `prisma/schema.prisma` dan `prisma7.config.ts` tersedia:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm prisma:generate
+pnpm prisma:migrate
 ```
 
-## Deployment
+Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat = "cjs"`. Lihat [`docs/architecture.md`](docs/architecture.md) bagian 11 sebelum mengubah konfigurasi database.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Test
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+# unit test
+pnpm test
+
+# e2e test
+pnpm test:e2e
+
+# coverage
+pnpm test:cov
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Test integrasi repository akan memakai database test terpisah melalui `DATABASE_URL_TEST` dan script `test:integration` setelah setup Prisma selesai.
 
-## Resources
+## Struktur proyek
 
-Check out a few resources that may come in handy when working with NestJS:
+```text
+backend/
+├── src/                 # bootstrap Nest dan modul fitur
+├── test/                # konfigurasi e2e
+├── docs/                # PRD, ERD, aturan bisnis, arsitektur
+├── docker-compose.yml   # Redis untuk BullMQ
+├── .env.example
+├── package.json
+└── pnpm-lock.yaml
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Rencana batas modul, pola repository, auth, queue, storage, dan strategi testing dijelaskan di [`docs/architecture.md`](docs/architecture.md).
 
-## Support
+## Dokumentasi
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- [`docs/PRD.md`](docs/PRD.md) - kebutuhan produk dan kriteria penerimaan
+- [`docs/API-Contract.md`](docs/API-Contract.md) - kontrak endpoint dan format response
+- [`docs/ERD.md`](docs/ERD.md) - entitas, relasi, dan enum
+- [`docs/Bussines-Rules.md`](docs/Bussines-Rules.md) - aturan bisnis
+- [`docs/architecture.md`](docs/architecture.md) - arsitektur backend
+- [`docs/domain-context.md`](docs/domain-context.md) - konteks dan batasan domain
 
-## Stay in touch
+## Catatan implementasi
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Validasi memakai Zod dan `nestjs-zod`; jangan menambahkan `class-validator` atau `class-transformer`.
+- Auth memakai implementasi sendiri di NestJS, bukan Supabase Auth.
+- Dokumen pribadi tidak boleh diakses lewat URL publik.
+- Pemeriksaan dokumen berjalan asinkron melalui BullMQ; hasil AI bukan keputusan resmi.
+- Status persiapan dan status pengajuan adalah dua hal yang terpisah.
