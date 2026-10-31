@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { PreparationStepper } from "./PreparationStepper";
@@ -28,10 +28,8 @@ export function PreparationLayout({
     dismissMigrationNote,
     applications,
     guestIntent,
-    createLinkedRevisionPreparation,
   } = useApp();
   const [params] = useSearchParams();
-  const navigate = useNavigate();
 
   const prepParam = params.get("prep");
   const revisionId = params.get("application");
@@ -85,7 +83,6 @@ export function PreparationLayout({
     }
   }, [resolvedPrep, activePreparation.id, selectPreparation]);
 
-  // 1. Jika sedang menginisialisasi draf baru dari ?new=1 atau guestIntent, tunggu sampai URL diperbarui
   if (isInitializingNewDraft) {
     return (
       <div className="flex min-h-screen bg-[#F7F8FA]">
@@ -109,7 +106,6 @@ export function PreparationLayout({
     );
   }
 
-  // 2. Jika parameter ?prep= tidak ditemukan pada draf milik pengguna, tolak tanpa fallback ke activePreparation
   if (isInvalidPrepParam) {
     return (
       <div className="flex min-h-screen bg-[#F7F8FA]">
@@ -131,18 +127,11 @@ export function PreparationLayout({
                 <code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">
                   {prepParam}
                 </code>{" "}
-                tidak ditemukan pada daftar persiapan akun ini. Sistem tidak
-                membuka atau mengubah draf lain sebagai pengganti otomatis.
+                tidak ditemukan pada daftar persiapan akun ini.
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-4">
                 <Link to="/persiapan" className="button-primary">
-                  Kembali ke Daftar persiapan
-                </Link>
-                <Link
-                  to="/persiapan/kebutuhan?new=1"
-                  className="button-secondary"
-                >
-                  Mulai persiapan baru
+                  Buka daftar persiapan saya
                 </Link>
               </div>
             </div>
@@ -152,82 +141,6 @@ export function PreparationLayout({
     );
   }
 
-  // 3. Jika parameter ?application= tidak valid, belum terhubung, atau tidak cocok dengan ?prep=
-  if (linkResolution && linkResolution.status !== "valid") {
-    return (
-      <div className="flex min-h-screen bg-[#F7F8FA]">
-        <Sidebar role="warga" />
-        <div className="flex-1 min-w-0 flex flex-col">
-          <TopBar
-            breadcrumbs={["Persiapan saya", "Validasi hubungan pengajuan"]}
-            role="warga"
-          />
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="workspace-content w-full flex-1"
-          >
-            <div className="empty-state" role="alert">
-              <h1>
-                {linkResolution.status === "application_not_found"
-                  ? "Pengajuan tidak ditemukan"
-                  : linkResolution.status === "unlinked_application"
-                    ? "Persiapan asal pengajuan belum terhubung"
-                    : "Kombinasi persiapan dan pengajuan tidak cocok"}
-              </h1>
-              <p>{linkResolution.message}</p>
-              <div className="flex flex-wrap items-center gap-3 mt-4">
-                {linkResolution.status === "mismatch" && (
-                  <>
-                    <Link
-                      to={`/persiapan/dokumen?prep=${encodeURIComponent(linkResolution.expectedPreparation.id)}&application=${encodeURIComponent(linkResolution.application.id)}`}
-                      className="button-primary"
-                    >
-                      Buka persiapan asal pengajuan ini (
-                      {linkResolution.expectedPreparation.internalReference}) →
-                    </Link>
-                    <Link
-                      to={`/persiapan/kebutuhan?prep=${encodeURIComponent(linkResolution.requestedPreparation.id)}`}
-                      className="button-secondary"
-                    >
-                      Buka {linkResolution.requestedPreparation.internalReference}{" "}
-                      tanpa kaitan revisi
-                    </Link>
-                  </>
-                )}
-                {linkResolution.status === "unlinked_application" && (
-                  <button
-                    type="button"
-                    className="button-primary"
-                    onClick={() => {
-                      const created = createLinkedRevisionPreparation(
-                        linkResolution.application.id,
-                      );
-                      if (created) {
-                        navigate(
-                          `/persiapan/dokumen?prep=${encodeURIComponent(created.id)}&application=${encodeURIComponent(linkResolution.application.id)}`,
-                        );
-                      }
-                    }}
-                  >
-                    Buat &amp; kaitkan draf perbaikan untuk pengajuan ini →
-                  </button>
-                )}
-                <Link to="/pelacakan" className="button-secondary">
-                  Kembali ke Pelacakan pengajuan
-                </Link>
-                <Link to="/persiapan" className="text-link text-sm">
-                  Daftar persiapan saya
-                </Link>
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
-  // 4. Jika tidak ada persiapan yang valid sama sekali
   if (!resolvedPrep) {
     return (
       <div className="flex min-h-screen bg-[#F7F8FA]">
@@ -242,8 +155,7 @@ export function PreparationLayout({
             <div className="empty-state">
               <h1>Belum ada persiapan yang dipilih</h1>
               <p>
-                Pilih persiapan dari daftar persiapanmu atau mulai draf
-                persiapan baru dari tahap pertama.
+                Pilih persiapan dari daftar persiapanmu atau mulai draf persiapan baru dari tahap pertama.
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-4">
                 <Link
@@ -263,7 +175,6 @@ export function PreparationLayout({
     );
   }
 
-  // 5. Pastikan sinkronisasi activePreparation selesai sebelum me-mount form input dan tombol aksi
   if (isSyncingActivePrep) {
     return (
       <div className="flex min-h-screen bg-[#F7F8FA]">
@@ -314,122 +225,127 @@ export function PreparationLayout({
       .find((e) => e.revision_detail)?.revision_detail;
 
   return (
-    <div className="flex min-h-screen bg-[#F7F8FA]">
+    <div className="flex min-h-screen bg-[#F5F7FB]">
       <Sidebar role="warga" />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar breadcrumbs={["Persiapan saya", title]} role="warga" />
         <main
           id="main-content"
           tabIndex={-1}
-          className="workspace-content w-full flex-1 pb-28"
+          className="workspace-content w-full flex-1 pb-32"
         >
-          <div className="flex flex-wrap items-baseline justify-between gap-4">
+          {/* Header Judul Dossier */}
+          <div className="flex flex-wrap items-baseline justify-between gap-4 pb-1 border-b border-slate-200/60">
             <div>
-              <h1>{title}</h1>
-              <p className="text-sm text-slate-600 mt-1">
-                {activePreparation.serviceName} · {targetLabel} ·{" "}
-                <span className="font-mono text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-[#1769D2] font-mono font-bold text-xs">
                   {activePreparation.internalReference}
                 </span>
+                <span className="text-xs text-slate-500 font-medium">{targetLabel}</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#142C4B] mt-1 font-display tracking-tight">
+                {title}
+              </h1>
+              <p className="text-sm text-slate-600 mt-0.5">
+                Layanan: <strong>{activePreparation.serviceName}</strong> · Terakhir diperbarui {activePreparation.updatedAt}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Link to="/persiapan" className="text-link text-xs">
-                Daftar persiapan saya
+
+            <div className="flex items-center gap-3">
+              <Link to="/persiapan" className="text-link text-xs font-semibold">
+                ← Daftar persiapan saya
               </Link>
-              <details className="text-xs text-slate-500">
-                <summary className="cursor-pointer hover:text-slate-700">
-                  Informasi draf
-                </summary>
-                <div className="mt-1 p-2.5 bg-white border border-slate-200 rounded-lg space-y-1">
-                  <p>Referensi persiapan: {activePreparation.internalReference}</p>
-                  <p>Terakhir diperbarui: {activePreparation.updatedAt}</p>
-                  <p>Versi isian formulir: v{activePreparation.dataVersion}</p>
-                  {revisionApp && (
-                    <p>
-                      Permintaan tinjauan terhubung:{" "}
-                      {revisionApp.internal_reference}
-                    </p>
-                  )}
-                </div>
-              </details>
             </div>
           </div>
 
           {activePreparation.migrationNote && (
-            <div className="case-update-note mt-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-amber-950 max-w-2xl">
-                <strong>Catatan data sebelumnya:</strong>{" "}
-                {activePreparation.migrationNote}
+            <div className="case-update-note mt-4 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+              <p className="max-w-2xl leading-relaxed">
+                <strong>Catatan data sebelumnya:</strong> {activePreparation.migrationNote}
               </p>
               <button
                 type="button"
                 onClick={() => dismissMigrationNote(activePreparation.id)}
-                className="btn-secondary !py-1 !px-2.5 !text-xs"
+                className="button-secondary !py-1 !px-2.5 !text-xs"
               >
                 Tutup catatan
               </button>
             </div>
           )}
 
+          {/* Banner Permintaan Perbaikan Petugas (Tactile Civic Notice) */}
           {revisionApp && revisionApp.current_status === "PERLU_PERBAIKAN" && (
             <div
-              className={`mt-4 rounded-xl border p-4 ${
+              className={`mt-5 rounded-2xl border-l-4 p-5 shadow-xs transition-all ${
                 revisionApp.revision_pending
-                  ? "bg-blue-50/90 border-blue-200 text-blue-950"
-                  : "bg-amber-50/95 border-amber-300 text-amber-950"
+                  ? "bg-blue-50/95 border-l-blue-600 border border-blue-200/90 text-blue-950"
+                  : "bg-amber-50/95 border-l-amber-500 border border-amber-200/90 text-amber-950"
               }`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider">
-                  {revisionApp.revision_pending
-                    ? `Perbaikan Telah Dikirim · ${revisionApp.internal_reference}`
-                    : `Permintaan Perbaikan Petugas · ${revisionApp.internal_reference}`}
-                </p>
-                <span className="text-xs font-medium">
-                  Draf asal: {activePreparation.internalReference}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-amber-200/70">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-amber-600">
+                    notification_important
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider font-mono">
+                    {revisionApp.revision_pending
+                      ? `Perbaikan Telah Dikirim · ${revisionApp.internal_reference}`
+                      : `Permintaan Tindakan Perbaikan Petugas · ${revisionApp.internal_reference}`}
+                  </span>
+                </div>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white font-medium border border-amber-200 text-amber-800">
+                  Draf Berkas: {activePreparation.internalReference}
                 </span>
               </div>
+
               {latestOfficerRevision ? (
-                <div className="mt-2 space-y-1.5 text-xs">
-                  <p>
-                    <strong>Bagian yang perlu diperbaiki:</strong>{" "}
-                    {latestOfficerRevision.targetItem} ·{" "}
-                    <span className="inline-block px-2 py-0.5 rounded bg-white/80 border border-amber-300 font-semibold">
-                      {
-                        OFFICER_ISSUE_CATEGORY_LABELS[
-                          latestOfficerRevision.issueCategory
-                        ]
-                      }
+                <div className="mt-3.5 space-y-2 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-700 font-semibold">Bagian yang Perlu Diperbaiki:</span>
+                    <span className="font-bold text-[#142C4B] bg-white px-2.5 py-0.5 rounded-md border border-amber-200">
+                      {latestOfficerRevision.targetItem}
                     </span>
-                  </p>
-                  <p>
-                    <strong>Catatan petugas ({latestOfficerRevision.officerName}):</strong>{" "}
+                    <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-semibold text-xs border border-amber-300">
+                      {OFFICER_ISSUE_CATEGORY_LABELS[latestOfficerRevision.issueCategory]}
+                    </span>
+                  </div>
+
+                  <p className="text-slate-800 leading-relaxed bg-white/70 p-3 rounded-xl border border-amber-100">
+                    <strong className="text-amber-950">Catatan Petugas ({latestOfficerRevision.officerName}):</strong>{" "}
                     {latestOfficerRevision.problemDescription}
                   </p>
-                  <p>
-                    <strong>Tindakan perbaikan yang diminta:</strong>{" "}
-                    {latestOfficerRevision.requiredAction}
-                  </p>
+
+                  <div className="p-3 rounded-xl bg-white border border-amber-300/80 text-amber-950 flex items-start gap-2.5">
+                    <span className="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">
+                      task_alt
+                    </span>
+                    <p className="leading-relaxed">
+                      <strong>Tindakan yang Diminta:</strong> {latestOfficerRevision.requiredAction}
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <p className="mt-1 text-xs">
-                  Perbaiki data atau ganti berkas sesuai catatan petugas pada
-                  permintaan tinjauan <strong>{revisionApp.internal_reference}</strong>,
-                  lalu kirim perbaikan pada tahap Tinjau &amp; kirim.
+                <p className="mt-2 text-sm leading-relaxed">
+                  Perbaiki data atau ganti berkas sesuai catatan petugas pada permintaan tinjauan{" "}
+                  <strong>{revisionApp.internal_reference}</strong>, lalu kirimkan kembali perbaikan pada tahap Tinjau &amp; kirim.
                 </p>
               )}
             </div>
           )}
 
-          <div key={activePreparation.id}>
+          {/* Stepper Manila Tab + Konten Halaman */}
+          <div key={activePreparation.id} className="mt-4">
             <PreparationStepper currentStep={step} />
-            {children}
+            <div className="civic-dossier-body bg-white rounded-b-2xl border border-t-0 border-[#CBD7E6] p-6 sm:p-8 shadow-xs">
+              {children}
+            </div>
           </div>
         </main>
+
+        {/* Sticky Actions Bar dengan Glassmorphism */}
         <div
           key={`actions-${activePreparation.id}`}
-          className="preparation-actions no-print"
+          className="preparation-actions no-print sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-4 flex items-center justify-between gap-4 shadow-lg"
         >
           {actions}
         </div>
@@ -437,3 +353,5 @@ export function PreparationLayout({
     </div>
   );
 }
+
+export default PreparationLayout;

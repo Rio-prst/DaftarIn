@@ -76,24 +76,27 @@ export const DemoToolbar: React.FC = () => {
 
   if (!isExpanded) {
     return (
-      <button
-        onClick={() => setIsExpanded(true)}
-        className="fixed bottom-4 right-4 z-50 bg-[#0E1B2D]/95 hover:bg-[#1769D2] text-white px-3.5 py-2.5 rounded-full shadow-2xl border border-white/20 flex items-center gap-2 text-[12px] font-semibold transition-all backdrop-blur-md active:scale-95"
-        title="Buka Navigasi Pengembang (Developer Toolbar)"
-        type="button"
-      >
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span className="material-symbols-outlined text-[16px] text-emerald-400">terminal</span>
-        <span>Navigasi Dev ({currentScreen.num})</span>
-        <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10 font-mono text-slate-300">
-          {user ? user.role : 'tamu'}
-        </span>
-      </button>
+      <aside aria-label="Alat Pengembang">
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="fixed bottom-6 left-6 z-40 bg-[#0E1B2D]/95 hover:bg-[#1769D2] text-white px-3.5 py-2.5 rounded-full shadow-xl border border-white/20 flex items-center gap-2 text-[12px] font-semibold transition-all backdrop-blur-md active:scale-95 cursor-pointer"
+          title="Buka Navigasi Pengembang (Developer Toolbar)"
+          type="button"
+          aria-label="Buka Navigasi Developer"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="material-symbols-outlined text-[16px] text-emerald-400">terminal</span>
+          <span>Navigasi Dev ({currentScreen.num})</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10 font-mono text-slate-300">
+            {user ? user.role : 'tamu'}
+          </span>
+        </button>
+      </aside>
     );
   }
 
   return (
-    <div className="fixed bottom-3 right-3 left-3 sm:left-auto z-50 sm:max-w-[780px] bg-[#0E1B2D]/95 text-white p-2.5 rounded-2xl border border-[#233F66] shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 font-sans text-[12px]">
+    <div className="fixed bottom-4 left-4 right-4 sm:right-auto sm:max-w-[780px] z-50 bg-[#0E1B2D]/95 text-white p-2.5 rounded-2xl border border-[#233F66] shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 font-sans text-[12px]">
       {/* 1. Selector Layar + Prev / Next */}
       <div className="flex items-center gap-1.5">
         <div className="flex items-center gap-1.5 bg-[#142C4B] px-2 py-1 rounded-lg border border-[#233F66] shrink-0">
@@ -116,7 +119,7 @@ export const DemoToolbar: React.FC = () => {
         <select
           value={currentScreenIndex !== -1 ? currentScreenIndex : 0}
           onChange={(e) => navigate(SCREENS[Number(e.target.value)].path)}
-          className="bg-[#0B192C] text-white text-[12px] font-semibold py-1 px-2 rounded-lg border border-[#233F66] focus:border-[#1769D2] outline-none cursor-pointer max-w-[200px] sm:max-w-[240px] truncate"
+          className="bg-[#0B192C] text-white text-[12px] font-semibold py-1 px-2 rounded-lg border border-[#233F66] focus:border-[#1769D2] outline-none cursor-pointer max-w-[190px] sm:max-w-[240px] truncate"
         >
           {SCREENS.map((s, idx) => (
             <option key={s.id} value={idx}>

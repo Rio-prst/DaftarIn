@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { AppContextProvider } from "./context/AppContext";
 import { ToastContainer } from "./components/ToastContainer";
 import { ChatbotModal } from "./components/ChatbotModal";
+import { FloatingAiButton } from "./components/FloatingAiButton";
 import { DemoToolbar } from "./components/DemoToolbar";
 import { RouteFocus } from "./components/RouteFocus";
 import { LandingPage } from "./pages/LandingPage";
@@ -87,6 +88,7 @@ function Application() {
         </Routes>
         <ToastContainer />
         <ChatbotModal />
+        <FloatingAiButton />
         <DemoToolbar />
       </div>
     </AppContextProvider>

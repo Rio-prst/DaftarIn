@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 @tailwind base;
 @tailwind components;
@@ -505,54 +505,115 @@
   overflow-x: auto;
   margin-block: 20px 24px;
 }
+/* ==========================================================================
+   CIVIC FILING TAB STEPPER (Manila Folder Concept — Anti-AI-Slop)
+   ========================================================================== */
 .jmw-progress {
   display: flex;
-  margin: 0;
-  padding: 0;
-  gap: 0;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #EBF1F8;
+  border: 1px solid #D1DDEB;
+  border-radius: 14px 14px 0 0;
+  padding: 8px 8px 0 8px;
+  margin: 16px 0 0 0;
+  gap: 6px;
   list-style: none;
-  border-bottom: 1px solid #d8dee7;
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
+
+@media (max-width: 640px) {
+  .jmw-progress {
+    padding: 6px 6px 0 6px;
+    margin: 12px 0 0 0;
+    gap: 4px;
+  }
+  .jmw-step {
+    min-width: 100px !important;
+    padding: 8px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
 .jmw-progress > li {
   flex: 1;
-  min-width: 125px;
+  display: flex;
 }
+
 .jmw-step {
+  flex: 1;
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 13px 10px;
+  padding: 12px 14px;
+  border: 1px solid #CBD7E6;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: #DEE8F4;
+  color: #52657A;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
-  color: #64748b;
-  border-bottom: 2px solid transparent;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  min-width: 120px;
 }
+
 .jmw-step:hover {
-  background: #f2f4f7;
+  background: #E5EFF9;
+  color: #142C4B;
 }
+
 .jmw-step-dot {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 23px;
-  height: 23px;
-  border-radius: 50%;
-  border: 1px solid #cbd3de;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
+  font-weight: 700;
+  background: #CAD8E8;
+  color: #485B70;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
-.jmw-step.is-current {
-  border-color: #1769d2;
-  color: #1769d2;
-  font-weight: 600;
-}
-.jmw-step.is-current .jmw-step-dot {
-  background: #1769d2;
-  border-color: #1769d2;
-  color: white;
-}
+
 .jmw-step.is-complete {
-  color: #526175;
+  background: #E8F4F0;
+  border-color: #B8DECF;
+  color: #087F68;
 }
+
+.jmw-step.is-complete .jmw-step-dot {
+  background: #087F68;
+  color: #ffffff;
+}
+
+.jmw-step.is-current {
+  background: #FFFFFF;
+  border-color: #1769D2;
+  border-top: 3px solid #1769D2;
+  color: #142C4B;
+  font-weight: 700;
+  box-shadow: 0 -2px 10px rgba(20, 44, 75, 0.05);
+  margin-bottom: -1px;
+  z-index: 2;
+}
+
+.jmw-step.is-current .jmw-step-dot {
+  background: #1769D2;
+  color: #ffffff;
+}
+
 .thermal-receipt {
   background: white;
   border: 1px solid #d8dee7;
@@ -2073,6 +2134,47 @@
   background: rgb(15 23 42 / 60%);
 }
 
-/* Hide scrollbars */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ==========================================================================
+   AUTHENTIC CIVIC TACTILE & ANTI-AI-SLOP ENHANCEMENTS
+   ========================================================================== */
+.font-latin {
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 16px 36px -6px rgba(20, 44, 75, 0.12), 0 6px 16px rgba(20, 44, 75, 0.05);
+}
+
+.official-wet-stamp {
+  border: 3px double currentColor;
+  border-radius: 12px;
+  padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-10deg);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+  user-select: none;
+}
