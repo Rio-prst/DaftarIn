@@ -1,0 +1,670 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  runtime = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ServicePublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum GuideVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RuleVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETION_REQUESTED
+  DELETED
+}
+
+enum PreparationStatus {
+  DRAFT
+  QUEUED
+  INSPECTING
+  NEEDS_COMPLETION
+  NEEDS_CONFIRMATION
+  READY_INITIAL_CHECK
+  INSPECTION_INCOMPLETE
+  RECHECK_REQUIRED
+  ARCHIVED
+}
+
+enum InspectionStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FindingSeverity {
+  INFO
+  WARNING
+  BLOCKING
+}
+
+enum FindingResolutionStatus {
+  OPEN
+  CORRECTED
+  CONFIRMED_BY_USER
+  NEEDS_OFFICIAL_CONFIRMATION
+  DISMISSED
+}
+
+enum SubmissionChannel {
+  ONLINE_PORTAL
+  IN_PERSON
+  EMAIL
+  OTHER
+}
+
+enum StatusSourceType {
+  CITIZEN_REPORT
+  OFFICER
+  INTEGRATION
+  SIMULATION
+}
+
+enum ApplicationStatus {
+  CITIZEN_RECORDED_UNCONFIRMED
+  ACCEPTED
+  VERIFICATION
+  NEEDS_CORRECTION
+  PROCESSING
+  COMPLETED
+  RESULT_RECEIVED_BY_CITIZEN
+}
+
+model Region {
+  id String @id @db.Uuid @default(uuid())
+  code String @db.VarChar(64)
+  name String @db.VarChar(160)
+  regionType String
+  parentRegionId String? @db.Uuid
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  childrenRegion Region[] @relation("RegionParentRegion")
+  parentRegion Region? @relation("RegionParentRegion", fields: [parentRegionId], references: [id], onDelete: SetNull)
+
+  agencies Agency[]
+  services Service[]
+  userRoles UserRole[]
+
+  @@unique([code])
+  @@index([regionType])
+  @@index([isActive])
+  @@map("regions")
+}
+
+model Agency {
+  id String @id @db.Uuid @default(uuid())
+  name String @db.VarChar(200)
+  agencyType String
+  regionId String @db.Uuid
+  address String?
+  officialWebsite String?
+  contactInfo String?
+  cooperationStatus String?
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  region Region @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  services Service[]
+  userRoles UserRole[]
+  applicationRecords ApplicationRecord[]
+
+  @@index([regionId])
+  @@index([isActive])
+  @@map("agencies")
+}
+
+model Service {
+  id String @id @db.Uuid @default(uuid())
+  slug String @db.VarChar(160)
+  name String @db.VarChar(200)
+  category String
+  summary String?
+  agencyId String @db.Uuid
+  regionId String @db.Uuid
+  publicationStatus ServicePublicationStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  region Region @relation(fields: [regionId], references: [id], onDelete: Restrict)
+
+  guideVersions GuideVersion[]
+  requirementRuleVersions RequirementRuleVersion[]
+  serviceQuestions ServiceQuestion[]
+  preparations Preparation[]
+  applicationRecords ApplicationRecord[]
+
+  @@unique([slug])
+  @@index([publicationStatus, regionId, category])
+  @@map("services")
+}
+
+model GuideVersion {
+  id String @id @db.Uuid @default(uuid())
+  serviceId String @db.Uuid
+  versionNumber Int
+  status GuideVersionStatus
+  procedureJson Json
+  officialCostJson Json?
+  officialDurationJson Json?
+  applicationChannelsJson Json?
+  sourceReviewedAt DateTime?
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String? @db.Uuid
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("GuideVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  guideSections GuideSection[]
+  preparations Preparation[]
+  inspectionRuns InspectionRun[]
+
+  @@unique([serviceId, versionNumber])
+  @@index([serviceId, status])
+  @@map("guide_versions")
+}
+
+model GuideSection {
+  id String @id @db.Uuid @default(uuid())
+  guideVersionId String @db.Uuid
+  sectionType String
+  title String
+  contentJson Json
+  displayOrder Int
+
+  guideVersion GuideVersion @relation(fields: [guideVersionId], references: [id], onDelete: Cascade)
+  guideSourceLinks GuideSourceLink[]
+
+  @@index([guideVersionId])
+  @@map("guide_sections")
+}
+
+model OfficialSource {
+  id String @id @db.Uuid @default(uuid())
+  url String
+  title String
+  publisher String
+  sourceType String
+  sourcePublishedDate DateTime?
+  accessedAt DateTime
+  lastCheckedAt DateTime?
+  reviewStatus String
+  createdAt DateTime @default(now())
+
+  guideSourceLinks GuideSourceLink[]
+  requirements Requirement[]
+
+  @@index([reviewStatus, lastCheckedAt])
+  @@map("official_sources")
+}
+
+model GuideSourceLink {
+  id String @id @db.Uuid @default(uuid())
+  guideSectionId String @db.Uuid
+  sourceId String @db.Uuid
+  claimOrField String
+  notes String?
+
+  guideSection GuideSection @relation(fields: [guideSectionId], references: [id], onDelete: Cascade)
+  source OfficialSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@index([sourceId])
+  @@map("guide_source_links")
+}
+
+model RequirementRuleVersion {
+  id String @id @db.Uuid @default(uuid())
+  serviceId String @db.Uuid
+  versionNumber Int
+  status RuleVersionStatus
+  rulesConfigJson Json
+  effectiveAt DateTime?
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String? @db.Uuid
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("RequirementRuleVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  requirements Requirement[]
+  inspectionRuns InspectionRun[]
+
+  @@unique([serviceId, versionNumber])
+  @@index([serviceId, status])
+  @@map("requirement_rule_versions")
+}
+
+model Requirement {
+  id String @id @db.Uuid @default(uuid())
+  ruleVersionId String @db.Uuid
+  requirementCode String
+  title String
+  description String
+  requirementType String
+  isMandatory Boolean
+  conditionJson Json
+  sourceId String @db.Uuid
+  displayOrder Int
+
+  ruleVersion RequirementRuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Cascade)
+  source OfficialSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  findings Finding[]
+
+  @@unique([ruleVersionId, requirementCode])
+  @@index([ruleVersionId])
+  @@map("requirements")
+}
+
+model ServiceQuestion {
+  id String @id @db.Uuid @default(uuid())
+  serviceId String @db.Uuid
+  questionKey String
+  label String
+  inputType String
+  isPublicNonpersonal Boolean @default(false)
+  isRequired Boolean @default(true)
+  optionsJson Json?
+  validationJson Json?
+  dependsOnQuestionId String? @db.Uuid
+  dependencyRuleJson Json?
+  displayOrder Int
+  isActive Boolean @default(true)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  dependingQuestion ServiceQuestion? @relation("ServiceQuestionDependency", fields: [dependsOnQuestionId], references: [id], onDelete: SetNull)
+  dependentQuestions ServiceQuestion[] @relation("ServiceQuestionDependency")
+
+  answerVersions AnswerVersion[]
+
+  @@unique([serviceId, questionKey])
+  @@index([serviceId, isActive])
+  @@map("service_questions")
+}
+
+model User {
+  id String @id @db.Uuid @default(uuid())
+  displayName String @db.VarChar(200)
+  email String @db.VarChar(320)
+  phone String?
+  authProvider String
+  passwordHash String?
+  accountStatus AccountStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt DateTime?
+  lastLoginAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  guideVersions GuideVersion[] @relation("GuideVersionCreatedBy")
+  requirementRuleVersions RequirementRuleVersion[] @relation("RequirementRuleVersionCreatedBy")
+  userRoles UserRole[]
+  consentRecords ConsentRecord[]
+  preparations Preparation[]
+  answerVersions AnswerVersion[] @relation("AnswerVersionCreatedBy")
+  documentVersions DocumentVersion[] @relation("DocumentVersionUserId")
+  inspectionRuns InspectionRun[] @relation("InspectionRunUserId")
+  applicationRecords ApplicationRecord[] @relation("ApplicationRecordUserId")
+  statusEvents StatusEvent[] @relation("StatusEventActorUser")
+  officerAssignments OfficerAssignment[] @relation("OfficerAssignmentOfficer")
+  notifications Notification[]
+  reminderPreferences ReminderPreference[]
+  auditEvents AuditEvent[]
+  userCorrections UserCorrection[]
+  assignedUserRoles UserRole[] @relation("UserRoleAssignedBy")
+
+  @@unique([email])
+  @@index([accountStatus, updatedAt])
+  @@map("users")
+}
+
+model Role {
+  id String @id @db.Uuid @default(uuid())
+  roleCode String @db.VarChar(80)
+  roleName String @db.VarChar(160)
+  description String?
+
+  userRoles UserRole[]
+
+  @@unique([roleCode])
+  @@map("roles")
+}
+
+model UserRole {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  agencyId String? @db.Uuid
+  regionId String? @db.Uuid
+  assignedById String? @db.Uuid
+  validFrom DateTime?
+  validUntil DateTime?
+  isActive Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  agency Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  assignedBy User? @relation("UserRoleAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, roleId])
+  @@map("user_roles")
+}
+
+model ConsentRecord {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  purposeCode String
+  noticeVersion String
+  isAccepted Boolean
+  consentedAt DateTime
+  withdrawnAt DateTime?
+  metadataJson Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purposeCode])
+  @@map("consent_records")
+}
+
+model Preparation {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  serviceId String @db.Uuid
+  guideVersionId String @db.Uuid
+  internalReference String @db.VarChar(120)
+  status PreparationStatus @default(DRAFT)
+  currentDataVersion Int @default(1)
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archivedAt DateTime?
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  guideVersion GuideVersion @relation(fields: [guideVersionId], references: [id], onDelete: Restrict)
+
+  answerVersions AnswerVersion[]
+  documentVersions DocumentVersion[]
+  inspectionRuns InspectionRun[]
+  applicationRecords ApplicationRecord[]
+
+  @@unique([internalReference])
+  @@index([userId, status, updatedAt])
+  @@map("preparations")
+}
+
+model AnswerVersion {
+  id String @id @db.Uuid @default(uuid())
+  preparationId String @db.Uuid
+  questionId String @db.Uuid
+  dataVersion Int
+  answerJson Json
+  valueOrigin String
+  createdAt DateTime @default(now())
+
+  createdById String? @db.Uuid
+
+  preparation Preparation @relation(fields: [preparationId], references: [id], onDelete: Cascade)
+  question ServiceQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("AnswerVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([preparationId])
+  @@map("answer_versions")
+}
+
+model DocumentVersion {
+  id String @id @db.Uuid @default(uuid())
+  preparationId String @db.Uuid
+  userId String @db.Uuid
+  documentType String
+  versionNumber Int
+  storageKey String
+  originalFilename String
+  detectedMimeType String
+  fileSizeBytes BigInt @db.BigInt
+  checksumSha256 String
+  processingStatus String
+  uploadedAt DateTime @default(now())
+  deletedAt DateTime?
+
+  preparation Preparation @relation(fields: [preparationId], references: [id], onDelete: Cascade)
+  user User @relation("DocumentVersionUserId", fields: [userId], references: [id], onDelete: Restrict)
+
+  findings Finding[]
+
+  @@unique([preparationId, documentType, versionNumber])
+  @@index([preparationId, documentType])
+  @@map("document_versions")
+}
+
+model InspectionRun {
+  id String @id @db.Uuid @default(uuid())
+  preparationId String @db.Uuid
+  userId String @db.Uuid
+  guideVersionId String @db.Uuid
+  ruleVersionId String @db.Uuid
+  dataVersion Int
+  status InspectionStatus
+  engineVersion String
+  modelVersion String?
+  inputSnapshotJson Json
+  summaryJson Json?
+  failureCode String?
+  queuedAt DateTime @default(now())
+  startedAt DateTime?
+  completedAt DateTime?
+
+  preparation Preparation @relation(fields: [preparationId], references: [id], onDelete: Cascade)
+  user User @relation("InspectionRunUserId", fields: [userId], references: [id], onDelete: Restrict)
+  guideVersion GuideVersion @relation(fields: [guideVersionId], references: [id], onDelete: Restrict)
+  ruleVersion RequirementRuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+
+  findings Finding[]
+
+  @@index([preparationId, status])
+  @@map("inspection_runs")
+}
+
+model Finding {
+  id String @id @db.Uuid @default(uuid())
+  inspectionRunId String @db.Uuid
+  requirementId String @db.Uuid
+  documentVersionId String? @db.Uuid
+  findingCode String
+  severity FindingSeverity
+  category String
+  title String
+  explanation String
+  evidenceJson Json
+  suggestedActionsJson Json
+  readingConfidence Float?
+  resolutionStatus FindingResolutionStatus
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inspectionRun InspectionRun @relation(fields: [inspectionRunId], references: [id], onDelete: Cascade)
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  documentVersion DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: SetNull)
+
+  userCorrections UserCorrection[]
+
+  @@index([inspectionRunId, resolutionStatus])
+  @@map("findings")
+}
+
+model UserCorrection {
+  id String @id @db.Uuid @default(uuid())
+  findingId String @db.Uuid
+  userId String @db.Uuid
+  originalValueJson Json
+  correctedValueJson Json
+  correctionNote String?
+  createdAt DateTime @default(now())
+
+  finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([findingId])
+  @@map("user_corrections")
+}
+
+model ApplicationRecord {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  serviceId String @db.Uuid
+  preparationId String? @db.Uuid
+  agencyId String @db.Uuid
+  internalReference String @db.VarChar(120)
+  officialReference String?
+  submittedDate DateTime?
+  submissionChannel SubmissionChannel
+  sourceMode StatusSourceType
+  statusSummary ApplicationStatus
+  citizenNotes String?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archivedAt DateTime?
+
+  user User @relation("ApplicationRecordUserId", fields: [userId], references: [id], onDelete: Restrict)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  preparation Preparation? @relation(fields: [preparationId], references: [id], onDelete: SetNull)
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  statusEvents StatusEvent[]
+  officerAssignments OfficerAssignment[]
+  notifications Notification[]
+  reminderPreferences ReminderPreference[]
+
+  @@unique([internalReference])
+  @@index([userId, updatedAt])
+  @@index([preparationId, agencyId])
+  @@map("application_records")
+}
+
+model StatusEvent {
+  id String @id @db.Uuid @default(uuid())
+  applicationId String @db.Uuid
+  actorUserId String? @db.Uuid
+  statusCode ApplicationStatus
+  sourceType StatusSourceType
+  sourceLabel String
+  description String?
+  revisionReason String?
+  nextAction String?
+  occurredAt DateTime
+  recordedAt DateTime @default(now())
+  metadataJson Json?
+
+  application ApplicationRecord @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  actor User? @relation("StatusEventActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, occurredAt])
+  @@map("status_events")
+}
+
+model OfficerAssignment {
+  id String @id @db.Uuid @default(uuid())
+  applicationId String @db.Uuid
+  officerUserId String @db.Uuid
+  assignmentStatus String
+  assignedAt DateTime @default(now())
+  endedAt DateTime?
+
+  application ApplicationRecord @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  officer User @relation("OfficerAssignmentOfficer", fields: [officerUserId], references: [id], onDelete: Restrict)
+
+  @@index([officerUserId, assignmentStatus])
+  @@map("officer_assignments")
+}
+
+model Notification {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  applicationId String? @db.Uuid
+  notificationType String
+  title String
+  body String
+  targetPath String?
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  deliveredAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  application ApplicationRecord? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model ReminderPreference {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  applicationId String? @db.Uuid
+  reminderType String
+  channel String
+  isEnabled Boolean
+  scheduleConfigJson Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  application ApplicationRecord? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, applicationId])
+  @@map("reminder_preferences")
+}
+
+model AuditEvent {
+  id String @id @db.Uuid @default(uuid())
+  actorUserId String? @db.Uuid
+  actorRole String
+  action String
+  objectType String
+  objectId String
+  requestId String
+  outcome String
+  metadataJson Json
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@map("audit_events")
+}

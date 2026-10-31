@@ -513,7 +513,7 @@ preparation_status:
   ready_initial_check | inspection_incomplete | recheck_required | archived
 
 inspection_status:
-  queued | processing | completed | failed | cancelled | superseded
+  queued | running | completed | failed | cancelled
 
 finding_severity:
   info | warning | blocking

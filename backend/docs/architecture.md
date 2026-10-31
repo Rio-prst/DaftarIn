@@ -84,7 +84,10 @@ backend/
 ├── src/
 │   ├── main.ts
 │   ├── app.module.ts
+│   ├── app.controller.ts       # hello + /health
+│   ├── app.service.ts          # scaffold hello (dipakai oleh /)
 │   ├── common/
+│   │   ├── response/           # Response<T> helper global
 │   │   ├── decorators/          # @Public, @Roles, @CurrentUser, @IdempotencyKey
 │   │   ├── guards/              # JwtAuthGuard, RolesGuard
 │   │   ├── filters/             # global exception filter, Prisma error mapping
@@ -92,12 +95,12 @@ backend/
 │   │   ├── errors/              # AppError, error codes
 │   │   ├── types/               # AuthenticatedUser, pagination, request context
 │   │   └── utils/               # hashing, cursor, date
-│   ├── infra/
-│   │   ├── prisma/              # PrismaModule, PrismaService
-│   │   ├── storage/             # SupabaseStorageService, signed URL
-│   │   ├── queue/               # BullMQ root config dan nama queue
-│   │   ├── ai/                  # antarmuka OCR/LLM dan adapter provider
-│   │   └── config/              # env schema Zod dan typed config
+│   ├── prisma/
+│   │   ├── prisma.module.ts
+│   │   └── prisma.service.ts
+│   ├── storage/                 # SupabaseStorageService, signed URL
+│   ├── queue/                   # BullMQ root config dan nama queue
+│   ├── ai/                      # antarmuka OCR/LLM dan adapter provider
 │   ├── auth/
 │   ├── account/
 │   ├── catalog/
@@ -111,8 +114,7 @@ backend/
 │   ├── assistant/
 │   ├── admin/
 │   ├── audit/
-│   ├── dashboard/
-│   └── health/
+│   └── dashboard/
 ├── prisma/
 │   ├── schema.prisma
 │   ├── migrations/
@@ -126,7 +128,7 @@ backend/
 │   ├── Bussines-Rules.md
 │   ├── domain-context.md
 │   └── architecture.md
-├── prisma7.config.ts
+├── prisma.config.ts
 ├── .env.example
 ├── package.json
 └── tsconfig.json
@@ -149,24 +151,22 @@ src/<module>/
 ├── dto/
 │   ├── create-<entity>.dto.ts       # schema Zod + createZodDto
 │   ├── update-<entity>.dto.ts
-│   └── <entity>-response.dto.ts
+│   └── delete-<entity>.dto.ts
 ├── interfaces/
-│   ├── <entity>.repository.ts       # kontrak + Symbol token
-│   └── <domain>.service.ts          # kontrak lintas modul
+│   ├── repository.interface.ts      # kontrak repository + Symbol token
+│   └── service.interface.ts         # kontrak service
 ├── <entity>.repository.ts
 ├── <domain>.service.ts
 ├── <domain>.controller.ts
-├── <domain>.routes.ts
-├── <module>.module.ts
-├── <domain>.service.spec.ts
-├── <domain>.controller.spec.ts
-└── <entity>.repository.integration-spec.ts
+└── <module>.module.ts
 ```
 
 Aturan:
 
-- Interface diberi prefix `I`, misalnya `IPreparationRepository`.
-- Token DI memakai `Symbol`, bukan string: `export const PREPARATION_REPOSITORY = Symbol('PREPARATION_REPOSITORY')`.
+- `dto/` hanya untuk validation payload (`create`, `update`, `delete`); tidak ada DTO response.
+- Response global memakai `src/common/response/response.ts` dengan pola `new Response(...)` ketika sudah dipakai di controller.
+- Interface diberi prefix `I`, misalnya `IAuthRepository`.
+- Token DI memakai `Symbol`, bukan string: `export const AUTH_REPOSITORY = Symbol('AUTH_REPOSITORY')`.
 - Implementasi memakai nama domain langsung, bukan suffix `Impl`.
 - Satu controller per kelompok route; route admin boleh berada di modul pemilik domain dengan path `/admin/...`.
 - Modul mengekspor service yang memang dibutuhkan modul lain. Repository tidak diekspor lintas modul.
@@ -182,7 +182,10 @@ Aturan:
 | Controller | Parsing request, guard/decorator, memanggil service, memetakan hasil ke response | Query Prisma, aturan bisnis, akses storage langsung |
 | Service | Aturan bisnis, transaksi, otorisasi kepemilikan, orkestrasi repository/queue | Mengetahui `Request`/`Response` Express, menulis SQL mentah |
 | Repository | Query Prisma, mapping record, filter kepemilikan, update bersyarat versi | Memanggil service lain, mengirim email, mengakses storage |
-| Infra | Koneksi teknis dan adapter | Aturan domain |
+| Prisma | Koneksi, connection pool, adapter database | Aturan domain |
+| Storage | Akses file dan signed URL | Aturan bisnis |
+| Queue | Job orchestrator dan retry | Aturan domain tanpa service |
+| AI | Adapter provider dan validasi output | Menulis atau mengubah data domain |
 | Guard | Autentikasi dan role | Kepemilikan resource yang butuh data DB |
 | Filter/Interceptor | Format error, request id, envelope, logging aman | Perubahan status domain |
 
@@ -215,7 +218,7 @@ Service adalah tempat keputusan seperti:
 | `admin` | Administrasi pengguna, role, petugas, audit | `UserRole`, `User` | `/admin/users/*`, `/admin/officers/*`, `/admin/audit*` |
 | `audit` | Pencatatan peristiwa produk/keamanan | `AuditEvent` | Tidak ada endpoint publik |
 | `dashboard` | Agregasi baca untuk beranda | Tidak memiliki tabel | `/dashboard` |
-| `health` | Liveness/readiness | Tidak memiliki tabel | `/health`, `/health/ready` |
+Health endpoint tidak berada di modul domain. Ia hidup di `AppController` dan didaftarkan di `AppModule hanya sebagai kebutuhan bootstrap.
 
 Pemilik data:
 
@@ -333,9 +336,9 @@ Jika input berubah saat pemeriksaan berjalan, hasil tetap disimpan sebagai histo
 - Semua body, query, dan param divalidasi dengan Zod.
 - DTO memakai `createZodDto(schema)` dari `nestjs-zod`.
 - `ZodValidationPipe` dipasang global lewat `APP_PIPE`; jangan membuat pipe Zod custom yang duplikatif.
-- `ZodSerializerInterceptor` dipakai untuk response DTO agar field yang tidak disengaja tidak ikut terkirim.
+- `ZodSerializerInterceptor` dipakai jika response perlu dipetakan eksplisit, tetapi tidak lagi memakai file DTO response.
 - Schema memakai `.strict()` untuk body agar field asing ditolak.
-- Schema environment juga memakai Zod dan divalidasi saat bootstrap; aplikasi gagal start jika env wajib tidak ada.
+- Response shape berada di `src/common/response/response.ts`, bukan di DTO tiap modul.
 
 Contoh pola:
 
@@ -383,7 +386,7 @@ Jangan menambahkan status baru di kode tanpa memperbarui ERD, kontrak API, dan a
 
 ### 11.1 Prisma 7
 
-- Konfigurasi di `prisma7.config.ts`.
+- Konfigurasi di `prisma.config.ts`.
 - Generator:
 
 ```prisma
@@ -395,7 +398,7 @@ generator client {
 ```
 
 - `moduleFormat = "cjs"` diperlukan karena backend memakai CommonJS.
-- `PrismaService` membuat `PrismaClient` dengan `PrismaPg` dan `DATABASE_URL`.
+- `src/prisma/prisma.service.ts` membuat `PrismaClient` dengan `PrismaPg` dan `DATABASE_URL`.
 - Jangan memakai `prisma-client-js` lama atau mengandalkan `node_modules/.prisma`.
 - `prisma generate` dijalankan setelah schema tersedia. Jangan menaruh `postinstall` generate sebelum schema ada.
 
@@ -495,7 +498,7 @@ generator client {
 
 ## 13. Konfigurasi environment
 
-Semua env divalidasi Zod saat bootstrap. Contoh nama variabel:
+Env dibaca dari `.env` atau environment platform. Tidak divalidasi Zod pada bootstrap. Contoh nama variabel:
 
 | Variabel | Wajib | Keterangan |
 |---|---|---|
