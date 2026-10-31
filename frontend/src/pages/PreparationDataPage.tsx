@@ -153,7 +153,7 @@ export const PreparationDataPage: React.FC = () => {
               loadDemoFormData();
             }}
           >
-            Isi data contoh
+            ✨ Isi Cepat Data Warga
           </button>
         </div>
 
@@ -172,8 +172,8 @@ export const PreparationDataPage: React.FC = () => {
               }}
               placeholder={
                 activePreparation.applicantTarget === "anggota_keluarga"
-                  ? "Contoh: Bima Contoh (Anggota Keluarga)"
-                  : "Contoh: Ayu Contoh"
+                  ? "Contoh: Bima Prasetya (Anggota Keluarga)"
+                  : "Contoh: Ayu Lestari"
               }
             />
           </div>
