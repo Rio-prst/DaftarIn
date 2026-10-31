@@ -1,17 +1,26 @@
-﻿import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PreparationLayout } from "../components/PreparationLayout";
 import { useApp } from "../context/AppContext";
-import { documentSlots } from "../types/preparation";
-import { analyzeDocumentImage, type DocumentScanResult } from "../utils/documentAiScanner";
+import { documentSlots, type InspectionScope } from "../types/preparation";
+
+const scopeLabels: Record<InspectionScope, string> = {
+  format_formulir: "Format Formulir",
+  keberadaan_berkas: "Keberadaan Berkas",
+  analisis_isi_dokumen: "Analisis Isi Dokumen",
+  aturan_admin: "Aturan Tambahan Admin",
+};
 
 export function PreparationInspectionPage() {
   const {
     services,
     activePreparation,
     documents,
-    updateFormField,
-    showToast,
+    inspections,
+    runAIScanSimulation,
+    aiScanning,
+    readiness,
+    confirmFindingCorrection,
   } = useApp();
   const [params] = useSearchParams();
 
@@ -35,11 +44,8 @@ export function PreparationInspectionPage() {
 
   const querySuffix = buildQuery();
   const [selectedId, setSelectedId] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<DocumentScanResult | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
-  const [tempNoteText, setTempNoteText] = useState("");
+  const [confirmingId, setConfirmingId] = useState("");
+  const [confirmationNote, setConfirmationNote] = useState("");
 
   const available = documents.filter(
     (doc) =>
@@ -48,430 +54,404 @@ export function PreparationInspectionPage() {
   const selected =
     available.find((doc) => doc.id === selectedId) || available[0];
 
-  // Jalankan analisis saat pertama kali membuka halaman atau saat dokumen dipilih
-  const triggerAiScan = async () => {
-    if (!selected) return;
-    setIsScanning(true);
-
-    const docType = selected.id.includes("ktp")
-      ? "ktp"
-      : selected.id.includes("kk")
-      ? "kk"
-      : "surat";
-
-    const docUrl = selected.previewUrl || "/images/ktp-contoh.svg";
-
-    try {
-      // Berikan jeda animasi laser pemindai forensik (1 detik)
-      await new Promise((r) => setTimeout(r, 900));
-      const res = await analyzeDocumentImage(docUrl, docType, {
-        nik: activePreparation.formData.nik,
-        namaLengkap: activePreparation.formData.nama_lengkap,
-        alamatLengkap: activePreparation.formData.alamat,
-      });
-      setScanResult(res);
-      showToast("Pemindaian forensik AI dokumen selesai.", "success");
-    } catch (e) {
-      console.error("AI Scan error:", e);
-      showToast("Gagal melakukan pemindaian AI.", "error");
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  useEffect(() => {
-    if (selected && !scanResult && !isScanning) {
-      triggerAiScan();
-    }
-  }, [selected?.id]);
-
-  const handleApplyOcrToForm = () => {
-    if (!scanResult) return;
-    const { nik, nama, alamat } = scanResult.extractedData;
-    let updatedCount = 0;
-
-    if (nik && nik !== activePreparation.formData.nik) {
-      updateFormField("nik", nik);
-      updatedCount++;
-    }
-    if (nama && nama !== activePreparation.formData.nama_lengkap) {
-      updateFormField("nama_lengkap", nama);
-      updatedCount++;
-    }
-    if (alamat && !activePreparation.formData.alamat) {
-      updateFormField("alamat", alamat);
-      updatedCount++;
-    }
-
-    showToast(
-      updatedCount > 0
-        ? "Data hasil pembacaan berkas berhasil disalin ke formulir pemohon."
-        : "Data formulir sudah sesuai dengan hasil pembacaan berkas.",
-      "success"
-    );
-  };
-
-  const handleSaveNote = (id: string) => {
-    setNotes((prev) => ({ ...prev, [id]: tempNoteText }));
-    setActiveNoteId(null);
-    setTempNoteText("");
-    showToast("Catatan mandiri berhasil disimpan.", "info");
-  };
+  const hasInspected = Boolean(activePreparation.lastInspectionSnapshot);
+  const unresolvedErrors = readiness.unresolvedErrors;
+  const unresolvedWarnings = readiness.unresolvedWarnings;
+  const canRunScan = readiness.steps.step3Dokumen && !aiScanning;
 
   return (
     <PreparationLayout
       step={4}
-      title="Pemeriksaan Kelayakan & Verifikasi Berkas AI"
+      title="Rincian validasi & simulasi aturan (opsional)"
       actions={
         <>
           <Link
             to={"/persiapan/dokumen" + querySuffix}
-            className="button-secondary text-[15px] min-h-[48px] px-5"
+            className="button-secondary"
           >
-            ← Kembali ke Dokumen
+            Kembali ke dokumen
           </Link>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to={"/persiapan/ringkasan" + querySuffix}
-              className="button-primary text-[15px] min-h-[48px] px-6"
+              className="button-primary"
             >
-              Lanjut ke Tinjau &amp; Ajukan →
+              Lanjut ke Tinjau &amp; kirim →
             </Link>
           </div>
         </>
       }
     >
-      {/* Banner Informasi Inklusif & Jelas Bagi Warga */}
-      <div className="mb-6 p-4 rounded-2xl bg-blue-50/90 border border-blue-200/80 text-[14px] sm:text-[15px] text-blue-950 leading-relaxed flex flex-wrap items-center justify-between gap-3 shadow-2xs">
-        <div className="flex items-start gap-3">
-          <span className="material-symbols-outlined text-[24px] text-[#1769D2] shrink-0 mt-0.5">
-            verified
-          </span>
-          <span>
-            <strong>Pemeriksaan Otomatis:</strong> Sistem kecerdasan buatan (AI) memindai ketajaman gambar, mendeteksi kelengkapan sudut dokumen, dan mencocokkan NIK secara instan untuk mempercepat proses verifikasi di kelurahan.
-          </span>
-        </div>
+      <div className="mb-5 p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 leading-relaxed flex flex-wrap items-center justify-between gap-3">
+        <span>
+          <strong>Peran halaman ini:</strong> Alur utama persiapan menggunakan{" "}
+          <strong>validasi dasar aplikasi</strong> dan{" "}
+          <strong>tinjauan manusia oleh petugas pendamping</strong> pada tahap{" "}
+          <em>Tinjau &amp; kirim</em>. Pembacaan isi dokumen otomatis (OCR/AI)
+          disiapkan untuk pengembangan berikutnya dan{" "}
+          <strong>tidak menghalangi pengiriman berkas Anda</strong>.
+        </span>
+        <Link
+          to={"/persiapan/ringkasan" + querySuffix}
+          className="text-link text-xs shrink-0"
+        >
+          Ke Tinjau &amp; kirim →
+        </Link>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Kolom Kiri: Pratinjau Dokumen & Visual Forensik Meja Lampu (Light-Table) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-3.5">
-              <h3 className="font-bold text-[16px] text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#1769D2]">
-                  document_scanner
-                </span>
-                Pratinjau Berkas
-              </h3>
-              <button
-                type="button"
-                onClick={triggerAiScan}
-                disabled={isScanning || !selected}
-                className="text-[13px] sm:text-[14px] font-semibold text-[#1769D2] hover:text-[#1255AC] flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100/70 transition-all disabled:opacity-50"
-              >
-                <span className={`material-symbols-outlined text-[18px] ${isScanning ? "animate-spin" : ""}`}>
-                  {isScanning ? "sync" : "refresh"}
-                </span>
-                <span>{isScanning ? "Sedang Memindai…" : "Pindai Ulang"}</span>
-              </button>
-            </div>
-
-            {/* Pilihan Dokumen yang Tersedia */}
-            {available.length > 1 && (
-              <div className="flex gap-2 mb-4 overflow-x-auto pb-1 no-scrollbar">
-                {available.map((doc) => (
-                  <button
-                    key={doc.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedId(doc.id);
-                      setScanResult(null);
-                    }}
-                    className={`text-[13px] px-3.5 py-2 rounded-xl font-medium transition-all shrink-0 ${
-                      (selected?.id === doc.id)
-                        ? "bg-[#142C4B] text-white shadow-2xs"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
-                  >
-                    {doc.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Frame Pratinjau dengan Efek Laser Scanner Forensik */}
-            <div className="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center min-h-[260px] max-h-[360px] shadow-inner group">
-              {isScanning && <div className="scanner-beam" />}
-              {selected?.previewUrl ? (
-                <img
-                  src={selected.previewUrl}
-                  alt={selected.name}
-                  className="max-h-[340px] w-auto object-contain transition-transform duration-300 group-hover:scale-102"
-                />
-              ) : (
-                <div className="text-center p-6 text-slate-400">
-                  <span className="material-symbols-outlined text-[48px] mb-2 opacity-60">
-                    photo_library
-                  </span>
-                  <p className="text-[14px]">Dokumen contoh resmi terpilih</p>
-                </div>
-              )}
-
-              {/* Status Pemindaian Melayang */}
-              <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-md px-3.5 py-2 rounded-xl text-white text-[13px] flex items-center justify-between border border-slate-800">
-                <span className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isScanning ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
-                  {isScanning ? "AI Menganalisis Struktur Piksel…" : "Pemindaian Forensik Selesai"}
-                </span>
-                <span className="font-mono text-xs text-slate-300">
-                  {scanResult?.forensicMetrics.aspectRatio ? `${scanResult.forensicMetrics.aspectRatio}:1 ID-1` : "ISO 7810"}
-                </span>
-              </div>
-            </div>
-
-            {/* Metrik Kualitas Citra (Grafik Indikator) */}
-            {scanResult && (
-              <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                    Ketajaman
-                  </span>
-                  <span className="text-[17px] font-bold text-slate-900 mt-0.5 block">
-                    {scanResult.forensicMetrics.sharpnessScore}%
-                  </span>
-                  <span className="text-[11px] text-emerald-600 font-medium">Sangat Jelas</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                    Kontras
-                  </span>
-                  <span className="text-[17px] font-bold text-slate-900 mt-0.5 block">
-                    {scanResult.forensicMetrics.contrastScore}%
-                  </span>
-                  <span className="text-[11px] text-emerald-600 font-medium">Optimal</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                    Pencahayaan
-                  </span>
-                  <span className="text-[17px] font-bold text-slate-900 mt-0.5 block">
-                    {scanResult.forensicMetrics.lightingScore}%
-                  </span>
-                  <span className="text-[11px] text-emerald-600 font-medium">Bebas Silau</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Kotak Ekstraksi Data NIK & Kemudahan Bagi Lansia */}
-          {scanResult && (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-bold text-[15px] text-slate-900 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-emerald-600">
-                    badge
-                  </span>
-                  Data Terbaca dari Berkas
-                </h4>
-                <span className="text-[12px] px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800">
-                  Terverifikasi
-                </span>
-              </div>
-              <div className="space-y-2 text-[14px] bg-slate-50 p-3.5 rounded-xl border border-slate-200/60 font-sans">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">NIK:</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    {scanResult.extractedData.nik || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">Nama:</span>
-                  <span className="font-semibold text-slate-900">
-                    {scanResult.extractedData.nama || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">Jenis Kelamin:</span>
-                  <span className="text-slate-800">
-                    {scanResult.extractedData.jenisKelamin || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">Alamat:</span>
-                  <span className="text-slate-800 text-right max-w-[65%] truncate">
-                    {scanResult.extractedData.alamat || "—"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Tombol Salin Otomatis ke Formulir */}
-              <button
-                type="button"
-                onClick={handleApplyOcrToForm}
-                className="mt-3.5 w-full py-2.5 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1769D2] font-semibold text-[14px] flex items-center justify-center gap-2 border border-blue-200 transition-all active:scale-98"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  auto_fix_high
-                </span>
-                <span>Salin Otomatis ke Formulir Pemohon</span>
-              </button>
-            </div>
-          )}
+      {!readiness.steps.step1Kebutuhan ? (
+        <div className="case-update-note mb-5 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <strong>Prasyarat belum selesai:</strong> Tahap 1 (Kebutuhan) belum
+            dikonfirmasi pada draf ini.
+          </span>
+          <Link
+            to={"/persiapan/kebutuhan" + querySuffix}
+            className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+          >
+            Ke tahap Kebutuhan →
+          </Link>
         </div>
+      ) : !readiness.steps.step2Data ? (
+        <div className="case-update-note mb-5 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <strong>Prasyarat belum selesai:</strong> Data pemohon pada Tahap 2
+            belum lengkap. Lengkapi data agar pemeriksaan dapat dijalankan.
+          </span>
+          <Link
+            to={"/persiapan/data" + querySuffix}
+            className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+          >
+            Ke tahap Data →
+          </Link>
+        </div>
+      ) : !readiness.steps.step3Dokumen ? (
+        <div className="case-update-note mb-5 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <strong>Prasyarat belum selesai:</strong>{" "}
+            {readiness.missingRequiredDocs.length > 0
+              ? `Masih ada ${readiness.missingRequiredDocs.length} dokumen wajib yang belum diunggah.`
+              : "Persetujuan pemrosesan berkas pada tahap Dokumen belum dicentang."}
+          </span>
+          <Link
+            to={"/persiapan/dokumen" + querySuffix}
+            className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+          >
+            Ke tahap Dokumen →
+          </Link>
+        </div>
+      ) : null}
 
-        {/* Kolom Kanan: Rincian Hasil Evaluasi Checklist & Validasi */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div>
-                <h3 className="font-bold text-[18px] text-slate-900">
-                  Hasil Uji Kelayakan Berkas
-                </h3>
-                <p className="text-[14px] text-slate-500 mt-0.5">
-                  5 parameter pemeriksaan kepatuhan dokumen kependudukan
+      {!available.length ? (
+        <div className="empty-state">
+          <h2>Belum ada berkas untuk diperiksa</h2>
+          <p>
+            Pilih dokumen persyaratan atau gunakan fixture simulasi pada tahap
+            Dokumen terlebih dahulu.
+          </p>
+          <Link
+            to={"/persiapan/dokumen" + querySuffix}
+            className="button-primary"
+          >
+            Buka tahap dokumen →
+          </Link>
+        </div>
+      ) : (
+        <>
+          <section className="plain-panel mb-6" aria-label="Status pemeriksaan">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="panel-title">Status pemeriksaan</h2>
+                  <span
+                    className={
+                      readiness.state === "SIAP_AWAL"
+                        ? "status-neutral"
+                        : "status-attention"
+                    }
+                  >
+                    {readiness.label}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600 mt-1.5">
+                  {!hasInspected
+                    ? "Pemeriksaan awal belum dijalankan. Tekan tombol di samping untuk memeriksa format formulir, keberadaan berkas wajib, dan status keterbacaan berkas."
+                    : readiness.isStale
+                      ? readiness.staleReason ||
+                        "Ada perubahan data, berkas, atau aturan setelah pemeriksaan terakhir. Jalankan pemeriksaan ulang."
+                      : unresolvedErrors.length > 0
+                        ? `${unresolvedErrors.length} temuan penghalang perlu diperbaiki sebelum berkas dinyatakan siap awal.`
+                        : readiness.notEvaluatedFindings.length > 0
+                          ? `Evaluasi aturan formulir dan keberadaan berkas telah selesai, namun analisis isi dokumen otomatis (OCR/LLM) belum tersedia untuk ${readiness.notEvaluatedFindings.length} item. Catatan mandiri warga tidak menggantikan cakupan pemeriksaan otomatis sistem.`
+                          : unresolvedWarnings.length > 0
+                            ? `Tidak ada penghalang wajib, namun terdapat ${unresolvedWarnings.length} peringatan yang perlu ditinjau.`
+                            : readiness.hasSimulatedFixtures
+                              ? "Evaluasi aturan formulir (nyata) dan pemeriksaan keterbacaan berkas (Simulasi Fixture) telah selesai dan sesuai."
+                              : "Format formulir dan kelengkapan berkas pada draf ini telah melewati pemeriksaan awal."}
                 </p>
               </div>
-              <div className="text-right">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                  Kesiapan {scanResult?.readinessPercentage || 92}%
-                </span>
-              </div>
+              <button
+                type="button"
+                className="button-primary shrink-0 disabled:opacity-50"
+                disabled={!canRunScan}
+                onClick={() => runAIScanSimulation(activePreparation.id)}
+              >
+                {aiScanning
+                  ? "Memeriksa…"
+                  : !hasInspected
+                    ? "Jalankan pemeriksaan"
+                    : readiness.isStale
+                      ? "Periksa ulang berkas"
+                      : "Periksa ulang"}
+              </button>
             </div>
+          </section>
 
-            {/* Daftar Temuan Checklist */}
-            <div className="mt-5 space-y-3.5">
-              {scanResult?.validationChecks.map((chk) => {
-                const isPass = chk.status === "PASS";
-                const isWarning = chk.status === "WARNING";
-                const userNote = notes[chk.id];
-
-                return (
-                  <div
-                    key={chk.id}
-                    className={`p-4 rounded-2xl border transition-all ${
-                      isPass
-                        ? "bg-slate-50/70 border-slate-200/90"
-                        : isWarning
-                        ? "bg-amber-50/60 border-amber-200/90"
-                        : "bg-red-50/60 border-red-200/90"
-                    }`}
+          <div className="inspection-grid">
+            <section className="plain-panel">
+              <h2 className="panel-title">Berkas dalam draf ini</h2>
+              <label className="sr-only" htmlFor="inspection-document">
+                Pilih berkas
+              </label>
+              <select
+                className="field-select"
+                id="inspection-document"
+                value={selected?.id || ""}
+                onChange={(event) => setSelectedId(event.target.value)}
+              >
+                {available.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.name} (Versi {doc.version || 1})
+                  </option>
+                ))}
+              </select>
+              {selected && (
+                <div className="document-placeholder">
+                  <span
+                    className="material-symbols-outlined text-[40px] text-slate-400"
+                    aria-hidden="true"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`material-symbols-outlined text-[22px] shrink-0 mt-0.5 ${
-                            isPass
-                              ? "text-emerald-600"
-                              : isWarning
-                              ? "text-amber-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {isPass ? "check_circle" : isWarning ? "warning" : "error"}
-                        </span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-500">
-                              {chk.category}
-                            </span>
-                          </div>
-                          <h4 className="font-bold text-[15px] sm:text-[16px] text-slate-900 mt-0.5">
-                            {chk.title}
-                          </h4>
-                          <p className="text-[14px] text-slate-700 mt-1 leading-relaxed">
-                            {chk.detail}
-                          </p>
-                          {chk.recommendation && (
-                            <p className="text-[13px] text-amber-800 bg-amber-100/70 px-3 py-1.5 rounded-lg mt-2 font-medium">
-                              💡 Saran: {chk.recommendation}
-                            </p>
-                          )}
+                    description
+                  </span>
+                  <p className="text-sm font-semibold mt-3 break-words text-[#142c4b]">
+                    {selected.fileName} (v{selected.version || 1})
+                  </p>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    {selected.qualityPreset === "sample_issue"
+                      ? "[Simulasi Fixture] Berkas contoh dengan area tanda tangan/QR bawah terpotong."
+                      : selected.qualityPreset === "sample_clean"
+                        ? "[Simulasi Fixture] Berkas contoh utuh untuk pengujian alur."
+                        : "Berkas perangkat pengguna: pembacaan isi dokumen otomatis (OCR/AI) belum terhubung ke backend. Pastikan secara mandiri keempat sudut dokumen terlihat jelas."}
+                  </p>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-3 mt-5">
+                <Link
+                  to={"/persiapan/dokumen" + querySuffix}
+                  className="text-link"
+                >
+                  Ganti berkas →
+                </Link>
+                <Link
+                  to={"/persiapan/data" + querySuffix}
+                  className="text-link"
+                >
+                  Ubah data →
+                </Link>
+              </div>
+            </section>
 
-                          {/* Catatan Mandiri Warga */}
-                          {userNote && (
-                            <div className="mt-2.5 p-2.5 rounded-xl bg-white border border-slate-200 text-[13px] text-slate-800">
-                              <span className="font-semibold text-slate-900">Catatan Pemohon:</span> {userNote}
-                            </div>
+            <section>
+              <h2 className="panel-title mb-4">
+                Rincian pemeriksaan ({inspections.length})
+              </h2>
+              <div className="space-y-4">
+                {!inspections.length && (
+                  <div className="plain-panel">
+                    <p className="field-hint">
+                      Belum ada hasil pemeriksaan untuk draf ini. Jalankan
+                      pemeriksaan untuk mengevaluasi format formulir dan
+                      dokumen yang dipilih.
+                    </p>
+                  </div>
+                )}
+
+                {inspections.map((finding) => {
+                  const isNotEvaluated =
+                    finding.evaluationStatus === "not_evaluated";
+                  const isSimulated =
+                    finding.evaluationStatus === "simulated_fixture";
+                  const isRealEvaluated =
+                    finding.evaluationStatus === "evaluated_passed" ||
+                    finding.evaluationStatus === "evaluated_issue";
+                  const isError =
+                    !finding.resolved && finding.severity === "error";
+                  const isWarning =
+                    !finding.resolved && finding.severity === "warning";
+                  const targetPath =
+                    finding.scope === "format_formulir"
+                      ? "/persiapan/data" + querySuffix
+                      : "/persiapan/dokumen" + querySuffix;
+
+                  const scopeLabel = finding.scope
+                    ? scopeLabels[finding.scope]
+                    : finding.category;
+
+                  return (
+                    <article className="finding-card" key={finding.id}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="finding-label font-medium">
+                            {scopeLabel}
+                          </span>
+                          {isSimulated && (
+                            <span className="status-neutral">
+                              Simulasi Fixture
+                            </span>
+                          )}
+                          {isRealEvaluated && (
+                            <span className="status-neutral">
+                              Evaluasi aturan nyata
+                            </span>
+                          )}
+                          {isNotEvaluated && (
+                            <span className="status-attention">
+                              Analisis otomatis belum tersedia
+                            </span>
                           )}
                         </div>
+                        <span
+                          className={
+                            isError || isNotEvaluated
+                              ? "status-attention"
+                              : "status-neutral"
+                          }
+                        >
+                          {isNotEvaluated
+                            ? "Belum dianalisis otomatis"
+                            : finding.resolved
+                              ? isSimulated
+                                ? "Sesuai (Simulasi)"
+                                : "Sesuai"
+                              : isError
+                                ? "Perlu diperbaiki"
+                                : "Peringatan aturan"}
+                        </span>
                       </div>
 
-                      <span
-                        className={`text-[12px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                          isPass
-                            ? "bg-emerald-100 text-emerald-800"
-                            : isWarning
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {isPass ? "Lulus" : isWarning ? "Perhatian" : "Perlu Perbaikan"}
-                      </span>
-                    </div>
+                      <h3 className="text-base font-semibold mt-2.5 text-[#142c4b]">
+                        {finding.title}
+                      </h3>
 
-                    {/* Form Tambah Catatan */}
-                    {activeNoteId === chk.id ? (
-                      <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={tempNoteText}
-                          onChange={(e) => setTempNoteText(e.target.value)}
-                          placeholder="Tulis penjelasan untuk petugas verifikasi…"
-                          className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-[13px] focus:outline-hidden focus:border-[#1769D2]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleSaveNote(chk.id)}
-                          className="px-3 py-1.5 rounded-lg bg-[#142C4B] text-white text-[13px] font-medium"
-                        >
-                          Simpan
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveNoteId(null)}
-                          className="px-2 py-1.5 text-slate-500 hover:text-slate-800 text-[13px]"
-                        >
-                          Batal
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mt-2.5 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveNoteId(chk.id);
-                            setTempNoteText(userNote || "");
-                          }}
-                          className="text-[12px] text-slate-500 hover:text-[#1769D2] font-medium flex items-center gap-1"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">edit_note</span>
-                          {userNote ? "Ubah Catatan" : "Tambah Catatan Penjelasan"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      <p className="text-sm text-slate-600 leading-relaxed mt-2">
+                        {finding.evidence}
+                      </p>
 
-            {/* Tombol Lanjut ke Tahap Terakhir */}
-            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <span className="text-[14px] text-slate-500">
-                Pemeriksaan selesai. Lanjutkan untuk meninjau dan mengirim berkas.
-              </span>
-              <Link
-                to={"/persiapan/ringkasan" + querySuffix}
-                className="w-full sm:w-auto button-primary text-[15px] font-semibold min-h-[48px] px-6 flex items-center justify-center gap-2 shadow-sm"
-              >
-                <span>Tinjau &amp; Ajukan Berkas</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </Link>
-            </div>
+                      {!finding.resolved && finding.action && (
+                        <p className="text-sm text-slate-700 leading-relaxed mt-2">
+                          <strong>Tindakan:</strong> {finding.action}
+                        </p>
+                      )}
+
+                      {finding.userCorrection && (
+                        <div className="text-xs text-slate-700 mt-2.5 bg-[#f0f5fc] p-3 rounded-lg border border-[#cbd7e6] space-y-1">
+                          <p className="font-semibold text-[#142c4b]">
+                            Catatan warga ({finding.userCorrection.correctedAt})
+                            {" · "}
+                            Sumber:{" "}
+                            {finding.userCorrection.source ||
+                              "Catatan pemeriksaan mandiri warga (bukan hasil evaluasi otomatis sistem)"}
+                          </p>
+                          <p>{finding.userCorrection.note}</p>
+                          {isNotEvaluated && (
+                            <p className="text-slate-500">
+                              Catatan mandiri ini tersimpan pada draf, namun
+                              status analisis otomatis tetap tercatat belum
+                              dilakukan karena OCR/LLM belum terhubung.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {!finding.resolved && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
+                          <Link className="text-link" to={targetPath}>
+                            {finding.scope === "format_formulir"
+                              ? "Perbaiki data →"
+                              : "Ganti berkas / gunakan fixture simulasi →"}
+                          </Link>
+
+                          {(isWarning || isNotEvaluated) &&
+                            confirmingId !== finding.id && (
+                              <button
+                                type="button"
+                                className="text-xs font-medium text-slate-600 hover:text-[#1769d2]"
+                                onClick={() => {
+                                  setConfirmingId(finding.id);
+                                  setConfirmationNote(
+                                    finding.userCorrection?.note ||
+                                      "Saya telah memeriksa berkas fisik/foto secara mandiri dan memastikan seluruh bagian terbaca jelas.",
+                                  );
+                                }}
+                              >
+                                {finding.userCorrection
+                                  ? "Ubah catatan pemeriksaan mandiri"
+                                  : "Tambah catatan pemeriksaan mandiri"}
+                              </button>
+                            )}
+                        </div>
+                      )}
+
+                      {(isWarning || isNotEvaluated) &&
+                        confirmingId === finding.id && (
+                          <div className="mt-3 pt-3 border-t border-slate-200 space-y-2.5">
+                            <label
+                              htmlFor={`confirm-note-${finding.id}`}
+                              className="block text-xs font-medium text-slate-700"
+                            >
+                              Catatan pemeriksaan mandiri warga (tidak mengubah
+                              status analisis otomatis):
+                            </label>
+                            <input
+                              id={`confirm-note-${finding.id}`}
+                              type="text"
+                              value={confirmationNote}
+                              onChange={(e) =>
+                                setConfirmationNote(e.target.value)
+                              }
+                              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                className="button-primary text-xs py-2 px-3"
+                                onClick={() => {
+                                  confirmFindingCorrection(
+                                    finding.id,
+                                    confirmationNote,
+                                  );
+                                  setConfirmingId("");
+                                }}
+                              >
+                                Simpan catatan mandiri warga
+                              </button>
+                              <button
+                                type="button"
+                                className="button-secondary text-xs py-2 px-3"
+                                onClick={() => setConfirmingId("")}
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </PreparationLayout>
   );
 }
