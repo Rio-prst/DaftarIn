@@ -25,18 +25,26 @@ export const ChatbotModal: React.FC<{
   const isOpen = propIsOpen !== undefined ? propIsOpen : isChatOpen;
   const onClose = propOnClose || closeChat;
 
+  const [seniorFontMode, setSeniorFontMode] = useState<boolean>(false);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+
   const currentService = services.find((s) => s.id === activePreparation?.serviceId);
 
+  const greetingName = user?.name && user.name !== "Pengunjung" ? `Bapak/Ibu ${user.name.split(" ")[0]}` : "Bapak/Ibu";
+
   const initialGreeting = currentService
-    ? `Halo ${user?.name || "Bapak/Ibu"}! Saya Asisten Regulasi Kependudukan DaftarIn. Saya melihat Anda sedang mengurus **${currentService.name}**. Silakan tanyakan hal seputar syarat berkas, perbedaan ejaan nama, atau biaya resmi.`
-    : `Halo ${user?.name || "Bapak/Ibu"}! Saya Asisten Regulasi Kependudukan resmi DaftarIn. Didukung basis pengetahuan hukum Kemendagri RI untuk memastikan berkas KTP, KK, dan Akta Anda siap tanpa kendala di loket kelurahan.`;
+    ? `Halo ${greetingName}! Saya Asisten Regulasi Kependudukan DaftarIn. Saya melihat Anda sedang menyiapkan pengurusan ${currentService.name}. Silakan tanyakan hal seputar syarat berkas fisik, perbedaan ejaan nama, atau biaya resmi.`
+    : `Halo ${greetingName}! Selamat datang di Asisten Layanan Kependudukan DaftarIn. Kami siap membantu Anda memahami persyaratan KTP-el, Kartu Keluarga, dan Akta sesuai regulasi resmi Kemendagri RI agar berkas Anda lengkap dan siap tanpa kendala di loket kelurahan.`;
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "msg-welcome",
       sender: "bot",
       text: initialGreeting,
-      legalCitations: ["UU No. 24 Tahun 2013", "Permendagri No. 109 Tahun 2019"],
+      legalCitations: [
+        "UU No. 24 Tahun 2013 Pasal 79A (Pelayanan Adminduk Bebas Biaya Rp 0)",
+        "Permendagri No. 109 Tahun 2019 (Dokumen Kependudukan Ber-barcode TTE Sah)",
+      ],
       time: "Baru saja",
     },
   ]);
@@ -86,10 +94,34 @@ export const ChatbotModal: React.FC<{
     return () => {
       panel.removeEventListener("keydown", handleKey);
       previous?.focus();
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleSpeak = (msgId: string, text: string) => {
+    if (!("speechSynthesis" in window)) return;
+    if (speakingMsgId === msgId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*_#•]/g, " ");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "id-ID";
+    utterance.rate = 0.95;
+
+    utterance.onend = () => setSpeakingMsgId(null);
+    utterance.onerror = () => setSpeakingMsgId(null);
+
+    setSpeakingMsgId(msgId);
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleSendPrompt = (text: string) => {
     if (!text.trim() || isTyping) return;
@@ -112,7 +144,7 @@ export const ChatbotModal: React.FC<{
     ]);
     setIsTyping(true);
 
-    // Jalankan Mesin Pencarian RAG Semantik Kependudukan
+    // Jalankan Mesin RAG Semantik Kependudukan
     setTimeout(() => {
       const ragResult: RagResult = retrieveAdmindukKnowledge(userQuery, activePreparation?.serviceId);
 
@@ -132,7 +164,7 @@ export const ChatbotModal: React.FC<{
         },
       ]);
       setIsTyping(false);
-    }, 450);
+    }, 400);
   };
 
   const handleActionClick = (route: string) => {
@@ -144,7 +176,7 @@ export const ChatbotModal: React.FC<{
     "Apakah ada biaya pengurusan dokumen?",
     "Ejaan nama di KTP dan Akta berbeda?",
     "Syarat memperbarui Kartu Keluarga",
-    "Bagaimana jika KTP saya rusak atau hilang?",
+    "KTP rusak atau hilang bagaimana?",
   ];
 
   return (
@@ -159,9 +191,9 @@ export const ChatbotModal: React.FC<{
         {/* Header Ramah Lansia & Berkontras Tinggi */}
         <div className="min-h-[72px] bg-[#0F223D] px-5 py-3 flex items-center justify-between text-white border-b border-[#1E3B66] shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#1769D2] flex items-center justify-center text-white shadow-md ring-2 ring-blue-400/30">
+            <div className="w-11 h-11 rounded-xl bg-[#1769D2] flex items-center justify-center text-white shadow-md ring-2 ring-blue-400/30 shrink-0">
               <span className="material-symbols-outlined text-[24px]">
-                balance
+                support_agent
               </span>
             </div>
             <div>
@@ -172,26 +204,44 @@ export const ChatbotModal: React.FC<{
                 >
                   Asisten Regulasi Warga
                 </h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                   RAG Kemendagri
                 </span>
               </div>
               <p className="text-[13px] text-[#C2D8F2] mt-0.5 font-medium">
-                Pencarian Semantik Regulasi UU &amp; Permendagri Resmi
+                Pencarian Semantik Regulasi UU &amp; Standar Disdukcapil RI
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            aria-label="Tutup bantuan"
-            onClick={onClose}
-            className="w-10 h-10 rounded-xl hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-white/90 hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined text-[22px]">close</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Toggle Ukuran Teks untuk Kemudahan Membaca Lansia */}
+            <button
+              type="button"
+              onClick={() => setSeniorFontMode(!seniorFontMode)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                seniorFontMode
+                  ? "bg-amber-400 text-slate-950 font-black shadow-xs"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+              }`}
+              title="Perbesar teks untuk kemudahan membaca"
+              aria-label="Ubah ukuran teks"
+            >
+              <span>{seniorFontMode ? "Teks Normal" : "Perbesar Teks"}</span>
+            </button>
+
+            <button
+              type="button"
+              aria-label="Tutup bantuan"
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-white/90 hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-[22px]">close</span>
+            </button>
+          </div>
         </div>
 
-        {/* Message Log dengan Teks Nyaman 15px & Spasi Lega */}
+        {/* Message Log dengan Teks Nyaman & Suara Text-to-Speech */}
         <div
           role="log"
           aria-live="polite"
@@ -203,24 +253,44 @@ export const ChatbotModal: React.FC<{
               className={`flex flex-col ${m.sender === "user" ? "items-end" : "items-start"}`}
             >
               <div
-                className={`max-w-[90%] sm:max-w-[85%] rounded-2xl px-4 py-3.5 text-[15px] sm:text-[16px] leading-relaxed shadow-xs ${
+                className={`max-w-[92%] sm:max-w-[88%] rounded-2xl px-4 py-3.5 leading-relaxed shadow-xs ${
+                  seniorFontMode ? "text-[17px]" : "text-[15px] sm:text-[16px]"
+                } ${
                   m.sender === "user"
                     ? "bg-[#1769D2] text-white rounded-br-xs font-medium"
                     : "bg-white text-[#0F223D] border border-[#CBD5E1] rounded-bl-xs"
                 }`}
               >
-                <p className="whitespace-pre-line">{m.text}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="whitespace-pre-line flex-1">{m.text}</p>
+                  {m.sender === "bot" && (
+                    <button
+                      type="button"
+                      onClick={() => handleSpeak(m.id, m.text)}
+                      className={`p-1.5 rounded-lg shrink-0 transition-colors ${
+                        speakingMsgId === m.id
+                          ? "bg-amber-100 text-amber-700 animate-pulse"
+                          : "text-slate-400 hover:text-[#1769D2] hover:bg-slate-100"
+                      }`}
+                      title={speakingMsgId === m.id ? "Hentikan suara" : "Dengarkan pesan suara"}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        {speakingMsgId === m.id ? "volume_off" : "volume_up"}
+                      </span>
+                    </button>
+                  )}
+                </div>
 
                 {/* Checklist Tindakan Warga */}
                 {m.actionSteps && m.actionSteps.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-200">
                     <span className="font-bold text-[13px] text-slate-900 block mb-1">
-                      Langkah yang Harus Dilakukan:
+                      Langkah yang Perlu Dilakukan:
                     </span>
-                    <ul className="space-y-1 text-[13px] sm:text-[14px] text-slate-700">
+                    <ul className="space-y-1.5 text-[13px] sm:text-[14px] text-slate-700">
                       {m.actionSteps.map((step, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
-                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                          <span className="text-emerald-600 font-bold shrink-0 mt-0.5">✓</span>
                           <span>{step}</span>
                         </li>
                       ))}
@@ -228,16 +298,16 @@ export const ChatbotModal: React.FC<{
                   </div>
                 )}
 
-                {/* Dasar Hukum Resmi (Citations dari RAG) */}
+                {/* Dasar Hukum Resmi (Citations dari RAG Kependudukan) */}
                 {m.legalCitations && m.legalCitations.length > 0 && (
                   <div className="mt-3 pt-2.5 border-t border-slate-200 text-[12px] sm:text-[13px] text-slate-600">
-                    <span className="font-semibold text-slate-800 flex items-center gap-1">
+                    <span className="font-semibold text-slate-800 flex items-center gap-1 mb-1">
                       <span className="material-symbols-outlined text-[16px] text-[#1769D2]">
                         menu_book
                       </span>
                       Dasar Hukum Terkait:
                     </span>
-                    <ul className="list-disc list-inside mt-0.5 space-y-0.5">
+                    <ul className="list-disc list-inside space-y-0.5">
                       {m.legalCitations.map((s, idx) => (
                         <li key={idx} className="italic text-slate-700">{s}</li>
                       ))}
@@ -251,7 +321,7 @@ export const ChatbotModal: React.FC<{
                     <button
                       type="button"
                       onClick={() => handleActionClick(m.quickAction!.route)}
-                      className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1769D2] font-semibold text-[13px] sm:text-[14px] flex items-center justify-center gap-1.5 border border-blue-200 transition-all active:scale-98"
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1769D2] font-semibold text-[13px] sm:text-[14px] flex items-center justify-center gap-1.5 border border-blue-200 transition-all active:scale-98 shadow-2xs"
                     >
                       <span>{m.quickAction.label}</span>
                       <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -276,21 +346,21 @@ export const ChatbotModal: React.FC<{
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggestion Chips (Besar & Mudah Diklik Lansia) */}
-        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 overflow-x-auto flex gap-2 no-scrollbar">
+        {/* Quick Suggestion Chips (TIDAK ADA SCROLLBAR WINDOWS JELEK LAGI) */}
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 overflow-x-auto flex gap-2 no-scrollbar">
           {quickPrompts.map((q, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSendPrompt(q)}
-              className="text-[13px] sm:text-[14px] bg-white border border-slate-300 hover:border-[#1769D2] hover:text-[#1769D2] text-slate-700 px-3.5 py-2 rounded-xl whitespace-nowrap transition-all shadow-2xs shrink-0 active:scale-95"
+              className="text-[13px] sm:text-[14px] font-medium bg-white border border-slate-300 hover:border-[#1769D2] hover:text-[#1769D2] text-slate-700 px-3.5 py-2 rounded-xl whitespace-nowrap transition-all shadow-2xs shrink-0 active:scale-95"
             >
               {q}
             </button>
           ))}
         </div>
 
-        {/* Input Bar (Tinggi Standar 48px untuk Aksesibilitas Layar Sentuh) */}
+        {/* Input Bar Standar 48px untuk Aksesibilitas Touch / Desktop */}
         <div className="p-3.5 sm:p-4 bg-white border-t border-[#CBD5E1]">
           <form
             onSubmit={(e) => {
@@ -321,3 +391,5 @@ export const ChatbotModal: React.FC<{
     </div>
   );
 };
+
+export default ChatbotModal;

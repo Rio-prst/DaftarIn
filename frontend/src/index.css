@@ -2111,3 +2111,7 @@ button, input, select, textarea {
 .button-primary:active, .button-secondary:active {
   transform: scale(0.98);
 }
+
+/* Hide scrollbars */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

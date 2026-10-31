@@ -69,7 +69,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Links (Ukuran Nyaman 15px, Bersih & Konsisten) */}
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 text-[15px] font-semibold text-[#52657A]">
             <a
               href="#/katalog"
@@ -99,7 +99,7 @@ export const LandingPage: React.FC = () => {
             </button>
           </nav>
 
-          {/* Action Header: Konsisten & Rapi */}
+          {/* Action Header */}
           <div className="flex items-center gap-3">
             {user ? (
               <button
@@ -132,7 +132,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </header>
 
-      {/* 3. HERO SECTION (EDITORIAL CIVIC CRAFT + AUTHENTIC INDONESIAN HERO ENZY) */}
+      {/* 3. HERO SECTION (EDITORIAL CIVIC CRAFT + ENZY HERO) */}
       <section className="relative pt-10 pb-16 md:pt-14 md:pb-24 overflow-hidden bg-gradient-to-r from-white via-[#F8FAFD] to-[#E9F3F2] border-b border-[#E2E8F0]">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
@@ -213,7 +213,7 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Column (5 cols): AUTHENTIC INDONESIAN HERO ENZY SEAMLESSLY BLENDED */}
+            {/* Right Column: Hero Enzy Seamlessly Blended */}
             <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
               <div className="relative w-full max-w-[430px]">
                 <img
@@ -361,7 +361,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. ALUR 4 TAHAP PROSEDURAL */}
+      {/* 5. ALUR 4 TAHAP PROSEDURAL (PUNCHY, SEQUENTIAL, ACCESSIBLE) */}
       <section id="cara-kerja" className="py-16 px-6 max-w-6xl mx-auto space-y-12 w-full text-center">
         <div className="space-y-2.5 max-w-2xl mx-auto">
           <span className="px-3.5 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
@@ -371,94 +371,196 @@ export const LandingPage: React.FC = () => {
             4 Tahap Dari Rumah Hingga Selesai di Loket
           </h2>
           <p className="text-sm sm:text-base text-[#52657A]">
-            Setiap langkah dirancang untuk meminimalisir kesalahan administratif sebelum pengajuan resmi.
+            Alur terstruktur dan berurutan untuk memastikan berkas Anda bebas penolakan sebelum ke kantor dinas.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
-          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
-              01
+        {/* 4 Cards with Consistent Elevation, Clear Milestone Numerals & Action Icons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left relative">
+          {/* Step 01 */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4 hover:border-[#1769D2] hover:shadow-md transition-all shadow-xs flex flex-col justify-between group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-black font-mono text-sm shadow-xs transition-colors">
+                  01
+                </span>
+                <span className="material-symbols-outlined text-[24px] text-[#1769D2] p-2 rounded-xl bg-blue-50">
+                  checklist
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#142C4B] group-hover:text-[#1769D2] transition-colors">
+                Pilih Layanan
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Jawab panduan singkat untuk menentukan jenis berkas fisik wajib yang perlu disiapkan.
+              </p>
             </div>
-            <h3 className="font-bold text-base sm:text-lg text-[#142C4B]">Pilih Kebutuhan Layanan</h3>
-            <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-              Tentukan jenis permohonan melalui kuesioner panduan sederhana untuk mengetahui daftar berkas wajib.
-            </p>
+            <div className="pt-2 text-xs font-semibold text-[#1769D2] flex items-center gap-1">
+              <span>Langkah 1 dari 4</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
-              02
+          {/* Step 02 */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4 hover:border-[#1769D2] hover:shadow-md transition-all shadow-xs flex flex-col justify-between group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-black font-mono text-sm shadow-xs transition-colors">
+                  02
+                </span>
+                <span className="material-symbols-outlined text-[24px] text-[#1769D2] p-2 rounded-xl bg-blue-50">
+                  photo_camera
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#142C4B] group-hover:text-[#1769D2] transition-colors">
+                Foto Berkas
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Pindai berkas fisik (KTP/KK/Surat) langsung dari kamera HP Anda pada permukaan datar.
+              </p>
             </div>
-            <h3 className="font-bold text-base sm:text-lg text-[#142C4B]">Unggah Foto Berkas Fisik</h3>
-            <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-              Ambil pindaian dokumen menggunakan kamera HP Anda pada permukaan datar dengan pencahayaan merata.
-            </p>
+            <div className="pt-2 text-xs font-semibold text-[#1769D2] flex items-center gap-1">
+              <span>Langkah 2 dari 4</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
-              03
+          {/* Step 03 */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4 hover:border-[#1769D2] hover:shadow-md transition-all shadow-xs flex flex-col justify-between group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-black font-mono text-sm shadow-xs transition-colors">
+                  03
+                </span>
+                <span className="material-symbols-outlined text-[24px] text-[#1769D2] p-2 rounded-xl bg-blue-50">
+                  verified
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#142C4B] group-hover:text-[#1769D2] transition-colors">
+                Pemeriksaan AI
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Sistem cerdas memvalidasi NIK, ejaan nama, dan ketajaman foto dokumen secara instan.
+              </p>
             </div>
-            <h3 className="font-bold text-base sm:text-lg text-[#142C4B]">Pemeriksaan AI &amp; Ejaan</h3>
-            <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-              Model cerdas memeriksa ketajaman foto berkas, keabsahan NIK, dan mencocokkan data pada formulir.
-            </p>
+            <div className="pt-2 text-xs font-semibold text-[#1769D2] flex items-center gap-1">
+              <span>Langkah 3 dari 4</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#CBD7E6] p-6 space-y-3 hover:border-[#1769D2] transition-all shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-[#EBF1F8] text-[#1769D2] flex items-center justify-center font-bold text-sm">
-              04
+          {/* Step 04 */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 space-y-4 hover:border-[#1769D2] hover:shadow-md transition-all shadow-xs flex flex-col justify-between group">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="w-11 h-11 rounded-xl bg-[#142C4B] group-hover:bg-[#1769D2] text-white flex items-center justify-center font-black font-mono text-sm shadow-xs transition-colors">
+                  04
+                </span>
+                <span className="material-symbols-outlined text-[24px] text-[#1769D2] p-2 rounded-xl bg-blue-50">
+                  storefront
+                </span>
+              </div>
+              <h3 className="font-bold text-lg text-[#142C4B] group-hover:text-[#1769D2] transition-colors">
+                Ke Loket Resmi
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Bawa susunan berkas rapi bersama struk tanda terima ke loket Kelurahan atau Disdukcapil.
+              </p>
             </div>
-            <h3 className="font-bold text-base sm:text-lg text-[#142C4B]">Serahkan ke Loket Resmi</h3>
-            <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-              Bawa susunan berkas rapi bersama struk tanda terima ke loket pelayanan kelurahan atau Disdukcapil.
-            </p>
+            <div className="pt-2 text-xs font-semibold text-emerald-600 flex items-center gap-1 font-mono">
+              <span>Selesai di Loket</span>
+              <span className="material-symbols-outlined text-[14px]">task_alt</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 6. CIVIC TRANSPARENCY & LEGAL BASIS */}
-      <section id="dasar-hukum" className="py-16 bg-white border-y border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 space-y-8">
+      {/* 6. CIVIC TRANSPARENCY & LEGAL GUARANTEE (ELEVATED, TRUSTWORTHY, NO CLUTTER) */}
+      <section id="dasar-hukum" className="py-16 bg-[#F8FAFD] border-y border-[#E2E8F0]">
+        <div className="max-w-6xl mx-auto px-6 space-y-10">
           <div className="text-center space-y-2.5 max-w-2xl mx-auto">
+            <span className="px-3.5 py-1 rounded-full bg-blue-100/70 text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
+              JAMINAN TATA KELOLA PUBLIK
+            </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#142C4B]">
               Komitmen Transparansi &amp; Integritas Publik
             </h2>
             <p className="text-sm sm:text-base text-[#52657A]">
-              DaftarIn adalah instrumen literasi tata kelola berkas kependudukan mandiri, bukan perantara ilegal.
+              DaftarIn menjamin kepastian syarat berkas, transparansi biaya Rp 0, dan perlindungan privasi data warga secara mandiri.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-3">
-              <svg className="w-6 h-6 text-[#1769D2]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
-              </svg>
-              <h3 className="font-bold text-base text-[#142C4B]">Regulasi Resmi Negara</h3>
-              <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-                Seluruh panduan mengacu pada UU No. 24 Tahun 2013 dan Permendagri No. 108 Tahun 2019 mengenai standar administrasi kependudukan nasional.
-              </p>
+            {/* Guarantee Card 1 */}
+            <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between">
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1769D2] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[26px]">account_balance</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full font-mono">
+                    Standar Nasional
+                  </span>
+                </div>
+                <h3 className="font-bold text-lg text-[#142C4B]">
+                  Regulasi Resmi Negara
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Seluruh alur panduan dan daftar periksa mengacu langsung pada standar kependudukan nasional yang sah dan selalu dimutakhirkan.
+                </p>
+              </div>
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2 text-xs font-mono text-slate-500">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100">UU No. 24/2013</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100">Permendagri 108/2019</span>
+              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-3">
-              <svg className="w-6 h-6 text-[#087F68]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
-              <h3 className="font-bold text-base text-[#142C4B]">Tanpa Pungutan Liar</h3>
-              <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-                Pengurusan mandiri di loket pemerintah tidak dikenakan biaya apapun. Hindari pihak-pihak yang menjanjikan jalur cepat dengan imbalan materi.
-              </p>
+            {/* Guarantee Card 2 */}
+            <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between">
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[26px]">verified_user</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-mono">
+                    Biaya Resmi: Rp 0
+                  </span>
+                </div>
+                <h3 className="font-bold text-lg text-[#142C4B]">
+                  100% Bebas Pungutan Liar
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Pengurusan mandiri di loket resmi bebas biaya retribusi. Tolak dan laporkan segala bentuk percaloan atau jalur kilat berbayar.
+                </p>
+              </div>
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2 text-xs font-mono text-slate-500">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">Pasal 79A UU 24/2013</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100">Halo Dukcapil 1500537</span>
+              </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-[#F8FAFD] border border-[#CBD7E6] space-y-3">
-              <svg className="w-6 h-6 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-              </svg>
-              <h3 className="font-bold text-base text-[#142C4B]">Kedaulatan Data Warga</h3>
-              <p className="text-xs sm:text-sm text-[#52657A] leading-relaxed">
-                Data disimpan aman di peramban Anda. Platform tidak menjual atau membagikan identitas pribadi Anda kepada pihak manapun.
-              </p>
+            {/* Guarantee Card 3 */}
+            <div className="p-7 rounded-2xl bg-white border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-4 flex flex-col justify-between">
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 text-[#142C4B] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[26px]">lock</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-full font-mono">
+                    Privasi Peramban
+                  </span>
+                </div>
+                <h3 className="font-bold text-lg text-[#142C4B]">
+                  Kedaulatan Data Warga
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Formulir dan berkas diproses di peramban Anda. Kami tidak menyimpan, mengumpulkan, atau membagikan identitas pribadi Anda ke pihak ketiga.
+                </p>
+              </div>
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2 text-xs font-mono text-slate-500">
+                <span className="px-2 py-0.5 rounded-md bg-slate-100">100% Aman di Browser</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-100">Bebas Pelacak</span>
+              </div>
             </div>
           </div>
         </div>
