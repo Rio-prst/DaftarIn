@@ -1,807 +1,1303 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useEffect, useState, type FormEvent } from "react";
+import { WorkspaceLayout } from "../components/WorkspaceLayout";
+import {
+  DocumentPreviewModal,
+  isDocumentContentAvailable,
+  type PreviewableDocument,
+} from "../components/DocumentPreviewModal";
+import {
+  getOfficialSubmissionStatusLabel,
+  getReviewStatusLabel,
+  useApp,
+  type ApplicationRecord,
+} from "../context/AppContext";
+import {
+  documentSlots,
+  OFFICER_ISSUE_CATEGORY_LABELS,
+  OFFICER_ITEM_VERDICT_LABELS,
+  type OfficerIssueCategory,
+  type OfficerItemAssessment,
+  type OfficerItemVerdict,
+} from "../types/preparation";
 
-interface QueueItem {
-  id: string;
-  officialNumber: string;
-  service: string;
-  refId: string;
-  applicant: string;
-  channel: string;
-  email: string;
-  submittedAt: string;
-  statusBadge: string;
-  statusBadgeClass: string;
-  lastNote: string;
-  defaultStatus: 'DITERIMA' | 'VERIFIKASI' | 'PERLU_PERBAIKAN' | 'DIPROSES' | 'SELESAI';
-  defaultAction: string;
-  defaultNotes: string;
-  attachments: Array<{
-    name: string;
-    format: string;
-    size: string;
-    status: string;
-    isWarning?: boolean;
-    icon: string;
-  }>;
-}
-
-const QUEUE_ITEMS: QueueItem[] = [
+const filterOptions: Array<{ value: string; label: string }> = [
+  { value: "", label: "Semua status tinjauan" },
+  { value: "DITERIMA", label: "Menunggu tinjauan" },
+  { value: "VERIFIKASI", label: "Sedang ditinjau" },
+  { value: "PERLU_PERBAIKAN_WARGA", label: "Perlu perbaikan (menunggu warga)" },
   {
-    id: 'DEMO-AK-014',
-    officialNumber: 'DEMO-AK-014',
-    service: 'Akta Kelahiran (contoh)',
-    refId: 'SIM-2026-AK014',
-    applicant: 'Ayu Contoh (Tersamarkan)',
-    channel: 'Loket Pelayanan Disdukcapil (contoh)',
-    email: 'ayu.contoh@email.simulasi',
-    submittedAt: '26 Okt 2026, 09:15 WIB',
-    statusBadge: 'Perlu Tindakan Petugas',
-    statusBadgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
-    lastNote: 'Catatan terakhir: Hasil pemeriksaan awal OCR ada catatan halaman kedua kurang terbaca.',
-    defaultStatus: 'PERLU_PERBAIKAN',
-    defaultAction: 'Unggah ulang halaman kedua Surat Keterangan Lahir agar seluruh tulisan dan stempel terbaca utuh.',
-    defaultNotes: 'Cap fasilitas kesehatan pada lampiran surat kelahiran buram dan tepi dokumen terpotong saat pemindaian. Mohon lampirkan ulang pindai yang jelas.',
-    attachments: [
-      {
-        name: 'Kartu Keluarga (contoh)',
-        format: 'Format PDF · Ukuran 420 KB',
-        size: '420 KB',
-        status: 'Terbaca jelas',
-        isWarning: false,
-        icon: 'description',
-      },
-      {
-        name: 'Surat Keterangan Lahir (contoh)',
-        format: 'Format PDF · Ukuran 850 KB',
-        size: '850 KB',
-        status: 'Catatan pemindaian halaman 2 terpotong / buram',
-        isWarning: true,
-        icon: 'description',
-      },
-    ],
+    value: "PERBAIKAN_DIKIRIM",
+    label: "Perbaikan dikirim (perlu ditinjau ulang)",
   },
-  {
-    id: 'DEMO-KK-008',
-    officialNumber: 'DEMO-KK-008',
-    service: 'Kartu Keluarga (contoh)',
-    refId: 'SIM-2026-KK008',
-    applicant: 'Budi S. (Tersamarkan)',
-    channel: 'Kanal Daring Warga (Simulasi)',
-    email: 'budi.santoso@email.simulasi',
-    submittedAt: '27 Okt 2026, 14:00 WIB',
-    statusBadge: 'Menunggu Verifikasi Awal',
-    statusBadgeClass: 'bg-blue-50 text-blue-800 border-blue-200',
-    lastNote: 'Seluruh berkas persyaratan draf telah diunggah. Menunggu verifikasi fisik NIK SIAK.',
-    defaultStatus: 'VERIFIKASI',
-    defaultAction: 'Verifikasi keselarasan NIK pemohon dan data pernikahan di database nasional SIAK.',
-    defaultNotes: 'Pemeriksaan awal berkas Kartu Keluarga. Dokumen fisik pendukung perlu dicocokkan dengan data SIAK.',
-    attachments: [
-      {
-        name: 'Kartu Keluarga Lama',
-        format: 'Format PDF · Ukuran 512 KB',
-        size: '512 KB',
-        status: 'Terbaca jelas',
-        isWarning: false,
-        icon: 'badge',
-      },
-      {
-        name: 'Buku Nikah / Akta Perkawinan',
-        format: 'Format PDF · Ukuran 1.1 MB',
-        size: '1.1 MB',
-        status: 'Terbaca jelas',
-        isWarning: false,
-        icon: 'description',
-      },
-    ],
-  },
-  {
-    id: 'DEMO-AK-019',
-    officialNumber: 'DEMO-AK-019',
-    service: 'Akta Kelahiran (contoh)',
-    refId: 'SIM-2026-AK019',
-    applicant: 'Citra D. (Tersamarkan)',
-    channel: 'Loket Pelayanan Disdukcapil (contoh)',
-    email: 'citra.dewi@email.simulasi',
-    submittedAt: '25 Okt 2026, 11:30 WIB',
-    statusBadge: 'Selesai Simulasi',
-    statusBadgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    lastNote: 'Seluruh berkas terverifikasi lengkap dan TTE kepala dinas telah diterbitkan.',
-    defaultStatus: 'SELESAI',
-    defaultAction: 'Kutipan akta kelahiran siap diunduh atau diambil di loket pengambilan.',
-    defaultNotes: 'Seluruh persyaratan fisik dan identitas SIAK telah sesuai standar. Berkas disahkan untuk penerbitan.',
-    attachments: [
-      {
-        name: 'Surat Keterangan Lahir RSUD',
-        format: 'Format PDF · Ukuran 920 KB',
-        size: '920 KB',
-        status: 'Terbaca jelas & TTE Sah',
-        isWarning: false,
-        icon: 'description',
-      },
-      {
-        name: 'Kartu Keluarga Terbitan Baru',
-        format: 'Format PDF · Ukuran 480 KB',
-        size: '480 KB',
-        status: 'Barcode Valid',
-        isWarning: false,
-        icon: 'badge',
-      },
-    ],
-  },
+  { value: "SELESAI", label: "Tinjauan awal selesai" },
 ];
 
-export const OfficerPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { applications, officerUpdateApplication, showToast } = useApp();
+export function OfficerPage() {
+  const { applications } = useApp();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("");
+  const [selectedId, setSelectedId] = useState("");
 
-  const [selectedQueueId, setSelectedQueueId] = useState<string>('DEMO-AK-014');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [serviceFilter, setServiceFilter] = useState<string>('all');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'antrean' | 'riwayat' | 'profil'>('antrean');
-
-  const currentItem = QUEUE_ITEMS.find((q) => q.id === selectedQueueId) || QUEUE_ITEMS[0];
-
-  const [selectedStatus, setSelectedStatus] = useState<'DITERIMA' | 'VERIFIKASI' | 'PERLU_PERBAIKAN' | 'DIPROSES' | 'SELESAI'>(
-    currentItem.defaultStatus
+  // Hanya tampilkan permintaan tinjauan yang benar-benar sudah dikirim warga dan ditugaskan ke petugas ini
+  const assignedSubmitted = applications.filter(
+    (item) =>
+      item.current_status !== "DICATAT_WARGA" &&
+      Boolean(item.assigned_officer_id),
   );
-  const [officerNotes, setOfficerNotes] = useState<string>(currentItem.defaultNotes);
-  const [officerAction, setOfficerAction] = useState<string>(currentItem.defaultAction);
-  const [additionalNote, setAdditionalNote] = useState<string>('');
 
-  // Modal States
-  const [previewDoc, setPreviewDoc] = useState<{ name: string; format: string; status: string; isWarning?: boolean } | null>(null);
-  const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
+  const filtered = assignedSubmitted.filter((item) => {
+    const matchesStatus =
+      !filter ||
+      (filter === "PERLU_PERBAIKAN_WARGA"
+        ? item.current_status === "PERLU_PERBAIKAN" && !item.revision_pending
+        : filter === "PERBAIKAN_DIKIRIM"
+          ? item.current_status === "PERLU_PERBAIKAN" &&
+            Boolean(item.revision_pending)
+          : item.current_status === filter);
 
-  const handleSelectQueueItem = (item: QueueItem) => {
-    setSelectedQueueId(item.id);
-    setSelectedStatus(item.defaultStatus);
-    setOfficerNotes(item.defaultNotes);
-    setOfficerAction(item.defaultAction);
-    setAdditionalNote('');
-    showToast(`Memuat berkas pengajuan: ${item.id}`, 'info');
-  };
+    const searchTarget = [
+      item.applicant_name,
+      item.service_name,
+      item.internal_reference,
+      item.preparation_reference || "",
+      item.official_number || "",
+    ]
+      .join(" ")
+      .toLowerCase();
 
-  const handleUpdate = () => {
-    if (applications.length > 0) {
-      officerUpdateApplication(applications[0].id, selectedStatus, `Verifikator Disdukcapil (Budi Santoso): ${officerNotes}`);
-      showToast(`Status permohonan ${currentItem.id} berhasil diubah ke: ${selectedStatus}!`, 'success');
-    } else {
-      showToast(`Status simulasi ${currentItem.id} disimpan sebagai: ${selectedStatus}!`, 'success');
-    }
-    setShowReviewModal(false);
-  };
-
-  const filteredItems = QUEUE_ITEMS.filter((item) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchId = item.id.toLowerCase().includes(q);
-      const matchName = item.applicant.toLowerCase().includes(q);
-      const matchService = item.service.toLowerCase().includes(q);
-      if (!matchId && !matchName && !matchService) return false;
-    }
-    if (statusFilter === 'action_needed' && item.defaultStatus !== 'PERLU_PERBAIKAN') return false;
-    if (statusFilter === 'pending' && item.defaultStatus !== 'VERIFIKASI') return false;
-    if (serviceFilter === 'akta' && !item.service.toLowerCase().includes('akta')) return false;
-    if (serviceFilter === 'kk' && !item.service.toLowerCase().includes('kartu keluarga')) return false;
-    return true;
+    return matchesStatus && searchTarget.includes(query.trim().toLowerCase());
   });
 
+  const selected =
+    filtered.find((item) => item.id === selectedId) || filtered[0];
+
   return (
-    <div className="bg-[#F5F7FB] text-[#172B45] antialiased min-h-screen flex flex-col font-sans selection:bg-[#1769D2] selection:text-white overflow-x-hidden">
-      {/* Top Banner Ribbon */}
-      <div className="bg-[#142C4B] text-white px-6 py-2 flex flex-wrap items-center justify-between text-xs border-b border-[#233F66] gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-emerald-400">🛡️ Meja Kerja Petugas Verifikator:</span>
-          <span>Peran aktif: <strong>Budi Santoso (NIP: 198503142010011002)</strong> · Loket 3</span>
+    <WorkspaceLayout
+      title="Antrean Tinjauan Awal Petugas"
+      description="Periksa kelengkapan data, pratinjau berkas persyaratan sesuai versi kiriman, dan berikan penilaian eksplisit per item."
+    >
+      <div className="mb-5 p-3.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 leading-relaxed">
+        <strong>Ruang kerja tinjauan pendamping (Contoh / Simulasi):</strong>{" "}
+        Halaman ini hanya menampilkan permintaan tinjauan yang secara eksplisit
+        dikirim oleh warga dan ditugaskan ke akun petugas ini. Alur tinjauan:{" "}
+        <strong>
+          Menunggu tinjauan / Perbaikan dikirim → Sedang ditinjau → Perlu
+          perbaikan atau Tinjauan awal selesai
+        </strong>
+        . Penyelesaian tinjauan mewajibkan penilaian eksplisit untuk data
+        pemohon dan setiap berkas persyaratan.
+      </div>
+
+      <div className="queue-filters">
+        <div className="form-field">
+          <label htmlFor="queue-search">Cari permintaan tinjauan</label>
+          <input
+            id="queue-search"
+            type="search"
+            placeholder="Nama warga, layanan, atau kode TINJAU-2026-..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/pelacakan')}
-            className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded font-semibold text-white transition-colors"
-            type="button"
+        <div className="form-field">
+          <label htmlFor="queue-status">Filter status tinjauan</label>
+          <select
+            id="queue-status"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
           >
-            ← Lihat Linimasa Warga
-          </button>
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded font-semibold text-white transition-colors"
-            type="button"
-          >
-            Panel Kelola Aturan AI →
-          </button>
+            {filterOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Top Global Simulation Disclaimer Bar */}
-      <aside aria-label="Pemberitahuan Sistem Simulasi" className="bg-[#193254] text-white px-4 lg:px-6 py-2 border-b border-[#233F66] flex flex-wrap items-center justify-between text-xs gap-2">
-        <div className="flex items-center space-x-2">
-          <span className="material-symbols-outlined text-sky-400 text-[18px]">verified_user</span>
-          <span className="font-medium text-sky-200">Pemberitahuan:</span>
-          <span className="text-slate-200">Meja kerja petugas simulasi. Akses terbatas pada pengajuan yang dibagikan secara eksplisit oleh pemohon. Bukan portal resmi pemerintah.</span>
-        </div>
-        <div className="flex items-center space-x-3 text-[11px] text-sky-300">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#1769D2] text-white font-medium">Mode Simulasi Aktif</span>
-          <span>Prototipe: 28 Oktober 2026</span>
-        </div>
-      </aside>
-
-      {/* Shell Container: Sidebar + Workbench Area */}
-      <div className="flex flex-1 min-h-screen">
-        {/* Officer Navigation Sidebar */}
-        <nav aria-label="Navigasi Petugas" className="hidden md:flex w-[240px] bg-[#142C4B] text-white flex-col justify-between shrink-0 z-20 shadow-sm border-r border-[#233F66]">
-          <div className="flex flex-col">
-            {/* Brand Header */}
-            <div className="h-20 flex items-center px-5 border-b border-[#233F66]">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-lg bg-[#1769D2] flex items-center justify-center text-white shadow-sm">
-                  <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
-                </div>
-                <div>
-                  <span className="font-display font-black text-base tracking-tight text-white block leading-tight">DaftarIn</span>
-                  <span className="text-[10px] text-sky-200 block uppercase font-semibold">JejakMasWowo · Portal Petugas</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Role Badge Under Header */}
-            <div className="px-5 py-4 border-b border-[#233F66] bg-[#193254]/40">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] uppercase font-bold text-[#A6BCD7] tracking-wider">Status Petugas</span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Simulasi</span>
-              </div>
-              <p className="font-bold text-sm text-white">Loket 3 · Verifikator</p>
-              <p className="text-xs text-[#A6BCD7]">Wilayah Kota Contoh</p>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="px-3 py-4 space-y-1">
-              <button
-                type="button"
-                onClick={() => { setActiveSidebarTab('antrean'); showToast('Membuka antrean tugas masuk.', 'info'); }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                  activeSidebarTab === 'antrean' ? 'bg-[#1769D2] text-white shadow-sm' : 'text-[#C3D4EA] hover:bg-[#1E3E66]'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <span className="material-symbols-outlined text-[20px]">task</span>
-                  <span>Penugasan Saya</span>
-                </div>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-white text-[#1769D2]">
-                  {QUEUE_ITEMS.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setActiveSidebarTab('riwayat'); showToast('Riwayat pembaruan: 14 pengajuan telah diproses hari ini.', 'info'); }}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeSidebarTab === 'riwayat' ? 'bg-[#1769D2] text-white' : 'text-[#C3D4EA] hover:bg-[#1E3E66]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">history</span>
-                <span>Riwayat Pembaruan</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setActiveSidebarTab('profil'); showToast('Profil Petugas: Budi Santoso (NIP: 198503142010011002).', 'info'); }}
-                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  activeSidebarTab === 'profil' ? 'bg-[#1769D2] text-white' : 'text-[#C3D4EA] hover:bg-[#1E3E66]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">badge</span>
-                <span>Profil Petugas</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Footer in Sidebar */}
-          <div className="p-4 border-t border-[#233F66] bg-[#0E1F35]">
-            <div className="mb-3 px-2 py-2 rounded-lg bg-white/5 text-[11px] text-[#A6BCD7]">
-              <div className="flex items-center space-x-1.5 text-amber-300 font-semibold mb-1">
-                <span className="material-symbols-outlined text-[15px]">lock</span>
-                <span>Kebijakan Privasi</span>
-              </div>
-              <span>Akses draf privat warga &amp; pencarian berkas tak terbatas dinonaktifkan demi integritas simulasi.</span>
-            </div>
-            <div className="flex items-center justify-between px-2 pt-1 text-xs">
-              <div>
-                <span className="text-[10px] uppercase text-[#A6BCD7] block font-semibold">Peran Operasional</span>
-                <span className="text-white font-medium">Verifikator Simulasi</span>
-              </div>
-              <button onClick={() => navigate('/masuk')} className="text-sky-300 hover:text-white transition-colors p-1" title="Keluar Sesi Petugas" type="button">
-                <span className="material-symbols-outlined text-[20px]">logout</span>
-              </button>
-            </div>
-          </div>
-        </nav>
-
-        {/* Main Content Canvas */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-[#F5F7FB]">
-          {/* Officer Topbar / Sub-Header */}
-          <header className="bg-white border-b border-[#DDE5EF] px-6 h-[72px] flex items-center justify-between sticky top-0 z-10 shadow-xs">
-            <div className="flex items-center space-x-3">
-              <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-xs text-[#52657A]">
-                <span>Penugasan Petugas</span>
-                <span className="material-symbols-outlined text-[14px] text-[#8DA0B6]">chevron_right</span>
-                <span>Pengajuan Masuk</span>
-                <span className="material-symbols-outlined text-[14px] text-[#8DA0B6]">chevron_right</span>
-                <span className="font-bold text-[#142C4B]">{currentItem.id}</span>
-              </nav>
-              <span className="h-4 w-px bg-[#CBD7E6]"></span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EBF1F8] text-[#1769D2] border border-[#CBD7E6]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1769D2] mr-1.5"></span>
-                Kota Contoh · Simulasi
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="text-right hidden sm:block">
-                <span className="text-[11px] text-[#52657A] block">Tanggal Prototipe Aktif</span>
-                <span className="font-bold text-[#142C4B] text-xs">28 Oktober 2026</span>
-              </div>
-              <div className="flex items-center space-x-2.5 pl-4 border-l border-[#DDE5EF]">
-                <div className="w-9 h-9 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                  BS
-                </div>
-                <div className="hidden lg:block text-left">
-                  <div className="text-xs font-bold text-[#142C4B] leading-tight">Budi Santoso</div>
-                  <div className="text-[10px] text-[#52657A]">NIP: 19850314...</div>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          {/* Workbench Body */}
-          <div className="p-4 sm:p-8 space-y-6">
-            {/* Top Workspace Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-[#142C4B] font-display">Pengajuan yang ditugaskan</h1>
-                <p className="text-xs text-[#52657A] mt-1">
-                  Verifikasi kelengkapan berkas fisik &amp; draf formulir pemohon sebelum proses penerbitan SIAK.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+      {filtered.length && selected ? (
+        <div className="officer-grid">
+          <section
+            className="queue-list"
+            aria-label="Daftar permintaan tinjauan"
+          >
+            <p className="queue-count">
+              {filtered.length} permintaan tinjauan ditugaskan
+            </p>
+            {filtered.map((item) => {
+              const statusText = getReviewStatusLabel(item);
+              const isAttention =
+                item.current_status === "DITERIMA" ||
+                (item.current_status === "PERLU_PERBAIKAN" &&
+                  Boolean(item.revision_pending));
+              const isReady =
+                item.current_status === "SELESAI" ||
+                item.current_status === "HASIL_DITERIMA_WARGA";
+              return (
                 <button
+                  key={item.id}
                   type="button"
-                  onClick={() => showToast('Daftar antrean berhasil disinkronkan dengan basis data.', 'success')}
-                  className="px-3.5 py-2 bg-white border border-[#CBD7E6] text-xs font-bold text-[#142C4B] rounded-lg hover:bg-slate-50 transition flex items-center gap-1.5 shadow-xs"
+                  className={
+                    "queue-item" + (item.id === selected.id ? " selected" : "")
+                  }
+                  onClick={() => setSelectedId(item.id)}
+                  aria-pressed={item.id === selected.id}
                 >
-                  <span className="material-symbols-outlined text-[16px] text-[#1769D2]">sync</span>
-                  <span>Segarkan Antrean ({filteredItems.length})</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter and Search Bar */}
-            <div className="bg-white border border-[#DDE5EF] rounded-xl p-4 shadow-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                <div className="sm:col-span-6 relative">
-                  <span className="material-symbols-outlined absolute left-3 top-2.5 text-[20px] text-[#8DA0B6]">search</span>
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] placeholder-[#8DA0B6] focus:outline-none focus:border-[#1769D2] focus:ring-1 focus:ring-[#1769D2] transition-all"
-                    placeholder="Cari nomor pengajuan (mis. DEMO-AK-014, Ayu Contoh)..."
-                    type="text"
-                  />
-                </div>
-                <div className="sm:col-span-3">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full py-2 px-3 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] focus:outline-none focus:border-[#1769D2]"
-                  >
-                    <option value="all">Semua Status</option>
-                    <option value="action_needed">Perlu Tindakan</option>
-                    <option value="pending">Menunggu Verifikasi</option>
-                  </select>
-                </div>
-                <div className="sm:col-span-3">
-                  <select
-                    value={serviceFilter}
-                    onChange={(e) => setServiceFilter(e.target.value)}
-                    className="w-full py-2 px-3 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] focus:outline-none focus:border-[#1769D2]"
-                  >
-                    <option value="all">Semua Layanan</option>
-                    <option value="akta">Akta Kelahiran (contoh)</option>
-                    <option value="kk">Kartu Keluarga (contoh)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Two-Column Split Workbench */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Column 1: Assigned Application List (4 cols) */}
-              <div className="lg:col-span-4 space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="font-bold text-sm text-[#142C4B]">Daftar Antrean Tugas</h2>
-                  <span className="text-[11px] text-[#52657A]">Menampilkan {filteredItems.length} Pengajuan</span>
-                </div>
-
-                {filteredItems.map((item) => {
-                  const isSelected = item.id === selectedQueueId;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => handleSelectQueueItem(item)}
-                      className={`rounded-xl p-4 shadow-xs relative transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-white border-2 border-[#1769D2] shadow-sm'
-                          : 'bg-white border border-[#DDE5EF] hover:border-[#94A3B8] hover:bg-slate-50'
-                      }`}
+                  <span className="queue-item-top">
+                    <strong>{item.applicant_name}</strong>
+                    <span
+                      className={
+                        isReady
+                          ? "status-ready"
+                          : isAttention
+                            ? "status-attention"
+                            : "status-neutral"
+                      }
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-sm text-[#142C4B]">{item.id}</span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.statusBadgeClass}`}>
-                          {item.statusBadge}
-                        </span>
-                      </div>
-                      <p className="text-xs font-semibold text-[#1769D2]">{item.service}</p>
-                      <div className="mt-2.5 pt-2 border-t border-[#E2E8F0] space-y-1 text-xs text-[#52657A]">
-                        <div className="flex justify-between">
-                          <span>Pemohon:</span>
-                          <span className="font-semibold text-[#142C4B]">{item.applicant}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Diserahkan:</span>
-                          <span className="font-medium text-[#142C4B]">{item.submittedAt}</span>
-                        </div>
-                      </div>
-                      <div className="mt-2.5 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-700 flex items-start gap-1.5">
-                        <span className="material-symbols-outlined text-[15px] text-[#1769D2] shrink-0 mt-0.5">info</span>
-                        <span className="line-clamp-2">{item.lastNote}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      {statusText}
+                    </span>
+                  </span>
+                  <span>{item.service_name}</span>
+                  <small>
+                    {item.internal_reference}
+                    {item.submitted_snapshot
+                      ? ` · Kiriman #${item.submitted_snapshot.submissionVersion}`
+                      : ""}
+                  </small>
+                </button>
+              );
+            })}
+          </section>
+          <OfficerDetail
+            key={`${selected.id}-v${selected.submitted_snapshot?.submissionVersion || 1}`}
+            record={selected}
+          />
+        </div>
+      ) : (
+        <div className="empty-state">
+          <h2>
+            {assignedSubmitted.length
+              ? "Permintaan tinjauan tidak ditemukan"
+              : "Belum ada permintaan tinjauan yang ditugaskan"}
+          </h2>
+          <p>
+            {assignedSubmitted.length
+              ? "Coba kata kunci pencarian atau filter status lain."
+              : "Permintaan yang dikirim warga melalui tombol 'Kirim untuk ditinjau petugas' akan muncul di antrean ini."}
+          </p>
+          {assignedSubmitted.length > 0 && (
+            <button
+              className="button-secondary"
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setFilter("");
+              }}
+            >
+              Reset filter
+            </button>
+          )}
+        </div>
+      )}
+    </WorkspaceLayout>
+  );
+}
 
-                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-[#1769D2]">info</span>
-                  <span>Klik pada salah satu pengajuan untuk memuat detail verifikasi.</span>
+function OfficerDetail({ record }: { record: ApplicationRecord }) {
+  const {
+    services,
+    officerStartReview,
+    officerRequestRevision,
+    officerCompleteReview,
+  } = useApp();
+
+  const snapshot = record.submitted_snapshot;
+  const currentSubmissionVersion = snapshot?.submissionVersion || 1;
+  const service =
+    services.find((s) => s.id === record.service_id) || services[0];
+  const slots = documentSlots(
+    service,
+    snapshot?.conditionKey || record.condition_key,
+  );
+
+  const attachments = snapshot?.attachments?.length
+    ? snapshot.attachments
+    : record.attachments || [];
+
+  const targetChoices = [
+    ...attachments.map((att) => att.name),
+    ...slots
+      .filter((s) => s.required && !attachments.some((a) => a.name === s.name))
+      .map((s) => s.name),
+    "Data formulir pemohon (Nama / NIK / Nomor KK / Alamat)",
+    "Keterangan kondisi permohonan",
+  ];
+
+  const defaultActionTab: "start" | "revision" | "complete" =
+    record.current_status === "DITERIMA" ||
+    (record.current_status === "PERLU_PERBAIKAN" && record.revision_pending)
+      ? "start"
+      : record.current_status === "VERIFIKASI"
+        ? "complete"
+        : "start";
+
+  const [actionTab, setActionTab] = useState<"start" | "revision" | "complete">(
+    defaultActionTab,
+  );
+  const [startNote, setStartNote] = useState("");
+  const [targetItem, setTargetItem] = useState(
+    record.latest_revision_detail?.targetItem || targetChoices[0] || "",
+  );
+  const [issueCategory, setIssueCategory] = useState<OfficerIssueCategory>(
+    record.latest_revision_detail?.issueCategory || "sulit_dibaca",
+  );
+  const [problemDescription, setProblemDescription] = useState("");
+  const [requiredAction, setRequiredAction] = useState("");
+  // Catatan penyelesaian TIDAK diisi default agar petugas menulis hasil pemeriksaan secara nyata
+  const [completeNote, setCompleteNote] = useState("");
+  const [error, setError] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(
+    null,
+  );
+
+  // State penilaian eksplisit per item untuk versi kiriman aktif (tanpa auto-select saat membuka pratinjau)
+  const [verdictsByItem, setVerdictsByItem] = useState<
+    Record<string, OfficerItemVerdict | "">
+  >(() => {
+    const existingEval =
+      record.latest_evaluation?.submissionVersion === currentSubmissionVersion
+        ? record.latest_evaluation
+        : undefined;
+    const initial: Record<string, OfficerItemVerdict | ""> = {
+      form_data: "",
+    };
+    if (existingEval) {
+      existingEval.itemAssessments.forEach((a) => {
+        initial[a.itemId] = a.verdict;
+      });
+    }
+    attachments.forEach((att, idx) => {
+      const key = att.id || `att-${idx}`;
+      if (!(key in initial)) {
+        initial[key] = "";
+      }
+    });
+    return initial;
+  });
+
+  useEffect(() => {
+    if (record.current_status === "VERIFIKASI" && actionTab === "start") {
+      setActionTab("complete");
+    }
+  }, [record.current_status, actionTab]);
+
+  // Status transisi yang diizinkan:
+  // Menunggu tinjauan (DITERIMA) / Perbaikan dikirim (PERLU_PERBAIKAN + revision_pending)
+  // -> Sedang ditinjau (VERIFIKASI)
+  // -> Perlu perbaikan (PERLU_PERBAIKAN) atau Tinjauan awal selesai (SELESAI)
+  const canStartReview =
+    record.current_status === "DITERIMA" ||
+    (record.current_status === "PERLU_PERBAIKAN" &&
+      Boolean(record.revision_pending));
+  const isCurrentlyReviewing = record.current_status === "VERIFIKASI";
+
+  const setItemVerdict = (itemId: string, verdict: OfficerItemVerdict | "") => {
+    setVerdictsByItem((prev) => ({
+      ...prev,
+      [itemId]: verdict,
+    }));
+    setError("");
+  };
+
+  const buildItemAssessments = (): OfficerItemAssessment[] => {
+    const list: OfficerItemAssessment[] = [];
+    const formVerdict = verdictsByItem["form_data"];
+    if (formVerdict) {
+      list.push({
+        itemId: "form_data",
+        itemName: "Data pemohon & isian formulir",
+        itemType: "form_data",
+        verdict: formVerdict,
+      });
+    }
+    attachments.forEach((att, idx) => {
+      const key = att.id || `att-${idx}`;
+      const v = verdictsByItem[key];
+      if (v) {
+        list.push({
+          itemId: key,
+          itemName: att.name,
+          itemType: "document",
+          verdict: v,
+          fileVersion: att.version || 1,
+          fileName: att.fileName,
+        });
+      }
+    });
+    return list;
+  };
+
+  const unavailableAttachments = attachments.filter(
+    (att) => !isDocumentContentAvailable(att),
+  );
+  const allAttachmentsAvailable = unavailableAttachments.length === 0;
+
+  const isFormAssessedSesuai = verdictsByItem["form_data"] === "sesuai";
+  const allDocsAssessedSesuai =
+    attachments.length > 0 &&
+    attachments.every((att, idx) => {
+      const key = att.id || `att-${idx}`;
+      return (
+        isDocumentContentAvailable(att) && verdictsByItem[key] === "sesuai"
+      );
+    });
+  const allItemsMarkedSesuai = isFormAssessedSesuai && allDocsAssessedSesuai;
+  const hasAnyNeedsRevisionOrUnavailable =
+    verdictsByItem["form_data"] === "perlu_perbaikan" ||
+    verdictsByItem["form_data"] === "belum_dapat_diperiksa" ||
+    attachments.some((att, idx) => {
+      const v = verdictsByItem[att.id || `att-${idx}`];
+      return v === "perlu_perbaikan" || v === "belum_dapat_diperiksa";
+    });
+
+  const canSubmitComplete =
+    isCurrentlyReviewing &&
+    allAttachmentsAvailable &&
+    allItemsMarkedSesuai &&
+    completeNote.trim().length >= 5;
+
+  const handleStart = (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      officerStartReview(record.id, startNote);
+      setStartNote("");
+      setActionTab("complete");
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Gagal memulai tinjauan.",
+      );
+    }
+  };
+
+  const handleRevision = (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      officerRequestRevision(
+        record.id,
+        {
+          targetItem,
+          issueCategory,
+          problemDescription,
+          requiredAction,
+        },
+        buildItemAssessments(),
+      );
+      setProblemDescription("");
+      setRequiredAction("");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Gagal mengirim permintaan perbaikan.",
+      );
+    }
+  };
+
+  const handleComplete = (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      officerCompleteReview(
+        record.id,
+        completeNote,
+        buildItemAssessments(),
+      );
+      setCompleteNote("");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Gagal menyelesaikan tinjauan awal.",
+      );
+    }
+  };
+
+  const subjectLabel =
+    (snapshot?.applicantTarget || record.applicant_target) ===
+    "anggota_keluarga"
+      ? "Anggota keluarga dalam satu KK"
+      : "Diri sendiri / Kepala keluarga";
+
+  const submissionHistory =
+    record.submission_history && record.submission_history.length > 0
+      ? record.submission_history
+      : snapshot
+        ? [snapshot]
+        : [];
+
+  const evaluationHistory = record.evaluation_history || [];
+
+  return (
+    <section
+      className="plain-panel officer-detail"
+      aria-labelledby="case-heading"
+    >
+      <div className="case-heading">
+        <div>
+          <p className="field-hint">
+            Kode Tinjauan DaftarIn:{" "}
+            <strong className="font-mono text-slate-800">
+              {record.internal_reference}
+            </strong>{" "}
+            · Draf warga:{" "}
+            <span className="font-mono">
+              {record.preparation_reference || "-"}
+            </span>
+          </p>
+          <h2 id="case-heading">{record.service_name}</h2>
+          <p className="text-xs text-slate-600 mt-1">
+            {record.agency || service.agency} · Wilayah{" "}
+            {record.region || service.region || "Kota Contoh"}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1.5">
+          <span
+            className={
+              record.current_status === "SELESAI" ||
+              record.current_status === "HASIL_DITERIMA_WARGA"
+                ? "status-ready"
+                : record.current_status === "PERLU_PERBAIKAN" ||
+                    record.current_status === "DITERIMA"
+                  ? "status-attention"
+                  : "status-neutral"
+            }
+          >
+            Status Tinjauan: {getReviewStatusLabel(record)}
+          </span>
+          {record.official_submission && (
+            <span className="text-[11px] text-slate-500">
+              Kanal resmi: {getOfficialSubmissionStatusLabel(record)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {record.revision_pending && (
+        <div className="mt-4 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 space-y-1">
+          <p className="font-bold">
+            Warga telah mengirim perbaikan berkas (Kiriman #
+            {currentSubmissionVersion})
+          </p>
+          {snapshot?.changesSummary && snapshot.changesSummary.length > 0 && (
+            <ul className="list-disc pl-4 space-y-0.5">
+              {snapshot.changesSummary.map((change, idx) => (
+                <li key={idx}>{change}</li>
+              ))}
+            </ul>
+          )}
+          {snapshot?.citizenNote && (
+            <p>
+              <strong>Catatan warga:</strong> {snapshot.citizenNote}
+            </p>
+          )}
+          <p className="pt-1 text-blue-900 font-medium">
+            Tekan &ldquo;Mulai tinjauan sekarang&rdquo; di bagian bawah untuk
+            mengubah status menjadi <strong>Sedang ditinjau</strong> dan menilai
+            Kiriman #{currentSubmissionVersion}.
+          </p>
+        </div>
+      )}
+
+      {/* 1. Data Pemohon & Formulir yang Dikirim Warga */}
+      <section className="case-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3>Data pemohon &amp; isian formulir yang dibagikan</h3>
+          <span className="text-xs text-slate-500">
+            Salinan kiriman #{currentSubmissionVersion} ·{" "}
+            {snapshot?.submittedAt ||
+              record.submission_date ||
+              record.created_at}
+          </span>
+        </div>
+        <dl className="record-details mt-3">
+          <div>
+            <dt>Subjek pengurusan</dt>
+            <dd>{subjectLabel}</dd>
+          </div>
+          <div>
+            <dt>Kondisi permohonan</dt>
+            <dd>
+              {snapshot?.conditionLabel ||
+                record.condition_label ||
+                "Sesuai permohonan"}
+            </dd>
+          </div>
+          <div>
+            <dt>Nama lengkap pemohon</dt>
+            <dd>{snapshot?.formData.nama_lengkap || record.applicant_name}</dd>
+          </div>
+          <div>
+            <dt>NIK pemohon (16 digit)</dt>
+            <dd className="font-mono">
+              {snapshot?.formData.nik || record.applicant_nik}
+            </dd>
+          </div>
+          <div>
+            <dt>Nomor Kartu Keluarga (16 digit)</dt>
+            <dd className="font-mono">
+              {snapshot?.formData.no_kk || "Belum tercantum"}
+            </dd>
+          </div>
+          <div>
+            <dt>Nomor WhatsApp / telepon</dt>
+            <dd>
+              {snapshot?.formData.telepon ||
+                record.applicant_phone ||
+                "Belum tercantum"}
+            </dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt>Alamat domisili</dt>
+            <dd>{snapshot?.formData.alamat || "Belum tercantum"}</dd>
+          </div>
+          <div className="sm:col-span-2">
+            <dt>Alasan / rincian permohonan</dt>
+            <dd>{snapshot?.formData.alasan || "Belum tercantum"}</dd>
+          </div>
+        </dl>
+      </section>
+
+      {/* 2. Daftar Persyaratan Layanan & Berkas yang Dikirim Warga (dengan Pratinjau & Ketersediaan) */}
+      <section className="case-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3>
+            Berkas persyaratan pada Kiriman #{currentSubmissionVersion} (
+            {attachments.length})
+          </h3>
+          <span className="text-xs text-slate-500">
+            Membuka pratinjau tidak otomatis menandai berkas sebagai Sesuai
+          </span>
+        </div>
+
+        {/* Acuan persyaratan kondisi */}
+        <div className="mt-2 mb-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+          <strong>Persyaratan wajib kondisi ini:</strong>{" "}
+          {slots
+            .filter((s) => s.required)
+            .map((s) => s.name)
+            .join(" · ")}
+        </div>
+
+        {attachments.length ? (
+          <ul className="attachment-list">
+            {attachments.map((document, index) => {
+              const isSampleIssue = document.qualityPreset === "sample_issue";
+              const isSampleClean = document.qualityPreset === "sample_clean";
+              const available = isDocumentContentAvailable(document);
+              return (
+                <li
+                  key={index}
+                  className="flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <span
+                      className="material-symbols-outlined mt-0.5 text-slate-500"
+                      aria-hidden="true"
+                    >
+                      description
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong>
+                          {document.name} (Versi {document.version || 1})
+                        </strong>
+                        <span
+                          className={
+                            isSampleIssue
+                              ? "status-attention"
+                              : "status-neutral"
+                          }
+                        >
+                          {isSampleIssue
+                            ? "CONTOH / SIMULASI · Terpotong"
+                            : isSampleClean
+                              ? "CONTOH / SIMULASI · Utuh"
+                              : "Berkas unggahan warga"}
+                        </span>
+                        {!available && (
+                          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800 border border-red-200">
+                            Berkas tidak tersedia
+                          </span>
+                        )}
+                      </div>
+                      <small className="block mt-0.5">
+                        {document.fileName} · {document.size}
+                        {document.uploadedAt
+                          ? ` · Diunggah ${document.uploadedAt}`
+                          : ""}
+                      </small>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="button-secondary !py-1.5 !px-3 !text-xs shrink-0"
+                    onClick={() =>
+                      setPreviewDoc({
+                        id: document.id || `att-${index}`,
+                        name: document.name,
+                        fileName: document.fileName,
+                        size: document.size,
+                        fileType: document.fileType,
+                        version: document.version || 1,
+                        uploadedAt: document.uploadedAt,
+                        qualityPreset: document.qualityPreset,
+                        previewKey: document.previewKey,
+                        fixtureId: document.fixtureId,
+                      })
+                    }
+                  >
+                    Buka pratinjau berkas
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="field-hint">
+            Belum ada lampiran berkas pada permintaan tinjauan ini.
+          </p>
+        )}
+      </section>
+
+      {/* 3. Riwayat Versi Kiriman & Pratinjau Tiap Versi */}
+      {submissionHistory.length > 1 && (
+        <section className="case-section">
+          <h3>
+            Riwayat versi kiriman warga ({submissionHistory.length} versi)
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Setiap kiriman menyimpan snapshot versi berkas masing-masing. Anda
+            tetap dapat membuka pratinjau berkas v1 maupun v2 secara terpisah.
+          </p>
+          <div className="space-y-2.5 mt-2.5">
+            {submissionHistory.map((ver) => (
+              <div
+                key={ver.submissionVersion}
+                className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-slate-800">
+                    Kiriman #{ver.submissionVersion}
+                  </strong>
+                  <span className="text-slate-500">{ver.submittedAt}</span>
+                </div>
+                {ver.citizenNote && (
+                  <p className="text-slate-700">
+                    <strong>Catatan warga:</strong> {ver.citizenNote}
+                  </p>
+                )}
+                {ver.changesSummary && ver.changesSummary.length > 0 && (
+                  <p className="text-slate-600">
+                    <strong>Perubahan:</strong> {ver.changesSummary.join("; ")}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-slate-500 font-medium">
+                    Lampiran Kiriman #{ver.submissionVersion}:
+                  </span>
+                  {ver.attachments.map((att, idx) => (
+                    <button
+                      key={`${ver.submissionVersion}-${att.id || idx}`}
+                      type="button"
+                      className="btn-secondary !py-1 !px-2.5 !text-[11px]"
+                      onClick={() =>
+                        setPreviewDoc({
+                          id: att.id || `att-${idx}`,
+                          name: `${att.name} (Kiriman #${ver.submissionVersion})`,
+                          fileName: att.fileName,
+                          size: att.size,
+                          fileType: att.fileType,
+                          version: att.version || 1,
+                          uploadedAt: att.uploadedAt,
+                          qualityPreset: att.qualityPreset,
+                          previewKey: att.previewKey,
+                          fixtureId: att.fixtureId,
+                        })
+                      }
+                    >
+                      Pratinjau {att.fileName} (v{att.version || 1})
+                    </button>
+                  ))}
                 </div>
               </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-              {/* Column 2: Selected Application Details & Action Form (8 cols) */}
-              <div className="lg:col-span-8 space-y-6">
-                {/* Application Identification Header Card */}
-                <div className="bg-white border border-[#DDE5EF] rounded-xl p-6 shadow-xs space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#DDE5EF]">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-[#142C4B] text-white">
-                        Nomor Pengajuan: {currentItem.id}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs bg-[#EBF1F8] text-[#142C4B] font-semibold border border-[#CBD7E6]">
-                        {currentItem.service}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
-                        {currentItem.refId}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-[#52657A] font-mono">Diserahkan: {currentItem.submittedAt}</span>
-                  </div>
-
-                  {/* Synthetic Application Meta */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                    <div>
-                      <span className="text-[#52657A] block font-medium">Pemohon Terdaftar</span>
-                      <span className="font-bold text-[#142C4B] text-sm">{currentItem.applicant}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#52657A] block font-medium">Kanal Pengajuan</span>
-                      <span className="font-semibold text-[#142C4B]">{currentItem.channel}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#52657A] block font-medium">Kontak Notifikasi</span>
-                      <span className="font-semibold text-[#142C4B]">{currentItem.email}</span>
-                    </div>
-                  </div>
+      {/* Riwayat Keputusan & Penilaian Petugas */}
+      {evaluationHistory.length > 0 && (
+        <section className="case-section">
+          <h3>
+            Riwayat keputusan &amp; penilaian petugas (
+            {evaluationHistory.length})
+          </h3>
+          <div className="space-y-2.5 mt-2">
+            {evaluationHistory.map((ev, idx) => (
+              <div
+                key={`${ev.submissionVersion}-${idx}`}
+                className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-slate-800">
+                    Penilaian Kiriman #{ev.submissionVersion} ·{" "}
+                    {ev.decision === "SELESAI"
+                      ? "Tinjauan awal selesai"
+                      : "Perlu perbaikan"}
+                  </strong>
+                  <span className="text-slate-500">
+                    {ev.evaluatedBy} · {ev.evaluatedAt}
+                  </span>
                 </div>
-
-                {/* Berkas Lampiran yang Diserahkan */}
-                <div className="bg-white border border-[#DDE5EF] rounded-xl p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-bold text-[#142C4B] flex items-center gap-2 font-display">
-                      <span className="material-symbols-outlined text-[#1769D2] text-[22px]">attach_file</span>
-                      <span>Berkas Lampiran yang Diserahkan (Simulasi)</span>
-                    </h2>
-                    <span className="text-xs text-[#52657A] font-mono">{currentItem.attachments.length} Dokumen Divalidasi</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {currentItem.attachments.map((att, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-4 border rounded-xl flex items-start justify-between transition ${
-                          att.isWarning ? 'border-amber-300 bg-amber-50/40' : 'border-[#DDE5EF] bg-white'
-                        }`}
+                <p className="text-slate-700">{ev.summaryNote}</p>
+                {ev.itemAssessments.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {ev.itemAssessments.map((item) => (
+                      <span
+                        key={item.itemId}
+                        className="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-[11px] text-slate-700"
                       >
-                        <div className="flex items-start space-x-3">
-                          <span className={`material-symbols-outlined text-[24px] ${att.isWarning ? 'text-amber-700' : 'text-[#1769D2]'}`}>
-                            {att.icon}
-                          </span>
-                          <div>
-                            <p className="text-xs font-bold text-[#142C4B]">{att.name}</p>
-                            <p className="text-[11px] text-[#52657A]">{att.format}</p>
-                            <span
-                              className={`inline-flex items-center mt-2 px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                att.isWarning ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[13px] mr-1">
-                                {att.isWarning ? 'warning' : 'check_circle'}
-                              </span>
-                              <span>{att.status}</span>
-                            </span>
-                          </div>
-                        </div>
-                        <button
-                          className="px-2.5 py-1 rounded bg-[#EBF1F8] hover:bg-[#D5E6FF] text-[#1769D2] font-bold text-xs transition"
-                          type="button"
-                          onClick={() => setPreviewDoc(att)}
-                        >
-                          Periksa
-                        </button>
-                      </div>
+                        {item.itemName}
+                        {item.fileVersion ? ` (v${item.fileVersion})` : ""}:{" "}
+                        <strong>
+                          {OFFICER_ITEM_VERDICT_LABELS[item.verdict]}
+                        </strong>
+                      </span>
                     ))}
                   </div>
-                </div>
-
-                {/* Form Putusan & Pembaruan Status Petugas */}
-                <div className="bg-white border border-[#DDE5EF] rounded-xl p-6 shadow-xs space-y-5">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#DDE5EF]">
-                    <div>
-                      <h2 className="text-base font-bold text-[#142C4B] font-display">Tindak Lanjut &amp; Catatan Petugas Verifikator</h2>
-                      <p className="text-xs text-[#52657A] mt-0.5">Catatan ini akan otomatis diselaraskan ke linimasa pelacakan warga pemohon.</p>
-                    </div>
-                    <span className="text-xs font-mono font-bold text-[#1769D2] bg-[#EBF1F8] px-2.5 py-1 rounded-full">
-                      LOKET MEJA 03
-                    </span>
-                  </div>
-
-                  {/* Preset Cepat */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold text-[#52657A]">Preset Cepat:</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOfficerNotes('Cap fasilitas kesehatan pada lampiran surat kelahiran buram dan tepi dokumen terpotong saat pemindaian. Mohon lampirkan ulang pindai yang jelas.');
-                        setOfficerAction('Unggah ulang halaman kedua Surat Keterangan Lahir agar seluruh tulisan dan stempel terbaca utuh.');
-                        setSelectedStatus('PERLU_PERBAIKAN');
-                        showToast('Preset Cap Buram diterapkan!', 'info');
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition"
-                    >
-                      + Preset Cap Buram
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOfficerNotes('Ejaan nama pemohon di draf tidak sesuai persis dengan akta perkawinan. Mohon sesuaikan ejaan huruf.');
-                        setOfficerAction('Perbaiki ejaan nama di Tahap 2 Formulir Data Pemohon.');
-                        setSelectedStatus('PERLU_PERBAIKAN');
-                        showToast('Preset Selisih Huruf diterapkan!', 'info');
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition"
-                    >
-                      + Preset Selisih Huruf
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOfficerNotes('Seluruh persyaratan fisik dan identitas SIAK telah sesuai standar. Berkas disahkan untuk penerbitan.');
-                        setOfficerAction('Menunggu proses antrean TTE kepala dinas kependudukan.');
-                        setSelectedStatus('SELESAI');
-                        showToast('Preset Lengkap & Sah diterapkan!', 'success');
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-bold transition"
-                    >
-                      + Preset Lengkap &amp; Sah
-                    </button>
-                  </div>
-
-                  {/* Status Selection */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#142C4B]">Status Putusan Verifikator</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {(['DITERIMA', 'VERIFIKASI', 'PERLU_PERBAIKAN', 'DIPROSES', 'SELESAI'] as const).map((st) => (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setSelectedStatus(st)}
-                          className={`py-2 px-3 rounded-lg text-xs font-bold border transition text-center ${
-                            selectedStatus === st
-                              ? 'bg-[#1769D2] text-white border-[#1769D2] shadow-xs'
-                              : 'bg-white text-[#52657A] border-[#CBD7E6] hover:bg-slate-50'
-                          }`}
-                        >
-                          {st.replace('_', ' ')}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Officer Notes Textarea */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#142C4B]">Catatan Resmi untuk Linimasa Warga</label>
-                    <textarea
-                      rows={3}
-                      value={officerNotes}
-                      onChange={(e) => setOfficerNotes(e.target.value)}
-                      className="w-full p-3 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] focus:outline-none focus:border-[#1769D2] leading-relaxed"
-                    />
-                  </div>
-
-                  {/* Officer Action */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#142C4B]">Langkah Tindak Lanjut yang Harus Dilakukan Pemohon</label>
-                    <input
-                      type="text"
-                      value={officerAction}
-                      onChange={(e) => setOfficerAction(e.target.value)}
-                      className="w-full h-10 px-3 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] focus:outline-none focus:border-[#1769D2]"
-                    />
-                  </div>
-
-                  {/* Additional Optional Note */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#52657A]">Petunjuk Tambahan Internal Loket (Opsional)</label>
-                    <input
-                      type="text"
-                      value={additionalNote}
-                      onChange={(e) => setAdditionalNote(e.target.value)}
-                      placeholder="Mis. Berkas fisik telah diarsipkan di rak antrean B3"
-                      className="w-full h-10 px-3 text-xs rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] focus:outline-none focus:border-[#1769D2]"
-                    />
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="pt-3 border-t border-[#DDE5EF] flex items-center justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowReviewModal(true)}
-                      className="h-10 px-4 rounded-lg border border-[#CBD7E6] bg-white text-[#142C4B] text-xs font-bold hover:bg-slate-50 transition"
-                    >
-                      Tinjau Perubahan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleUpdate}
-                      className="h-10 px-6 rounded-lg bg-[#1769D2] hover:bg-[#1257B0] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">send</span>
-                      <span>Simpan Pembaruan</span>
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
-            </div>
+            ))}
           </div>
-
-          {/* Footer */}
-          <footer className="mt-auto bg-[#142C4B] text-white border-t border-[#233F66] py-6 px-6 lg:px-12 text-xs">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-2 text-slate-300">
-                <span className="font-bold text-white">JejakMasWowo</span>
-                <span>|</span>
-                <span>© 2026 Portal Transparansi Publik Adminduk. Prototipe Rekayasa Perangkat Lunak.</span>
-              </div>
-              <div className="flex items-center gap-4 text-slate-300">
-                <button type="button" onClick={() => showToast('Kebijakan Privasi: Draf berkas dienkripsi dan tidak diserahkan ke pihak ketiga.', 'info')} className="hover:text-white transition">Kebijakan Privasi</button>
-                <button type="button" onClick={() => showToast('Ketentuan Layanan: Prototipe pendamping pra-loket resmi.', 'info')} className="hover:text-white transition">Ketentuan Layanan</button>
-                <button type="button" onClick={() => showToast('Keterbukaan Informasi: Sesuai UU No. 24/2013.', 'info')} className="hover:text-white transition">Keterbukaan Informasi</button>
-              </div>
-            </div>
-          </footer>
-        </main>
-      </div>
-
-      {/* Modal Preview Dokumen */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#DDE5EF]">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#1769D2] text-[22px]">description</span>
-                <h3 className="font-bold text-[#142C4B] text-sm">{previewDoc.name}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewDoc(null)}
-                className="p-1 text-[#52657A] hover:text-[#142C4B] rounded-lg hover:bg-slate-100"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs text-slate-700">
-              <div className="flex justify-between">
-                <span className="text-[#52657A]">Format Dokumen:</span>
-                <span className="font-bold text-[#142C4B]">{previewDoc.format}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#52657A]">Status Forensik OCR:</span>
-                <span className={`font-bold ${previewDoc.isWarning ? 'text-amber-700' : 'text-emerald-700'}`}>
-                  {previewDoc.status}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#52657A]">Integritas Stempel Faskes:</span>
-                <span className="font-bold text-[#142C4B]">{previewDoc.isWarning ? 'Perlu konfirmasi ulang' : 'Lengkap & Tajam'}</span>
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed">
-              <strong>Simulasi Verifikasi Petugas:</strong> Sistem OCR mendeteksi kontur teks terbaca dengan skor kepercayaan 88%. Dokumen memenuhi syarat pra-loket untuk dilanjutkan ke verifikasi SIAK.
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setPreviewDoc(null)}
-                className="px-4 py-2 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-lg text-xs font-bold transition"
-              >
-                Tutup Pratinjau
-              </button>
-            </div>
-          </div>
-        </div>
+        </section>
       )}
 
-      {/* Modal Tinjau Perubahan */}
-      {showReviewModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#DDE5EF]">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-amber-600 text-[22px]">checklist</span>
-                <h3 className="font-bold text-[#142C4B] text-sm">Konfirmasi Perubahan Status</h3>
-              </div>
+      {/* 4. Tindakan Tinjauan Petugas & Penilaian Eksplisit */}
+      <section className="case-section">
+        <h3>Tindakan tinjauan petugas (Kiriman #{currentSubmissionVersion})</h3>
+
+        {record.current_status === "SELESAI" ||
+        record.current_status === "HASIL_DITERIMA_WARGA" ? (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-1">
+            <p>
+              <strong>
+                Tinjauan awal pendamping telah selesai (Kiriman #
+                {record.latest_evaluation?.submissionVersion ||
+                  currentSubmissionVersion}
+                ).
+              </strong>{" "}
+              Warga telah diberikan arahan untuk melanjutkan pengajuan melalui
+              kanal resmi instansi.
+            </p>
+            <p className="text-emerald-800">
+              Catatan: Penyelesaian tinjauan awal ini tidak menyatakan instansi
+              pemerintah telah menerima pengajuan resmi.
+            </p>
+          </div>
+        ) : record.current_status === "PERLU_PERBAIKAN" &&
+          !record.revision_pending ? (
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
+            <strong>Menunggu perbaikan dari warga.</strong> Permintaan perbaikan
+            untuk Kiriman #{currentSubmissionVersion} telah dikirim. Setelah
+            warga mengirim berkas perbaikan, status akan berubah menjadi{" "}
+            <strong>Perbaikan dikirim</strong> dan dapat ditinjau ulang.
+          </div>
+        ) : (
+          <>
+            <div
+              className="flex flex-wrap gap-2 mt-2 mb-4"
+              role="tablist"
+              aria-label="Pilih tahap tindakan petugas"
+            >
               <button
                 type="button"
-                onClick={() => setShowReviewModal(false)}
-                className="p-1 text-[#52657A] hover:text-[#142C4B] rounded-lg hover:bg-slate-100"
+                role="tab"
+                aria-selected={actionTab === "start"}
+                className={
+                  actionTab === "start"
+                    ? "button-primary !py-1.5 !px-3 !text-xs"
+                    : "button-secondary !py-1.5 !px-3 !text-xs"
+                }
+                onClick={() => {
+                  setActionTab("start");
+                  setError("");
+                }}
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                1. Mulai tinjauan
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={actionTab === "revision"}
+                className={
+                  actionTab === "revision"
+                    ? "button-primary !py-1.5 !px-3 !text-xs"
+                    : "button-secondary !py-1.5 !px-3 !text-xs"
+                }
+                onClick={() => {
+                  setActionTab("revision");
+                  setError("");
+                }}
+              >
+                2. Minta perbaikan
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={actionTab === "complete"}
+                className={
+                  actionTab === "complete"
+                    ? "button-primary !py-1.5 !px-3 !text-xs"
+                    : "button-secondary !py-1.5 !px-3 !text-xs"
+                }
+                onClick={() => {
+                  setActionTab("complete");
+                  setError("");
+                }}
+              >
+                3. Selesaikan tinjauan awal
               </button>
             </div>
 
-            <div className="space-y-2 text-xs text-slate-700">
-              <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                <div><strong>Nomor Pengajuan:</strong> {currentItem.id}</div>
-                <div><strong>Status Baru:</strong> <span className="font-bold text-[#1769D2]">{selectedStatus}</span></div>
-                <div className="mt-1 text-[11px] text-[#52657A]"><strong>Catatan Warga:</strong> {officerNotes}</div>
-                <div className="text-[11px] text-[#52657A]"><strong>Tindak Lanjut:</strong> {officerAction}</div>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Pembaruan ini akan langsung disiarkan ke akun warga Ayu Contoh di kanal pelacakan linimasa.
+            {error && (
+              <p role="alert" className="form-error mb-3">
+                {error}
               </p>
-            </div>
+            )}
 
-            <div className="pt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowReviewModal(false)}
-                className="px-4 py-2 rounded-lg border border-[#CBD7E6] text-xs font-bold text-[#142C4B] hover:bg-slate-50"
+            {/* Jika belum masuk status VERIFIKASI ("Sedang ditinjau"), wajibkan Mulai Tinjauan terlebih dahulu */}
+            {!isCurrentlyReviewing && actionTab !== "start" && (
+              <div
+                role="alert"
+                className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-3"
               >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleUpdate}
-                className="px-5 py-2 bg-[#1769D2] hover:bg-[#1257B0] text-white rounded-lg text-xs font-bold transition shadow-sm"
-              >
-                Konfirmasi &amp; Simpan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                <div>
+                  <p className="font-semibold">
+                    Permintaan masih berstatus &ldquo;
+                    {getReviewStatusLabel(record)}&rdquo;
+                  </p>
+                  <p className="mt-0.5 text-amber-900">
+                    Sesuai alur pelayanan, petugas harus memulai tinjauan (masuk
+                    ke status <strong>Sedang ditinjau</strong>) sebelum mengirim
+                    permintaan perbaikan atau menyelesaikan tinjauan awal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+                  onClick={() => {
+                    officerStartReview(record.id);
+                  }}
+                >
+                  Mulai tinjauan sekarang →
+                </button>
+              </div>
+            )}
+
+            {/* Daftar Penilaian Eksplisit Per Item (aktif saat Sedang ditinjau) */}
+            {isCurrentlyReviewing && (actionTab === "complete" || actionTab === "revision") && (
+              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Penilaian Eksplisit Pemeriksaan Kiriman #
+                    {currentSubmissionVersion}
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Pilih hasil pemeriksaan untuk data pemohon dan setiap berkas
+                    persyaratan. Penyelesaian tinjauan awal hanya dapat dilakukan
+                    jika seluruh item tersedia dan dinilai{" "}
+                    <strong>Sesuai</strong>.
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  {/* Baris 1: Data pemohon */}
+                  <div className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-800">
+                        1. Data pemohon &amp; isian formulir permohonan
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {snapshot?.formData.nama_lengkap ||
+                          record.applicant_name}{" "}
+                        · NIK {snapshot?.formData.nik || record.applicant_nik} ·
+                        KK {snapshot?.formData.no_kk || "-"}
+                      </p>
+                    </div>
+                    <select
+                      aria-label="Penilaian Data pemohon dan isian formulir"
+                      value={verdictsByItem["form_data"] || ""}
+                      onChange={(e) =>
+                        setItemVerdict(
+                          "form_data",
+                          e.target.value as OfficerItemVerdict | "",
+                        )
+                      }
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
+                    >
+                      <option value="">— Pilih penilaian —</option>
+                      <option value="sesuai">Sesuai</option>
+                      <option value="perlu_perbaikan">Perlu perbaikan</option>
+                      <option value="belum_dapat_diperiksa">
+                        Belum dapat diperiksa
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Baris 2..N: Setiap berkas persyaratan */}
+                  {attachments.map((att, idx) => {
+                    const key = att.id || `att-${idx}`;
+                    const available = isDocumentContentAvailable(att);
+                    const currentVerdict = verdictsByItem[key] || "";
+                    return (
+                      <div
+                        key={key}
+                        className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-xs font-semibold text-slate-800">
+                              {idx + 2}. {att.name} (v{att.version || 1})
+                            </p>
+                            {!available && (
+                              <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-800">
+                                Berkas tidak tersedia
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {att.fileName} · {att.size}
+                            {!available
+                              ? " — Isi berkas tidak ditemukan di penyimpanan sehingga tidak dapat ditandai Sesuai."
+                              : ""}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            className="btn-secondary !py-1 !px-2.5 !text-xs"
+                            onClick={() =>
+                              setPreviewDoc({
+                                id: key,
+                                name: att.name,
+                                fileName: att.fileName,
+                                size: att.size,
+                                fileType: att.fileType,
+                                version: att.version || 1,
+                                uploadedAt: att.uploadedAt,
+                                qualityPreset: att.qualityPreset,
+                                previewKey: att.previewKey,
+                                fixtureId: att.fixtureId,
+                              })
+                            }
+                          >
+                            Pratinjau
+                          </button>
+                          <select
+                            aria-label={`Penilaian ${att.name}`}
+                            value={currentVerdict}
+                            onChange={(e) => {
+                              const nextVal = e.target
+                                .value as OfficerItemVerdict | "";
+                              setItemVerdict(key, nextVal);
+                              if (
+                                nextVal === "perlu_perbaikan" ||
+                                nextVal === "belum_dapat_diperiksa"
+                              ) {
+                                setTargetItem(att.name);
+                              }
+                            }}
+                            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
+                          >
+                            <option value="">— Pilih penilaian —</option>
+                            <option value="sesuai" disabled={!available}>
+                              {available
+                                ? "Sesuai"
+                                : "Sesuai (Tidak tersedia — berkas hilang)"}
+                            </option>
+                            <option value="perlu_perbaikan">
+                              Perlu perbaikan
+                            </option>
+                            <option value="belum_dapat_diperiksa">
+                              Belum dapat diperiksa
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {actionTab === "start" && (
+              <form className="auth-form" onSubmit={handleStart} noValidate>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Ubah status permintaan dari{" "}
+                  <strong>{getReviewStatusLabel(record)}</strong> menjadi{" "}
+                  <strong>Sedang ditinjau</strong> agar warga mengetahui berkas
+                  mereka sedang diperiksa petugas.
+                </p>
+                <div className="form-field">
+                  <label htmlFor="officer-start-note">
+                    Catatan mulai tinjauan (opsional)
+                  </label>
+                  <textarea
+                    id="officer-start-note"
+                    rows={2}
+                    maxLength={500}
+                    value={startNote}
+                    onChange={(e) => setStartNote(e.target.value)}
+                    placeholder="Contoh: Petugas mulai memeriksa kelengkapan berkas dan kesesuaian data formulir."
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="button-primary disabled:opacity-50"
+                    disabled={!canStartReview}
+                  >
+                    {canStartReview
+                      ? "Mulai tinjauan sekarang"
+                      : "Permintaan sudah dalam tahap Sedang ditinjau"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {actionTab === "revision" && (
+              <form className="auth-form" onSubmit={handleRevision} noValidate>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Kembalikan permintaan dengan catatan terstruktur agar warga
+                  tahu persis berkas atau isian mana yang harus diperbaiki pada
+                  permintaan <strong>{record.internal_reference}</strong>.
+                </p>
+                <div className="form-field">
+                  <label htmlFor="revision-target-item">
+                    Dokumen atau bagian data yang bermasalah
+                  </label>
+                  <select
+                    id="revision-target-item"
+                    value={targetItem}
+                    onChange={(e) => setTargetItem(e.target.value)}
+                  >
+                    {targetChoices.map((choice) => (
+                      <option key={choice} value={choice}>
+                        {choice}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="revision-issue-category">
+                    Kategori masalah
+                  </label>
+                  <select
+                    id="revision-issue-category"
+                    value={issueCategory}
+                    onChange={(e) =>
+                      setIssueCategory(e.target.value as OfficerIssueCategory)
+                    }
+                  >
+                    {(
+                      Object.entries(OFFICER_ISSUE_CATEGORY_LABELS) as Array<
+                        [OfficerIssueCategory, string]
+                      >
+                    ).map(([code, label]) => (
+                      <option key={code} value={code}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="revision-problem-desc">
+                    Penjelasan masalah yang ditemukan petugas
+                  </label>
+                  <textarea
+                    id="revision-problem-desc"
+                    rows={3}
+                    maxLength={1000}
+                    value={problemDescription}
+                    onChange={(e) => setProblemDescription(e.target.value)}
+                    placeholder="Contoh: Bagian bawah dokumen KK lama terpotong sehingga tanda tangan kepala keluarga dan QR pengesahan tidak terlihat."
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="revision-required-action">
+                    Tindakan perbaikan yang harus dilakukan warga
+                  </label>
+                  <textarea
+                    id="revision-required-action"
+                    rows={2}
+                    maxLength={1000}
+                    value={requiredAction}
+                    onChange={(e) => setRequiredAction(e.target.value)}
+                    placeholder="Contoh: Foto atau pindai ulang Kartu Keluarga secara utuh (keempat sudut terlihat jelas), unggah berkas baru di tahap Dokumen, lalu kirim perbaikan."
+                  />
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    className="button-primary disabled:opacity-50"
+                    disabled={!isCurrentlyReviewing}
+                  >
+                    Kirim permintaan perbaikan ke warga
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {actionTab === "complete" && (
+              <form className="auth-form" onSubmit={handleComplete} noValidate>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Tandai <strong>Tinjauan awal selesai</strong> hanya apabila
+                  seluruh data pemohon dan berkas wajib pada Kiriman #
+                  {currentSubmissionVersion} tersedia serta telah Anda nilai{" "}
+                  <strong>Sesuai</strong>.
+                </p>
+
+                {!allAttachmentsAvailable && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-900"
+                  >
+                    <strong>
+                      Tidak dapat menyelesaikan tinjauan karena ada berkas yang
+                      tidak tersedia:
+                    </strong>{" "}
+                    {unavailableAttachments.map((a) => a.name).join(", ")}.
+                    Tandai berkas tersebut sebagai{" "}
+                    <em>Belum dapat diperiksa</em> dan gunakan tab{" "}
+                    <strong>2. Minta perbaikan</strong> agar warga mengunggah
+                    ulang berkasnya.
+                  </div>
+                )}
+
+                {allAttachmentsAvailable && !allItemsMarkedSesuai && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-950">
+                    {hasAnyNeedsRevisionOrUnavailable ? (
+                      <span>
+                        Ada item yang dinilai{" "}
+                        <strong>Perlu perbaikan</strong> atau{" "}
+                        <strong>Belum dapat diperiksa</strong>. Gunakan tab{" "}
+                        <button
+                          type="button"
+                          className="underline font-semibold"
+                          onClick={() => setActionTab("revision")}
+                        >
+                          2. Minta perbaikan
+                        </button>{" "}
+                        untuk mengembalikan berkas ke warga, atau ubah penilaian
+                        seluruh item menjadi <strong>Sesuai</strong> jika sudah
+                        memenuhi syarat.
+                      </span>
+                    ) : (
+                      <span>
+                        Lengkapi penilaian eksplisit pada daftar di atas:
+                        pastikan <strong>Data pemohon</strong> dan seluruh{" "}
+                        <strong>{attachments.length} berkas persyaratan</strong>{" "}
+                        telah dinilai <strong>Sesuai</strong>.
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="form-field">
+                  <label htmlFor="officer-complete-note">
+                    Catatan hasil tinjauan awal untuk warga (wajib ditulis
+                    petugas, min. 5 karakter)
+                  </label>
+                  <textarea
+                    id="officer-complete-note"
+                    rows={3}
+                    maxLength={1000}
+                    value={completeNote}
+                    onChange={(e) => setCompleteNote(e.target.value)}
+                    placeholder="Tuliskan ringkasan hasil pemeriksaan Anda terhadap data formulir dan dokumen persyaratan serta arahan pengajuan ke kanal resmi..."
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="button-primary disabled:opacity-50"
+                    disabled={!canSubmitComplete}
+                  >
+                    Selesaikan tinjauan awal
+                  </button>
+                </div>
+              </form>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* 5. Linimasa Tinjauan */}
+      <section className="case-section">
+        <h3>Linimasa tinjauan</h3>
+        <ol className="case-history">
+          {record.events
+            .filter((event) => event.completed)
+            .map((event) => (
+              <li key={event.id}>
+                <strong>{event.title}</strong>
+                <p>{event.notes}</p>
+                {event.next_action && (
+                  <p className="text-xs text-slate-600 mt-1">
+                    <strong>Tindak lanjut:</strong> {event.next_action}
+                  </p>
+                )}
+                <small>
+                  {event.source} · {event.time}
+                </small>
+              </li>
+            ))}
+        </ol>
+      </section>
+
+      <DocumentPreviewModal
+        doc={previewDoc}
+        applicantName={snapshot?.formData.nama_lengkap || record.applicant_name}
+        applicantNik={snapshot?.formData.nik || record.applicant_nik}
+        applicantNoKk={snapshot?.formData.no_kk}
+        applicantAddress={snapshot?.formData.alamat}
+        onClose={() => setPreviewDoc(null)}
+        onOfficerMarkUnavailable={
+          previewDoc && isCurrentlyReviewing
+            ? () => {
+                if (previewDoc.id) {
+                  setItemVerdict(previewDoc.id, "belum_dapat_diperiksa");
+                }
+                setTargetItem(previewDoc.name);
+                setIssueCategory("sulit_dibaca");
+                setProblemDescription(
+                  `Berkas "${previewDoc.fileName}" tidak tersedia / tidak dapat dibuka pada pratinjau petugas.`,
+                );
+                setRequiredAction(
+                  `Unggah ulang berkas ${previewDoc.name} dalam format PDF/JPG/PNG yang utuh pada tahap Dokumen, lalu kirim perbaikan.`,
+                );
+                setActionTab("revision");
+                setPreviewDoc(null);
+              }
+            : undefined
+        }
+      />
+    </section>
   );
-};
+}

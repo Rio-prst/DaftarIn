@@ -1,0 +1,119 @@
+CATATAN UJI ULANG - 31 Oktober 2026 pukul 14.40 WIB
+Temuan pada laporan awal di bawah telah diperbaiki. Hasil terbaru: 47/47 pemeriksaan fungsi PASS, 66 kombinasi halaman/peran/ukuran layar tanpa overflow horizontal, 0 error JavaScript. Build dan lint berhasil dengan peringatan yang masih tercatat.
+Laporan terperinci: frontend/docs/LAPORAN-PERBAIKAN-2026-10-31.txt.
+
+=== RIWAYAT PENGUJIAN AWAL SEBELUM PERBAIKAN ===
+
+LAPORAN PENGUJIAN FRONTEND DAFTARIN
+31 Oktober 2026 — 14.24.02 WIB
+
+LINGKUP DAN CARA PENGUJIAN
+Pengujian penggunaan nyata pada Chrome headless melalui Playwright, menggunakan browser context terpisah dari browser pengguna. Akun, identitas, dokumen, dan mutasi menggunakan data contoh. Tidak mengubah kode aplikasi, tidak mengakses atau mengirim permohonan ke pemerintah.
+Website: http://127.0.0.1:5173/
+Ukuran layar: 1440 × 900/1000, 390 × 900, dan 320 × 900.
+
+RINGKASAN HASIL
+- Build frontend: berhasil (npm run build).
+- Lint: exit code 0, dengan peringatan React/Fast Refresh, effect, memoization, dan dependency hooks. Peringatan bukan error kompilasi.
+- Build memberi peringatan satu bundel JavaScript lebih dari 500 kB (559,48 kB sebelum gzip).
+- Pemeriksaan fungsi: 44; 42 lolos; 2 gagal; 0 terhalang.
+- Kombinasi halaman dan ukuran layar: 66; 6 menunjukkan halaman melebar horizontal.
+- Error JavaScript yang tertangkap selama pengujian: 0.
+- Keenam overflow adalah pengulangan masalah pada beberapa halaman/ukuran; bukan enam kerusakan alur utama yang terpisah.
+
+ALUR UTAMA YANG BERHASIL DIJALANKAN
+1. Login warga -> buat persiapan KK baru -> konfirmasi kebutuhan -> isi data -> unggah berkas -> tinjau ringkasan -> setujui pembagian -> kirim ke petugas.
+2. Logout warga -> login petugas -> cari kiriman -> buka file warga -> mulai tinjauan -> minta revisi dengan alasan dan tindakan.
+3. Login warga -> ganti file menjadi v2 -> kirim ulang pada permintaan sama -> riwayat v1 tetap tersimpan.
+4. Login petugas -> mulai tinjauan ulang -> nilai data dan dokumen secara eksplisit -> isi catatan -> selesaikan tinjauan.
+5. Login warga -> konfirmasi penerimaan hasil layanan pemerintah -> status tinjauan tetap SELESAI dan status hasil pemerintah tersimpan terpisah.
+6. Reload mempertahankan kiriman, riwayat, dan hasil tinjauan.
+
+TEMUAN YANG SUDAH DIAMATI DI BROWSER
+
+A. SEDANG — Halaman melebar ke samping pada ponsel
+Langkah ulang: login warga -> buka tahap Kebutuhan pada lebar 390 px. Lebar dokumen menjadi 487 px. Dropdown layanan melewati batas panel dan layar. Pada lebar 320 px, masalah juga terjadi pada panduan layanan, ringkasan, dan pelacakan.
+Bukti: outputs/qa-20261031/overflow-kebutuhan-390.png dan overflow-kebutuhan-320.png.
+Perbaikan yang disarankan: batasi lebar select/grid/flex dengan min-width:0 dan width/max-width yang sesuai; izinkan teks badge panjang membungkus; telusuri elemen pemicu pada ringkasan. Jangan sekadar menyembunyikan overflow seluruh halaman.
+Daftar pengukuran:
+  - guest | /layanan/1 | viewport 320 px -> document 364 px
+  - warga | /persiapan/kebutuhan?prep=prep-sample-kk-01 | viewport 390 px -> document 487 px
+  - warga | /layanan/1 | viewport 320 px -> document 364 px
+  - warga | /persiapan/kebutuhan?prep=prep-sample-kk-01 | viewport 320 px -> document 487 px
+  - warga | /persiapan/ringkasan?prep=prep-sample-kk-01 | viewport 320 px -> document 368 px
+  - warga | /pelacakan | viewport 320 px -> document 376 px
+
+B. SEDANG — Modal pratinjau belum mendukung keyboard dengan benar
+Langkah ulang: buka pratinjau berkas -> tekan Escape. Modal tetap terbuka. Saat modal dibuka, fokus juga masih berada pada tombol di belakang modal.
+Pengujian penguncian Tab berhenti pada pemeriksaan fokus awal yang gagal; tidak diklaim sudah menguji seluruh urutan Tab.
+Bukti: outputs/qa-20261031/FAIL-19.png dan extended-fail-3.png.
+Perbaikan yang disarankan: pindahkan fokus ke kontrol modal, tangani Escape, tahan fokus di dalam modal, lalu kembalikan fokus ke pemicu setelah ditutup.
+
+DAFTAR PEMERIKSAAN FUNGSI FINAL
+1. [PASS] Tamu: halaman pribadi diarahkan ke masuk
+2. [PASS] Masuk: kata sandi salah ditolak
+3. [PASS] Warga: katalog mempertahankan sidebar dan topbar akun
+4. [PASS] Warga: dilarang membuka admin
+5. [PASS] ID draf tidak valid tidak membuka draf lain
+6. [PASS] Pasangan draf-pengajuan tidak sesuai ditolak
+7. [PASS] Buat urusan baru dimulai pada tahap Kebutuhan
+8. [PASS] Format NIK salah menghalangi lanjut
+9. [PASS] Berkas lebih dari 5 MB ditolak
+10. [PASS] Format file tidak didukung ditolak
+11. [PASS] File hampir 5 MB tersimpan dan dapat dipratinjau
+12. [PASS] Gagal penyimpanan mempertahankan berkas sebelumnya
+13. [PASS] Dua berkas wajib lengkap membuka ringkasan tanpa AI
+14. [PASS] Pengiriman membutuhkan persetujuan berbagi
+15. [PASS] Kirim permintaan baru masuk pelacakan dan memiliki snapshot
+16. [PASS] Perubahan draf tidak mengubah snapshot kiriman
+17. [PASS] Petugas melihat snapshot kiriman milik penugasan
+18. [PASS] Petugas dapat membuka file hampir 5 MB setelah warga keluar
+19. [FAIL] Modal pratinjau dapat ditutup dengan Escape — locator.waitFor: Timeout 1200ms exceeded.
+20. [PASS] Tinjauan tidak dapat selesai sebelum dimulai
+21. [PASS] Mulai tinjauan menghasilkan VERIFIKASI
+22. [PASS] Selesai diblokir sebelum penilaian eksplisit
+23. [PASS] Permintaan revisi berisi masalah dan tindakan
+24. [PASS] Penggantian v2 tidak menghapus Blob v1
+25. [PASS] Kirim revisi mempertahankan nomor dan riwayat v1
+26. [PASS] Petugas menyelesaikan kiriman v2 setelah penilaian
+27. [PASS] Konfirmasi hasil pemerintah tidak menimpa status tinjauan
+28. [PASS] Reload mempertahankan snapshot dan hasil tinjauan
+29. [PASS] Daftar: formulir kosong ditolak dengan pesan field
+30. [PASS] Daftar: akun warga baru masuk dan mendapat data kosong
+31. [PASS] Admin: navigasi tab dan daftar akun dapat dibuka
+32. [PASS] Admin: tambah petugas berhasil tersimpan
+33. [PASS] Sembilan penggantian tambahan tidak menghapus Blob kiriman v1
+34. [PASS] Dua draf layanan sama tetap menyimpan nama berbeda
+35. [PASS] Pasangan dua ID valid tetapi tidak berkaitan ditolak
+36. [FAIL] Fokus dipindahkan ke modal dan tetap di dalam modal saat Tab — Fokus masih di tombol belakang modal
+37. [PASS] Logout mencegah membuka ulang halaman pribadi
+38. [PASS] Pemulihan kata sandi contoh berhasil
+39. [PASS] Tautan pemulihan tidak dapat digunakan dua kali
+40. [PASS] Simpan draf panduan tidak langsung mengubah katalog publik
+41. [PASS] Terbitkan panduan memperbarui katalog dan mencatat riwayat
+42. [PASS] PDF 2 MB bernama contoh-kk.pdf menyimpan dan membuka isi asli
+43. [PASS] Blob hilang setelah reload memblokir kelanjutan dan tidak mengganti dokumen dengan fixture
+44. [PASS] Navigasi ponsel dapat membuka katalog dalam ruang warga
+
+BERKAS DAN PENYIMPANAN YANG DICOBA
+- PNG valid berukuran mendekati 5 MB (4,998 MB): disimpan dan gambar berhasil ditampilkan pada akun warga serta petugas.
+- PDF valid berukuran sekitar 2 MB, bernama contoh-kk.pdf: pratinjau memakai Blob PDF asli, bukan lembar fixture.
+- File > 5 MB dan format .txt: ditolak.
+- Simulasi gagal penyimpanan: berkas lama tetap utuh.
+- Sembilan penggantian tambahan: Blob kiriman pertama tetap ada setelah reload.
+- Menghapus Blob milik konteks QA melalui IndexedDB lalu reload: tombol lanjut terblokir dan modal menampilkan Berkas tidak tersedia tanpa menggantinya dengan fixture.
+
+CATATAN HASIL
+- Semua hasil di atas berasal dari eksekusi browser yang selesai setelah penyesuaian selector dan parameter pada skrip pengujian. Kegagalan skrip pengujian awal tidak dihitung sebagai bug aplikasi.
+- Akun/data browser pengguna yang terbuka di aplikasi tidak dipakai atau dihapus.
+- Tidak mengubah kode aplikasi. Menambahkan skrip dan artefak pengujian di folder work/ dan outputs/, serta laporan ini.
+- AI/OCR nyata, backend, keamanan server, layanan email nyata, integrasi pemerintah, Safari/Firefox, dan perangkat ponsel fisik tidak diuji.
+- Lolosnya alur frontend dummy tidak membuktikan aplikasi siap menangani data pribadi nyata.
+
+ARTEFAK
+Ringkasan mesin: outputs/qa-20261031/final-results.json
+Rincian: workflow-results.json, screens-auth-results.json, extended-results.json, files-mobile-results.json.
+Screenshot desktop/ponsel serta PDF tersedia di outputs/qa-20261031/.
+
+KESIMPULAN
+Alur utama frontend dapat dijalankan dari warga ke petugas, revisi, dan penyelesaian dengan data dummy. Perbaiki responsivitas halaman tertentu dan akses keyboard modal sebelum finalisasi tampilan. Backend dan penggunaan data nyata tetap tahap terpisah.

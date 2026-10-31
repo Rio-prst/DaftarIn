@@ -1,0 +1,78 @@
+INFORMASI BRANCH DAN PERUBAHAN DAFTARIN
+31 Oktober 2026
+
+REPOSITORY DAN IDENTITAS
+Repository: https://github.com/Rio-prst/DaftarIn
+Branch baru: codex/frontend-flow-and-responsive-fixes
+Branch asal lokal: feat/frontend
+Commit dasar: 29e5432
+Akun GitHub untuk push: XakiTooo
+Penulis commit: Dzaki Ghatfaan Abhipraya
+Email commit: 179832370+XakiTooo@users.noreply.github.com
+
+TUJUAN BRANCH
+Menyimpan seluruh pembaruan frontend lokal yang telah dikerjakan, termasuk
+penyempurnaan alur warga/petugas/admin dan perbaikan hasil pengujian browser.
+Branch dibuat dari kondisi kerja lokal saat ini. Branch asal dan main tidak
+digabungkan atau ditimpa. Tidak ada deploy produksi dalam pekerjaan ini.
+
+RINGKASAN PERUBAHAN
+1. Frontend React + Vite + Tailwind CSS dengan navigasi publik dan ruang akun
+   warga, petugas, serta admin. Katalog warga mempertahankan layout akun.
+2. Registrasi warga dengan NIK dan data KTP contoh, login berbasis peran,
+   profil akun, logout, serta pemulihan kata sandi untuk demo lokal.
+3. Alur persiapan: Kebutuhan -> Data -> Dokumen -> Tinjau & kirim.
+   Urusan baru dimulai dari Kebutuhan; draf tersimpan terpisah.
+4. Persetujuan warga sebelum berbagi data dan berkas kepada petugas contoh.
+   Snapshot kiriman dipisahkan dari perubahan draf setelah pengiriman.
+5. Permintaan revisi, pengiriman ulang v2 pada perkara sama, dan riwayat v1.
+   Petugas melakukan penilaian eksplisit terhadap data dan dokumen.
+6. Status tinjauan petugas dipisahkan dari laporan hasil layanan pemerintah.
+7. Penyimpanan isi berkas sampai 5 MB memakai IndexedDB Blob. Gagal simpan
+   mempertahankan berkas lama; Blob yang hilang tidak dianggap siap dikirim.
+   Nama berkas seperti contoh-kk.pdf tidak mengubahnya menjadi fixture palsu.
+8. Tampilan responsif diperbaiki pada dropdown Kebutuhan, status panjang,
+   grid panduan layanan, ringkasan, dan pelacakan.
+9. Modal pratinjau memakai dialog native: fokus awal, Tab/Shift+Tab, latar
+   inert, kunci scroll, Escape termasuk frame PDF, dan pemulihan fokus.
+10. Dokumentasi produk, kemajuan, laporan pembaruan, dan hasil pengujian.
+
+HASIL VERIFIKASI TERAKHIR
+- 47 pemeriksaan fungsi unik: seluruhnya PASS.
+- 66 kombinasi halaman/peran/lebar layar: tanpa overflow horizontal.
+- Lebar yang diperiksa: 1440, 390, dan 320 piksel.
+- Tidak ada error JavaScript yang tertangkap selama pengujian.
+- npm run build: berhasil. Peringatan bundel JavaScript >500 kB masih ada.
+- npm run lint: exit code 0. Peringatan React yang telah ada masih tercatat.
+- Pengujian menggunakan Chrome headless dan browser context terpisah,
+  dengan akun, identitas, dan berkas contoh.
+
+BATAS FITUR SAAT INI
+- Autentikasi dan data operasional masih simulasi frontend lokal.
+- Penyimpanan browser bukan pengganti backend atau penyimpanan dokumen privat.
+- AI/OCR belum terhubung dan tidak menghalangi pengiriman ke petugas contoh.
+- Belum ada pengiriman atau integrasi ke sistem pemerintah sebenarnya.
+- Belum diuji pada perangkat fisik, Safari/Firefox, atau pembaca layar.
+- Branch ini belum menyatakan backend atau seluruh sistem siap produksi.
+
+BERKAS RUJUKAN DI REPOSITORY
+- frontend/README.md
+- frontend/docs/PRODUCT-DECISIONS.md
+- frontend/docs/PROGRESS.md
+- frontend/docs/LAPORAN-PEMBARUAN.txt
+- frontend/docs/LAPORAN-PERBAIKAN-2026-10-31.txt
+- frontend/docs/LAPORAN-PENGUJIAN-2026-10-31.txt
+  (memuat riwayat temuan awal sebelum perbaikan dan rujukan uji ulang)
+
+YANG DIKECUALIKAN DARI GITHUB
+AGENTS.md/agents.md, direktori instruksi/state asisten lokal, .env dan rahasia,
+node_modules, hasil build, coverage, log, cache kompilasi, serta output/scratch
+pengujian lokal. Template .env.example tetap boleh disertakan.
+Laporan TXT pengujian tetap disertakan sebagai dokumentasi proyek;
+screenshot, salinan penyimpanan browser, dan berkas unggahan QA tidak disertakan.
+
+CATATAN UNTUK MELANJUTKAN
+Pahami README, keputusan produk, dan laporan perbaikan sebelum mengubah alur.
+Data serta akun demo dipakai untuk meninjau frontend. Integrasi backend,
+autentikasi sungguhan, penyimpanan privat, dan AI/OCR merupakan tahap lanjutan.
+Lihat riwayat commit Git untuk hash perubahan terbaru setelah branch dipush.

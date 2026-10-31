@@ -1,79 +1,101 @@
-import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AppContextProvider } from './context/AppContext';
-import { ToastContainer } from './components/ToastContainer';
-import { ChatbotModal } from './components/ChatbotModal';
-import { DemoToolbar } from './components/DemoToolbar';
-
-// 12 Native React Pages
-import { LandingPage } from './pages/LandingPage';
-import { CatalogPage } from './pages/CatalogPage';
-import { ServiceDetailPage } from './pages/ServiceDetailPage';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { PreparationDataPage } from './pages/PreparationDataPage';
-import { PreparationDocsPage } from './pages/PreparationDocsPage';
-import { PreparationInspectionPage } from './pages/PreparationInspectionPage';
-import { PreparationSummaryPage } from './pages/PreparationSummaryPage';
-import { TrackingPage } from './pages/TrackingPage';
-import { OfficerPage } from './pages/OfficerPage';
-import { AdminPage } from './pages/AdminPage';
-
-export const App: React.FC = () => {
+import { HashRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { RequireAuth } from "./auth/RequireAuth";
+import { AppContextProvider } from "./context/AppContext";
+import { ToastContainer } from "./components/ToastContainer";
+import { ChatbotModal } from "./components/ChatbotModal";
+import { RouteFocus } from "./components/RouteFocus";
+import { LandingPage } from "./pages/LandingPage";
+import { CatalogPage } from "./pages/CatalogPage";
+import { ServiceDetailPage } from "./pages/ServiceDetailPage";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { PasswordRecoveryPage } from "./pages/PasswordRecoveryPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { AccountPage } from "./pages/AccountPage";
+import { AccessDeniedPage, NotFoundPage } from "./pages/AccessDeniedPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { PreparationListPage } from "./pages/PreparationListPage";
+import { PreparationNeedPage } from "./pages/PreparationNeedPage";
+import { PreparationDataPage } from "./pages/PreparationDataPage";
+import { PreparationDocsPage } from "./pages/PreparationDocsPage";
+import { PreparationInspectionPage } from "./pages/PreparationInspectionPage";
+import { PreparationSummaryPage } from "./pages/PreparationSummaryPage";
+import { TrackingPage } from "./pages/TrackingPage";
+import { OfficerPage } from "./pages/OfficerPage";
+import { AdminPage } from "./pages/AdminPage";
+function Application() {
+  const { user } = useAuth();
   return (
-    <AppContextProvider>
-      <HashRouter>
-        <div className="min-h-screen bg-[#F5F7FB] text-[#172B45] font-sans antialiased selection:bg-[#1769D2] selection:text-white relative">
-          <Routes>
-            {/* 01. Landing Page Warga */}
-            <Route path="/" element={<LandingPage />} />
-
-            {/* 02. Katalog & Pencarian Layanan */}
-            <Route path="/katalog" element={<CatalogPage />} />
-
-            {/* 03. Panduan Persyaratan & Alur */}
-            <Route path="/panduan" element={<ServiceDetailPage />} />
-            <Route path="/layanan/:id" element={<ServiceDetailPage />} />
-
-            {/* 04. Masuk Akun Simulasi */}
-            <Route path="/masuk" element={<LoginPage />} />
-
-            {/* 05. Dasbor Warga */}
+    <AppContextProvider key={user?.id || "guest"}>
+      <RouteFocus />
+      <div className="min-h-screen bg-[#F5F7FB] text-[#172B45] font-sans antialiased selection:bg-[#1769D2] selection:text-white relative">
+        <a
+          href="#main-content"
+          className="skip-link"
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById("main-content")?.focus();
+          }}
+        >
+          Lewati ke isi halaman
+        </a>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/katalog" element={<CatalogPage />} />
+          <Route path="/panduan" element={<ServiceDetailPage />} />
+          <Route path="/layanan/:id" element={<ServiceDetailPage />} />
+          <Route path="/masuk" element={<LoginPage />} />
+          <Route path="/daftar" element={<RegisterPage />} />
+          <Route path="/lupa-sandi" element={<PasswordRecoveryPage />} />
+          <Route path="/privasi" element={<PrivacyPage />} />
+          <Route element={<RequireAuth />}>
+            <Route path="/akun" element={<AccountPage />} />
+          </Route>
+          <Route element={<RequireAuth roles={["warga"]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-
-            {/* 06. Tahap 2: Formulir Data Pemohon */}
+            <Route path="/persiapan" element={<PreparationListPage />} />
+            <Route
+              path="/persiapan/kebutuhan"
+              element={<PreparationNeedPage />}
+            />
             <Route path="/persiapan/data" element={<PreparationDataPage />} />
-
-            {/* 07. Tahap 3: Unggah Berkas Persyaratan */}
-            <Route path="/persiapan/dokumen" element={<PreparationDocsPage />} />
-
-            {/* 08. Tahap 4: Pemeriksaan AI Dokumen */}
-            <Route path="/persiapan/pemeriksaan" element={<PreparationInspectionPage />} />
-
-            {/* 09. Tahap 5: Ringkasan Kesiapan Berkas */}
-            <Route path="/persiapan/ringkasan" element={<PreparationSummaryPage />} />
-
-            {/* 10. Pelacakan Pengajuan (Linimasa) */}
+            <Route
+              path="/persiapan/dokumen"
+              element={<PreparationDocsPage />}
+            />
+            <Route
+              path="/persiapan/pemeriksaan"
+              element={<PreparationInspectionPage />}
+            />
+            <Route
+              path="/persiapan/ringkasan"
+              element={<PreparationSummaryPage />}
+            />
             <Route path="/pelacakan" element={<TrackingPage />} />
-
-            {/* 11. Meja Kerja Petugas Verifikasi */}
+          </Route>
+          <Route element={<RequireAuth roles={["petugas"]} />}>
             <Route path="/petugas" element={<OfficerPage />} />
-
-            {/* 12. Panel Kelola Panduan & Aturan AI */}
+          </Route>
+          <Route element={<RequireAuth roles={["admin"]} />}>
             <Route path="/admin" element={<AdminPage />} />
-
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-
-          {/* Global Floating Elements */}
-          <ToastContainer />
-          <ChatbotModal />
-          <DemoToolbar />
-        </div>
-      </HashRouter>
+          </Route>
+          <Route path="/akses-ditolak" element={<AccessDeniedPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+        <ToastContainer />
+        <ChatbotModal />
+      </div>
     </AppContextProvider>
   );
-};
-
+}
+export function App() {
+  return (
+    <HashRouter>
+      <AuthProvider>
+        <Application />
+      </AuthProvider>
+    </HashRouter>
+  );
+}
 export default App;

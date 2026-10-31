@@ -1,0 +1,469 @@
+================================================================================
+TANGGAL DAN WAKTU PEMBARUAN
+31 Oktober 2026 pukul 14.40 WIB - Perbaikan overflow HP dan akses keyboard pratinjau berkas
+================================================================================
+Status: 47 pemeriksaan fungsi PASS; 66 kombinasi halaman/peran/ukuran layar tanpa overflow horizontal; 0 error JavaScript.
+Perubahan: dropdown tahap Kebutuhan, badge panjang, grid panduan, tautan ringkasan, dan modal dialog dengan fokus/Tab/Escape termasuk frame PDF.
+Build dan lint berhasil; peringatan React yang telah ada dan bundel >500 kB masih tersisa.
+Laporan lengkap, daftar pemeriksaan, dan batas pengujian: frontend/docs/LAPORAN-PERBAIKAN-2026-10-31.txt.
+Riwayat pembaruan sebelumnya dipertahankan di bawah. Perubahan tersimpan lokal, belum di-commit/push.
+
+================================================================================
+TANGGAL DAN WAKTU PEMBARUAN
+31 Oktober 2026, 13:53 WIB - Finalisasi Frontend: Penyimpanan Blob IndexedDB (Hingga 5 MB), Pelestarian Pratinjau Per Versi Kiriman Tanpa Heuristik Nama File, Penilaian Eksplisit Petugas per Item, dan Pemisahan Status Tinjauan vs Hasil Layanan Pemerintah
+================================================================================
+
+1. RINGKASAN PENYEBAB MASALAH PADA KODE SEBELUMNYA & SOLUSI AKTUAL
+--------------------------------------------------------------------------------
+A. Masalah 1 — Berkas Tidak Benar-Benar Tersimpan & Keterikatan Draf Asal:
+   - Penyebab pada kode sebelumnya:
+     Di `PreparationDocsPage.tsx`, validasi mengizinkan file sampai 5 MB, tetapi hanya file `<= 1,5 MB` yang dibaca dengan `FileReader`. File `1,5 MB–5 MB` langsung memanggil `addDocument({ status: "TERUNGGAH" })` tanpa menyimpan isi berkas sama sekali. Selain itu, hasil `saveSharedFilePreview()` tidak diperiksa dan blok `reader.onerror` tetap memanggil `addDocument({ status: "TERUNGGAH" })` serta menampilkan toast sukses. `addDocument()` juga hanya memperbarui `activePreparation` saat callback selesai tanpa mengikat `targetPrepId` asal saat tombol pilih file diklik.
+   - Perbaikan:
+     * Membuat modul penyimpanan berkas browser berbasis **IndexedDB Blob** (`frontend/src/utils/fileStorage.ts`, database `daftarin_file_storage_v1`, store `file_blobs`) yang mendukung ukuran penuh hingga **5 MB** (`MAX_UPLOAD_FILE_BYTES = 5 * 1024 * 1024`) tanpa menyimpan PDF/gambar besar sebagai Data URL di dalam satu objek JSON `localStorage`.
+     * Fungsi `readAndStoreUploadedFile()` membaca `ArrayBuffer`, menyimpan `Blob` ke IndexedDB, dan memverifikasi keberadaan serta ukuran `Blob` di IndexedDB sebelum mengembalikan sukses.
+     * `PreparationDocsPage.tsx` menangkap konteks asal (`prepId`, `slotId`, `nextVersion`, `existingDocName`) pada `uploadContextRef` tepat saat warga menekan "Pilih berkas" / "Ganti berkas", lalu meneruskan `ctx.prepId` ke `addDocument(doc, ctx.prepId)`. Jika warga berpindah draf saat file sedang dibaca, berkas tetap masuk ke draf dan slot asal.
+     * Jika pembacaan atau penyimpanan gagal, aplikasi menampilkan banner dan toast error yang dapat ditindaklanjuti, **tidak** memasukkan metadata `TERUNGGAH`, dan **mempertahankan berkas versi lama** pada slot tersebut.
+     * `computePreparationReadiness()`, `submitForOfficerReview()`, dan `resubmitApplication()` memvalidasi `unavailableRequiredDocs.length === 0` serta `isDocumentContentAvailable(doc)` sebelum mengizinkan pengiriman permintaan atau revisi.
+
+B. Masalah 2 — Pratinjau Berkas Kiriman Terhapus / Tertimpa / Salah Klasifikasi Contoh:
+   - Penyebab pada kode sebelumnya:
+     Di `DocumentPreviewModal.tsx`, `saveSharedFilePreview()` memotong entri lama dengan `.slice(-8)` sehingga berkas kiriman aktif terhapus setelah 8 unggahan. Selain itu, `isSampleBroken` dan `isSampleFixed` menggunakan pencocokan substring nama file (`fileName.includes("contoh")`, `"terpotong"`, `"simulasi"`, `"fixture"`), sehingga berkas asli warga bernama `contoh-kk.pdf` apabila kehilangan pratinjau justru dirender sebagai lembar dokumen simulasi palsu.
+   - Perbaikan:
+     * Menghapus batas pemotongan 8 entri. Setiap unggahan versi baru (`v1`, `v2`, dst.) disimpan di IndexedDB dengan kunci unik per versi (`file-<prepId>-<slotId>-v<version>-<timestamp>-<rand>`). Mengganti berkas pada draf membuat entri `v2` baru tanpa menimpa `Blob` `v1` yang direferensikan oleh `submitted_snapshot` atau `submission_history` (`Kiriman #1`).
+     * Menambahkan fungsi `isBuiltInSampleDocument(doc)` dan `isCroppedSampleDocument(doc)` di `DocumentPreviewModal.tsx` yang **hanya** memeriksa metadata eksplisit (`doc.qualityPreset !== "user_file"` serta `doc.fixtureId` / `doc.qualityPreset === "sample_issue" | "sample_clean"`), tanpa pemeriksaan substring nama file sama sekali.
+     * Berkas unggahan warga (`qualityPreset: "user_file"`) bernama `contoh-kk.pdf` selalu menampilkan isi `Blob` asli warga, atau jika `Blob`-nya tidak tersedia menampilkan peringatan jujur **"Berkas tidak tersedia"** beserta tombol pilih ulang berkas (untuk warga) atau tombol tandai **"Belum dapat diperiksa"** & minta perbaikan (untuk petugas).
+
+C. Masalah 3 — Penyelesaian Tinjauan Petugas Tanpa Pemeriksaan & Catatan Default:
+   - Penyebab pada kode sebelumnya:
+     Di `OfficerPage.tsx` dan `AppContext.tsx`, `officerCompleteReview()` mengizinkan penyelesaian langsung dari status `DITERIMA` ("Menunggu tinjauan"), state `completeNote` sudah terisi kalimat default seolah seluruh berkas telah diperiksa, dan tidak ada kewajiban menilai data pemohon maupun setiap berkas persyaratan atau memverifikasi ketersediaan berkas.
+   - Perbaikan:
+     * Menegakkan alur transisi utama: **Menunggu tinjauan (`DITERIMA`) / Perbaikan dikirim (`PERLU_PERBAIKAN` + `revision_pending`) → Sedang ditinjau (`VERIFIKASI`) → Perlu perbaikan (`PERLU_PERBAIKAN`) atau Tinjauan awal selesai (`SELESAI`)**.
+     * `officerRequestRevision()` dan `officerCompleteReview()` hanya diizinkan saat `record.current_status === "VERIFIKASI"` ("Sedang ditinjau").
+     * Menghapus teks default pada `completeNote` (diinisialisasi kosong `""` dan wajib diisi petugas minimal 5 karakter).
+     * Menambahkan daftar **Penilaian Eksplisit Pemeriksaan Kiriman #N** di `OfficerPage.tsx` untuk `Data pemohon & isian formulir` dan setiap berkas persyaratan (`Sesuai` | `Perlu perbaikan` | `Belum dapat diperiksa`).
+     * Membuka modal pratinjau **tidak** otomatis mengubah penilaian berkas menjadi `Sesuai`.
+     * Berkas yang isinya tidak tersedia (`!isDocumentContentAvailable(att)`) menonaktifkan opsi `Sesuai` dan memblokir `officerCompleteReview()` baik di UI maupun di `AppContext.tsx`.
+     * Menyimpan objek `OfficerSubmissionEvaluation` (keputusan, alasan/ringkasan, nama petugas, waktu evaluasi, `submissionVersion`, dan `itemAssessments`) ke `record.latest_evaluation` serta menambahkannya ke `record.evaluation_history`.
+
+D. Masalah 4 — Status Tinjauan Petugas Tertimpa oleh Konfirmasi Hasil Layanan Pemerintah:
+   - Penyebab pada kode sebelumnya:
+     Di `AppContext.tsx`, `confirmApplicationResult()` mengubah `record.current_status` dari `"SELESAI"` menjadi `"HASIL_DITERIMA_WARGA"`, sehingga menimpa status tinjauan petugas pendamping. Selain itu, label sumber catatan warga belum seragam menggunakan `"Dilaporkan warga"`.
+   - Perbaikan:
+     * Memisahkan secara tegas:
+       1) Status draf persiapan (`PreparationRecord` / `readiness`),
+       2) Status tinjauan pendamping DaftarIn (`record.current_status`: `DITERIMA`, `VERIFIKASI`, `PERLU_PERBAIKAN`, `SELESAI` + `getReviewStatusLabel(record)`),
+       3) Status pengajuan & penerimaan hasil layanan pemerintah (`record.official_submission`: `status: "DIAJUKAN_WARGA" | "HASIL_DITERIMA_WARGA"`, `recordedAt`, `resultReceivedAt`, `resultNote`, `sourceLabel: "Dilaporkan warga"` + `getOfficialSubmissionStatusLabel(record)`).
+     * `confirmApplicationResult()` pada permohonan yang melalui tinjauan petugas mempertahankan `record.current_status = "SELESAI"` ("Tinjauan awal selesai") dan menyimpan konfirmasi penerimaan hasil pada `record.official_submission` serta linimasa dengan sumber **`"<Nama Warga> · Dilaporkan warga"`**.
+     * Seluruh catatan pengajuan kanal resmi, catatan tindak lanjut warga, dan konfirmasi hasil layanan secara konsisten mencantumkan sumber **"Dilaporkan warga"**.
+     * Menambahkan migrasi otomatis pada pembacaan `daftarin:applications:v1` agar record tinjauan petugas lama yang telanjur berstatus `HASIL_DITERIMA_WARGA` dipulihkan `current_status`-nya menjadi `"SELESAI"` sambil mempertahankan `official_submission.status = "HASIL_DITERIMA_WARGA"`.
+
+2. DAFTAR BERKAS YANG DIUBAH / DITAMBAHKAN
+--------------------------------------------------------------------------------
+- `frontend/src/utils/fileStorage.ts` (BARU):
+  * Penyimpanan `Blob` berbasis IndexedDB (`daftarin_file_storage_v1` / `file_blobs`) dengan batas `MAX_UPLOAD_FILE_BYTES = 5 MB`, migrasi otomatis dari `daftarin:shared-file-previews:v1`, verifikasi penyimpanan sebelum sukses, serta dukungan simulasi kegagalan penyimpanan untuk pengujian manual.
+- `frontend/src/components/DocumentPreviewModal.tsx`:
+  * Memuat `Blob` dari IndexedDB dan membuat Object URL (`URL.createObjectURL`) dengan pembersihan otomatis (`URL.revokeObjectURL`).
+  * Mengubah penentuan dokumen contoh (`isBuiltInSampleDocument`, `isCroppedSampleDocument`) agar murni berbasis metadata (`fixtureId` dan `qualityPreset`), menghapus seluruh pencocokan nama file.
+  * Menampilkan peringatan **"Berkas tidak tersedia"** beserta tombol tindakan (`onReupload` untuk warga, `onOfficerMarkUnavailable` untuk petugas) apabila isi berkas tidak ditemukan.
+- `frontend/src/types/preparation.ts`:
+  * Menambahkan `fixtureId?: string`, `OfficerItemVerdict`, `OFFICER_ITEM_VERDICT_LABELS`, `OfficerItemAssessment`, `OfficerSubmissionEvaluation`, dan `OfficialSubmissionStatus`.
+  * Memperbarui `computeDocSignature()` dan `computePreparationReadiness()` untuk memeriksa `unavailableRequiredDocs`.
+- `frontend/src/context/AppContext.tsx`:
+  * Menambahkan `getOfficialSubmissionStatusLabel()`, memperbarui `getReviewStatusLabel()`, mengikat `addDocument(doc, targetPrepId)` ke draf asal, memvalidasi ketersediaan berkas saat kirim/revisi, menegakkan aturan penyelesaian tinjauan petugas beserta `evaluation_history`, serta memisahkan `confirmApplicationResult()` dari `current_status` tinjauan petugas.
+- `frontend/src/pages/PreparationDocsPage.tsx`:
+  * Menyimpan isi berkas ke IndexedDB sebelum menandai `TERUNGGAH`, mengikat unggahan ke draf & slot asal, mempertahankan berkas lama jika unggahan pengganti gagal, menampilkan status ketersediaan berkas, dan menyediakan opsi simulasi uji kegagalan penyimpanan.
+- `frontend/src/pages/OfficerPage.tsx`:
+  * Menegakkan alur `Mulai tinjauan -> Sedang ditinjau -> Minta perbaikan / Selesaikan tinjauan awal`, menghapus catatan default penyelesaian, mewajibkan penilaian eksplisit per item, memblokir opsi `Sesuai` untuk berkas yang tidak tersedia, serta menampilkan pratinjau tiap versi kiriman (`Kiriman #1`, `Kiriman #2`) dan riwayat penilaian petugas.
+- `frontend/src/pages/TrackingPage.tsx`, `frontend/src/pages/PreparationSummaryPage.tsx`, `frontend/src/pages/DashboardPage.tsx`:
+  * Menampilkan status Tinjauan Pendamping DaftarIn dan status Pengajuan/Hasil Layanan Pemerintah (`Dilaporkan warga`) secara terpisah, menampilkan riwayat penilaian petugas, serta menyediakan pratinjau berkas per versi kiriman.
+
+3. DAMPAK TERHADAP DATA LAMA & BATAS PENYIMPANAN BROWSER (DUMMY FRONTEND)
+--------------------------------------------------------------------------------
+- Migrasi data lama:
+  * Entri pratinjau Data URL lama pada `localStorage` (`daftarin:shared-file-previews:v1`) otomatis dimigrasikan menjadi `Blob` di IndexedDB saat aplikasi dimuat, lalu kunci `localStorage` lama dibersihkan agar tidak membebani kuota `localStorage`.
+  * Record `daftarin:applications:v1` lama yang berstatus `HASIL_DITERIMA_WARGA` pada mode tinjauan petugas otomatis dimigrasikan ke `current_status: "SELESAI"` dengan `official_submission.status: "HASIL_DITERIMA_WARGA"`.
+- Batas dummy yang tersisa:
+  * Penyimpanan `Blob` menggunakan **IndexedDB pada browser lokal** sehingga berkas hingga 5 MB benar-benar tersimpan dan dapat dipratinjau lintas akun demo (warga & petugas) pada browser/profil yang sama. Namun, penyimpanan IndexedDB browser ini **belum menggantikan penyimpanan objek privat di sisi server (S3/MinIO)** maupun autentikasi/otorisasi dokumen pada backend.
+  * AI/OCR tetap ditunda sebagai kemampuan tambahan berikutnya dan tidak mengunci proses pengiriman maupun tinjauan manusia.
+
+4. HASIL BUILD DAN VERIFIKASI
+--------------------------------------------------------------------------------
+- Perintah: `npm.cmd run build` (`tsc -b && vite build`) di direktori `frontend`
+- Hasil: **Sukses (exit code 0)**, 64 modul ditransformasi tanpa error TypeScript maupun bundler.
+
+5. LANGKAH UJI MANUAL 7 SKENARIO WAJIB
+--------------------------------------------------------------------------------
+1) Unggah file PDF/JPG/PNG ukuran > 1,5 MB sampai <= 5 MB:
+   - Masuk sebagai warga (`warga@daftarin.test` / `DaftarIn2026!`), buka draf persiapan -> Tahap 3 (Dokumen).
+   - Pilih file PDF/JPG/PNG berukuran misalnya 2 MB–4,5 MB dari perangkat Anda.
+   - Pastikan indikator "Menyimpan isi berkas..." tampil, lalu status berubah menjadi `Terunggah · v1` setelah penyimpanan IndexedDB selesai.
+   - Klik "Lihat berkas" sebagai warga, lalu kirim ke petugas dan masuk sebagai petugas (`petugas@daftarin.test`): klik "Buka pratinjau berkas" dan pastikan isi file asli 2–4,5 MB tersebut tampil utuh.
+2) Simulasikan kegagalan pembacaan/penyimpanan file & penggantian berkas:
+   - Pada Tahap 3 (Dokumen), centang kotak **"Simulasi uji kegagalan penyimpanan"** di bagian bawah daftar dokumen.
+   - Coba pilih berkas pada slot yang masih kosong: pastikan muncul pesan error yang jelas, status slot **tidak** berubah menjadi `Terunggah`, dan tahap Dokumen belum dianggap selesai.
+   - Sekarang centang kembali **"Simulasi uji kegagalan penyimpanan"**, lalu klik **"Ganti berkas"** pada slot yang sudah memiliki berkas `v1`: pastikan muncul pesan error dan berkas `v1` sebelumnya **tetap dipertahankan** beserta pratinjaunya.
+3) Unggah berkas warga bernama `contoh-kk.pdf` dan uji kondisi isi pratinjau hilang:
+   - Beri nama sebuah file PDF/JPG di perangkat Anda menjadi `contoh-kk.pdf`, lalu unggah pada Tahap 3.
+   - Klik "Lihat berkas": pastikan yang tampil adalah isi file asli Anda dengan label **"Berkas Unggahan Warga"**, **bukan** lembar dokumen contoh sintetis.
+   - Apabila entri Blob pada IndexedDB (`daftarin_file_storage_v1` -> `file_blobs`) dihapus melalui DevTools Application -> IndexedDB lalu halaman dimuat ulang, pastikan modal pratinjau menampilkan **"Berkas tidak tersedia"** (bukan lembar dokumen contoh) dan tombol kirim memblokir pengiriman sampai berkas dipilih ulang.
+4) Kirim `v1` -> Petugas minta perbaikan -> Warga ganti berkas menjadi `v2` & kirim ulang:
+   - Kirim draf dengan berkas `v1` ke petugas (`Kiriman #1`).
+   - Masuk sebagai petugas (`petugas@daftarin.test`), pilih permintaan tersebut, klik **"Mulai tinjauan sekarang"** (status menjadi `Sedang ditinjau`), lalu pada tab **"2. Minta perbaikan"** kirim permintaan perbaikan.
+   - Masuk kembali sebagai warga, buka draf persiapan asal, ganti berkas menjadi `v2` pada Tahap 3, lalu pada Tahap 4 klik **"Kirim perbaikan untuk ditinjau"** (`Kiriman #2`).
+   - Masuk sebagai petugas: pada bagian **Riwayat versi kiriman warga**, klik tombol pratinjau pada `Kiriman #1 (v1)` dan `Kiriman #2 (v2)` — pastikan berkas `v1` dan `v2` masing-masing tetap menampilkan isi sesuai versinya.
+5) Uji pencegahan penyelesaian tinjauan petugas tanpa pemeriksaan / saat berkas tidak tersedia:
+   - Sebagai petugas, buka permintaan yang masih berstatus `Menunggu tinjauan` (`DITERIMA`) atau `Perbaikan dikirim`: buka tab **"3. Selesaikan tinjauan awal"** — pastikan muncul peringatan bahwa petugas wajib menekan **"Mulai tinjauan sekarang"** terlebih dahulu dan tombol selesai nonaktif.
+   - Setelah menekan **"Mulai tinjauan sekarang"** (status `Sedang ditinjau`), perhatikan bahwa kolom catatan penyelesaian **kosong** (tidak ada teks klaim default) dan tombol **"Selesaikan tinjauan awal"** tetap nonaktif sebelum `Data pemohon` dan seluruh berkas wajib dinilai eksplisit sebagai **`Sesuai`**.
+   - Klik **"Buka pratinjau berkas"** lalu tutup modal: pastikan membuka modal saja **tidak** otomatis mengubah penilaian item menjadi `Sesuai`.
+6) Selesaikan tinjauan awal, lalu konfirmasi hasil layanan sebagai warga:
+   - Sebagai petugas (pada status `Sedang ditinjau`), pilih penilaian **`Sesuai`** untuk data pemohon dan seluruh berkas persyaratan, isi catatan hasil tinjauan (minimal 5 karakter), lalu klik **"Selesaikan tinjauan awal"**. Status tinjauan menjadi **`Tinjauan awal selesai`**.
+   - Masuk kembali sebagai warga, buka halaman **Status Tinjauan & Pelacakan** (`/pelacakan`): catat tanda terima kanal resmi atau klik **"Konfirmasi hasil layanan diterima"**.
+   - Pastikan kartu **1. Status Tinjauan Pendamping DaftarIn** tetap berstatus **`Tinjauan awal selesai`** (tidak tertimpa), sedangkan kartu **2. Pengajuan & Hasil Layanan Pemerintah** berubah menjadi **`Hasil layanan diterima (Dilaporkan warga)`** dan linimasa mencatat sumber **`Ayu Contoh · Dilaporkan warga`**.
+7) Muat ulang browser (Reload / F5) dan pastikan seluruh state konsisten:
+   - Tekan F5 / muat ulang browser pada halaman Dokumen, Ringkasan, Pelacakan Warga, dan Antrean Petugas.
+   - Pastikan seluruh Blob berkas di IndexedDB, versi kiriman (`Kiriman #1`, `Kiriman #2`), riwayat penilaian petugas (`evaluation_history`), status tinjauan pendamping (`Tinjauan awal selesai`), serta status hasil layanan pemerintah (`Dilaporkan warga`) tetap utuh dan konsisten.
+
+================================================================================
+TANGGAL DAN WAKTU PEMBARUAN
+31 Oktober 2026, 13:15 WIB - Pembaruan Arah Produk: Alur Utama Validasi Dasar + Tinjauan Petugas Manusia, Penundaan AI/OCR sebagai Kemampuan Tambahan, Stepper 4 Tahap, Snapshot Kiriman Beku, dan Pratinjau Berkas di Panel Petugas
+================================================================================
+
+1. RINGKASAN RANCANGAN ALUR DAN PERUBAHAN ARAH PRODUK
+--------------------------------------------------------------------------------
+- Dasar referensi pelayanan Kartu Keluarga (KK):
+  Mengacu pada pola prosedur layanan KK daerah (Disdukcapil Kota Pekalongan https://disdukcapil.pekalongankota.go.id/halaman/penerbitan-kartu-keluarga.html dan Disdukcapil Kab. Ponorogo https://dukcapil.ponorogo.go.id/persyaratan-mengurus-kartu-keluarga-kk/):
+  1) Warga menyiapkan formulir dan persyaratan sesuai kondisi permohonannya.
+  2) Petugas memeriksa kelengkapan dan kesesuaian berkas.
+  3) Kekurangan dikembalikan dengan arahan perbaikan terstruktur.
+  4) Berkas yang sesuai diteruskan untuk pengajuan/pengolahan di kanal resmi.
+  5) Hasil diserahkan melalui kanal pelayanan resmi yang berlaku.
+  Seluruh antarmuka DaftarIn menegaskan bahwa aplikasi ini adalah pendamping persiapan & tinjauan awal, bukan sistem SIAK pemerintah dan tidak berwenang menerbitkan dokumen resmi.
+
+- Pemisahan Validasi Dasar, Tinjauan Petugas, dan AI/OCR:
+  1) Validasi dasar aplikasi: memeriksa konfirmasi kebutuhan (Tahap 1), format isian wajib pemohon (Tahap 2: Nama, 16 digit NIK, 16 digit Nomor KK, alamat, alasan), serta keberadaan berkas persyaratan wajib dengan format PDF/JPG/PNG dan ukuran <= 5 MB (Tahap 3).
+  2) Tinjauan petugas: pemeriksaan isi dan keterbacaan dokumen serta kesesuaian data oleh petugas pendamping setelah draf dikirim oleh warga.
+  3) Analisis AI/OCR: ditunda sebagai kemampuan tambahan berikutnya. Belum tersedianya OCR/LLM atau penggunaan berkas perangkat warga (user_file) tidak lagi menghalangi pengiriman berkas maupun pengiriman perbaikan. Adapter evaluatePreparationDraft() tetap dipertahankan untuk integrasi berikutnya.
+
+- 4 Tahap Pra-Pengiriman Warga:
+  Stepper persiapan disederhanakan menjadi:
+  1. Kebutuhan (/persiapan/kebutuhan) -> 2. Data (/persiapan/data) -> 3. Dokumen (/persiapan/dokumen) -> 4. Tinjau & kirim (/persiapan/ringkasan).
+  Pekerjaan petugas setelah pengiriman ditampilkan pada halaman Status Tinjauan & Pelacakan (/pelacakan), bukan sebagai langkah di dalam form persiapan warga. Route /persiapan/pemeriksaan tetap dipertahankan sebagai halaman rincian validasi & simulasi aturan opsional agar tautan lama tidak rusak.
+
+- Pemisahan 3 Entitas Status:
+  1) Draf persiapan pribadi warga (PREP-2026-XXXX) — tetap privat sampai dikirim eksplisit.
+  2) Permintaan tinjauan awal DaftarIn (TINJAU-2026-XXXX) — dikirim ke Unit Tinjauan Pendamping Adminduk (petugas contoh Budi Santoso) dengan status: Belum dikirim, Menunggu tinjauan, Sedang ditinjau, Perlu perbaikan, Perbaikan dikirim, dan Tinjauan awal selesai.
+  3) Catatan pengajuan di kanal resmi pemerintah (Dicatat warga / Hasil layanan diterima warga) — dicatat ketika warga sudah mengajukan berkas di loket Disdukcapil, MPP, atau portal resmi daerah.
+
+2. DAFTAR BERKAS YANG DIUBAH / DITAMBAHKAN
+--------------------------------------------------------------------------------
+- frontend/src/types/preparation.ts:
+  * Menambahkan tipe OfficerIssueCategory ("berkas_tidak_lengkap", "sulit_dibaca", "data_tidak_sesuai", "perlu_klarifikasi"), OFFICER_ISSUE_CATEGORY_LABELS, OfficerRevisionDetail, SubmittedAttachment, SubmissionSnapshot, dan OfficialSubmissionRecord.
+  * Memperbarui computePreparationReadiness() agar menghitung basicValidationPassed (Tahap 1, Tahap 2, dan berkas wajib Tahap 3 lengkap), mengarahkan resumePath ke 4 tahap utama (Kebutuhan -> Data -> Dokumen -> Tinjau & kirim), tidak memblokir pengiriman berkas perangkat pengguna (user_file), serta mendeteksi hasUnsentDraftChanges dengan membandingkan signature draf aktif terhadap lastSubmittedDataSignature dan lastSubmittedDocSignature.
+- frontend/src/components/DocumentPreviewModal.tsx (BARU):
+  * Menyediakan modal pratinjau berkas interaktif serta helper penyimpanan pratinjau lintas akun demo (saveSharedFilePreview & getSharedFilePreview pada localStorage "daftarin:shared-file-previews:v1").
+  * Menampilkan lembar dokumen contoh berwatermark jelas "CONTOH · BUKAN DOKUMEN RESMI" (baik berkas KK lama Versi 1 yang terpotong di bagian bawah maupun berkas KK Versi 2 yang utuh keempat sudutnya, KTP-el contoh, dan Akta/Surat contoh) serta menampilkan pratinjau gambar/PDF nyata untuk berkas yang diunggah dari perangkat warga (<= 1,5 MB) atau pemberitahuan jujur apabila pratinjau file tidak tersedia.
+- frontend/src/context/AppContext.tsx:
+  * Memperbarui panduan layanan KK (DEFAULT_SERVICES[0]) dengan referensi prosedur Disdukcapil Kota Pekalongan dan Disdukcapil Kab. Ponorogo.
+  * Menambahkan statusLabels dan helper getReviewStatusLabel() untuk menghasilkan label status tinjauan yang konsisten (Belum dikirim, Menunggu tinjauan, Sedang ditinjau, Perlu perbaikan, Perbaikan dikirim, Tinjauan awal selesai).
+  * Menambahkan helper buildSubmissionSnapshot() untuk membekukan data formulir dan versi berkas saat dikirim serta menghitung ringkasan perubahan (changesSummary) secara otomatis dibanding kiriman sebelumnya.
+  * Menambahkan submitForOfficerReview(prepId, citizenNote): memvalidasi kepemilikan warga, basicValidationPassed, dan consentAccepted (tanpa syarat OCR/fixture), membuat permintaan tinjauan berkode TINJAU-2026-XXXX, menyimpan submitted_snapshot (Kiriman #1), dan menugaskan ke officer-budi.
+  * Menambahkan aksi petugas terstruktur: officerStartReview(), officerRequestRevision() (menyimpan targetItem, issueCategory, problemDescription, requiredAction), dan officerCompleteReview().
+  * Memperbarui resubmitApplication() agar memvalidasi ikatan 1-ke-1 (resolveApplicationPreparationLink), basicValidationPassed, dan consentAccepted (tanpa mewajibkan OCR/fixture simulasi), membuat SubmissionSnapshot versi berikutnya beserta changesSummary, menyimpan ke submission_history, dan menandai revision_pending: true ("Perbaikan dikirim").
+  * Menambahkan recordOfficialSubmission() untuk mencatat nomor tanda terima dari kanal resmi instansi secara terpisah dari status tinjauan awal DaftarIn.
+- frontend/src/components/PreparationStepper.tsx & frontend/src/components/PreparationLayout.tsx:
+  * Mengubah stepper menjadi 4 tahap: 1. Kebutuhan, 2. Data, 3. Dokumen, 4. Tinjau & kirim.
+  * Menampilkan banner permintaan perbaikan terstruktur dari petugas (targetItem, kategori masalah, penjelasan petugas, dan tindakan yang diminta) ketika persiapan terhubung ke permintaan berstatus PERLU_PERBAIKAN, serta mengganti istilah teknis pada header draf.
+- frontend/src/pages/PreparationDocsPage.tsx:
+  * Menyimpan Data URL berkas unggahan warga (<= 1,5 MB) melalui saveSharedFilePreview() agar dapat dipratinjau baik oleh warga maupun petugas contoh.
+  * Menambahkan tombol "Lihat berkas" pada setiap dokumen terunggah dan mengganti label tombol contoh menjadi "Muat dokumen contoh (1 berkas terpotong)" serta "Muat dokumen contoh (semua berkas utuh)".
+  * Mengarahkan tombol lanjut langsung ke Tahap 4 ("Lanjut ke tinjau & kirim ->" /persiapan/ringkasan).
+- frontend/src/pages/PreparationSummaryPage.tsx:
+  * Menjadi halaman Tahap 4 ("Tinjau & kirim berkas") yang menampilkan kartu Validasi Dasar Persiapan, penjelasan ringkas 1 kali bahwa OCR/AI belum aktif dan isi dokumen diperiksa oleh petugas, daftar data & dokumen dengan tombol "Lihat berkas", ringkasan perubahan sejak kiriman sebelumnya, informasi unit penerima & perbedaan tinjauan DaftarIn vs pengajuan resmi, kotak persetujuan pembagian berkas, serta tombol utama "Kirim untuk ditinjau petugas" / "Kirim perbaikan untuk ditinjau".
+- frontend/src/pages/PreparationInspectionPage.tsx:
+  * Disederhanakan menjadi halaman rincian validasi & simulasi aturan opsional dengan tombol utama "Lanjut ke Tinjau & kirim ->".
+- frontend/src/pages/OfficerPage.tsx:
+  * Hanya menampilkan permintaan tinjauan yang sudah dikirim warga dan ditugaskan ke petugas yang sedang login.
+  * Menampilkan data formulir lengkap dari submitted_snapshot, acuan persyaratan layanan, daftar berkas dengan tombol "Buka pratinjau berkas" (DocumentPreviewModal), riwayat versi kiriman warga, serta 3 tab tindakan terstruktur: "1. Mulai tinjauan", "2. Minta perbaikan" (target dokumen/field, kategori masalah, penjelasan, tindakan perbaikan), dan "3. Selesaikan tinjauan awal".
+- frontend/src/pages/TrackingPage.tsx, frontend/src/pages/PreparationListPage.tsx, frontend/src/pages/DashboardPage.tsx:
+  * Memisahkan tampilan Status Tinjauan Awal DaftarIn (TINJAU-2026-XXXX) dari Status Pengajuan di Kanal Resmi Instansi, menampilkan rincian permintaan perbaikan petugas, menyediakan pratinjau berkas kiriman, serta mendukung pencatatan tanda terima kanal resmi.
+
+3. LANGKAH UJI MANUAL LENGKAP (WARGA -> PETUGAS -> REVISI WARGA -> TINJAUAN ULANG PETUGAS)
+--------------------------------------------------------------------------------
+Skenario 1 - Warga menyiapkan draf baru (dengan file sendiri atau dokumen contoh) dan mengirim untuk ditinjau petugas:
+  1. Masuk sebagai warga (warga@daftarin.test / DaftarIn2026!).
+  2. Buka "Persiapan saya" (/persiapan) lalu klik "Buat persiapan baru".
+  3. Tahap 1 (Kebutuhan): Pilih layanan "Pembaruan Data Kartu Keluarga (KK)", pilih subjek pengurusan, pilih kondisi permohonan, lalu klik "Simpan & lanjut ke data ->".
+  4. Tahap 2 (Data): Klik "Isi data contoh" atau lengkapi Nama, 16 digit NIK, 16 digit Nomor KK, telepon, alamat, dan alasan, lalu klik "Lanjut ke dokumen ->".
+  5. Tahap 3 (Dokumen): Unggah file PDF/JPG/PNG dari perangkat Anda sendiri ATAU klik "Muat dokumen contoh (1 berkas terpotong)". Klik "Lihat berkas" untuk memeriksa pratinjau dokumen, lalu klik "Lanjut ke tinjau & kirim ->".
+  6. Tahap 4 (Tinjau & kirim): Periksa ringkasan validasi dasar, penerima tinjauan (Unit Tinjauan Pendamping Adminduk — Budi Santoso), centang kotak persetujuan pembagian berkas, isi catatan pengantar opsional, lalu klik "Kirim untuk ditinjau petugas".
+  7. Pastikan permintaan tinjauan baru berkode TINJAU-2026-XXXX dibuat dengan status "Menunggu tinjauan" dan halaman beralih ke "/pelacakan".
+
+Skenario 2 - Mengedit draf setelah dikirim tidak mengubah snapshot petugas secara diam-diam:
+  1. Dari halaman "/pelacakan", klik "Buka draf persiapan" untuk kembali ke Tahap 4, lalu buka Tahap 2 (Data) dan ubah alamat domisili.
+  2. Kembali ke Tahap 4 (Tinjau & kirim): perhatikan muncul peringatan "Perubahan draf belum terkirim ke petugas" beserta daftar "Ringkasan perubahan sejak kiriman sebelumnya".
+
+Skenario 3 - Petugas memeriksa data, membuka pratinjau berkas, memulai tinjauan, dan meminta perbaikan terstruktur:
+  1. Keluar dari akun warga, lalu masuk sebagai petugas (petugas@daftarin.test / DaftarIn2026!).
+  2. Pada "Antrean Tinjauan Awal Petugas" (/petugas), pilih permintaan TINJAU-2026-XXXX yang baru dikirim warga (atau TINJAU-2026-0001 milik Ayu Contoh).
+  3. Periksa data pemohon dan klik "Buka pratinjau berkas" pada setiap dokumen yang dikirim warga. Pastikan lembar pratinjau tampil (termasuk penanda bagian bawah terpotong pada berkas contoh v1 atau gambar/PDF unggahan warga).
+  4. Pada bagian "Tindakan tinjauan petugas", pilih tab "1. Mulai tinjauan" dan klik "Mulai tinjauan sekarang" -> status berubah menjadi "Sedang ditinjau".
+  5. Pilih tab "2. Minta perbaikan":
+     - Pilih dokumen/bagian data: misalnya "Kartu Keluarga (KK) Asli Lama"
+     - Pilih kategori masalah: "Berkas sulit dibaca / bagian terpotong"
+     - Isi penjelasan masalah dan tindakan perbaikan yang harus dilakukan warga
+     - Klik "Kirim permintaan perbaikan ke warga" -> status berubah menjadi "Perlu perbaikan".
+
+Skenario 4 - Warga melihat catatan petugas, mengganti berkas, dan mengirim perbaikan pada permintaan yang sama:
+  1. Masuk kembali sebagai warga (warga@daftarin.test / DaftarIn2026!) dan buka "/pelacakan".
+  2. Pilih permintaan yang berstatus "Perlu perbaikan". Perhatikan kotak tindak lanjut menampilkan bagian yang bermasalah, kategori masalah, penjelasan petugas, dan tindakan yang diminta.
+  3. Klik "Perbaiki berkas & kirim ulang ->" (membuka draf persiapan asal yang terikat 1-ke-1).
+  4. Pada Tahap 3 (Dokumen), ganti berkas dengan file baru dari perangkat atau klik "Muat dokumen contoh (semua berkas utuh)" (menghasilkan Versi 2). Klik "Lihat berkas" untuk memastikan keempat sudut dokumen utuh, lalu klik "Lanjut ke tinjau & kirim ->".
+  5. Pada Tahap 4 (Tinjau & kirim), periksa "Ringkasan perubahan sejak kiriman sebelumnya", pastikan kotak persetujuan tercentang, isi catatan perbaikan, lalu klik "Kirim perbaikan untuk ditinjau".
+  6. Pastikan nomor permintaan tinjauan tetap sama (TINJAU-2026-XXXX), status berubah menjadi "Perbaikan dikirim", dan Kiriman #2 tercatat pada riwayat.
+
+Skenario 5 - Petugas meninjau ulang perbaikan dan menyelesaikan tinjauan awal, lalu warga mencatat pengajuan kanal resmi:
+  1. Masuk kembali sebagai petugas (petugas@daftarin.test / DaftarIn2026!).
+  2. Pilih permintaan berstatus "Perbaikan dikirim" (Kiriman #2), lihat kotak biru ringkasan perubahan warga, dan klik "Buka pratinjau berkas" pada dokumen Versi 2.
+  3. Pilih tab "3. Selesaikan tinjauan awal" dan klik "Selesaikan tinjauan awal" -> status berubah menjadi "Tinjauan awal selesai".
+  4. Masuk kembali sebagai warga, buka "/pelacakan", klik "Catat tanda terima kanal resmi" untuk menyimpan nomor tanda terima loket Disdukcapil (tercatat terpisah pada panel "2. Pengajuan di Kanal Resmi Instansi"), lalu klik "Konfirmasi hasil layanan diterima" bila dokumen resmi sudah diterima.
+
+4. HASIL BUILD YANG BENAR-BENAR DIJALANKAN
+--------------------------------------------------------------------------------
+- Perintah yang dijalankan: npm.cmd run build (tsc -b && vite build) pada direktori C:\Users\DzGha\Downloads\Repo Lomva\DaftarIn\frontend.
+- Hasil: Sukses (exit code 0), 63 modules transformed, 0 error TypeScript maupun bundler.
+
+================================================================================
+TANGGAL DAN WAKTU PEMBARUAN
+31 Oktober 2026, 12:30 WIB - Penutupan 5 Celah Alur & Data: Pemisahan Catatan Mandiri dari Pemeriksaan Otomatis, Validasi Ketat Hubungan Revisi Pengajuan, Penanganan ID Persiapan Tidak Valid, Penyatuan Prasyarat Kesiapan, dan Kejujuran Bukti Migrasi Data Lama
+================================================================================
+
+1. MASALAH YANG DIPERBAIKI DAN AKAR MASALAHNYA
+--------------------------------------------------------------------------------
+- Masalah 1: Konfirmasi mandiri warga menjadi hasil pemeriksaan otomatis (SIAP_AWAL)
+  Akar masalah: Pada AppContext.tsx, fungsi confirmFindingCorrection() mengubah finding.resolved menjadi true dan evaluationStatus menjadi "citizen_confirmed" untuk semua peringatan termasuk temuan berkas perangkat pengguna ("unverified-file-...") dan aturan admin ("custom-rule-...") yang berstatus "not_evaluated". Selanjutnya computePreparationReadiness() menyimpulkan status SIAP_AWAL karena unresolvedWarnings menjadi kosong, seolah berkas sudah diperiksa otomatis oleh sistem/OCR.
+- Masalah 2: Revisi pengajuan hanya membandingkan kesamaan layanan (serviceId)
+  Akar masalah: Pada resubmitApplication(), validasi masih menerima persiapan mana pun selama targetPrep.serviceId === record.service_id dan memiliki fallback ke activePreparation. Selain itu, TrackingPage, PreparationLayout, dan PreparationSummaryPage masih memiliki fallback pencocokan longgar atau default ke "prep-sample-kk-01". Ketika satu akun memiliki dua persiapan untuk layanan yang sama, draf yang salah dapat dipakai untuk mencatat revisi.
+- Masalah 3: Parameter URL ?prep=<id> yang tidak valid tetap menampilkan activePreparation
+  Akar masalah: PreparationLayout hanya memanggil selectPreparation(prepParam) di dalam useEffect apabila prepParam ditemukan, tetapi tetap me-render {children} dan {actions} menggunakan activePreparation lama ketika prepParam tidak valid atau sebelum useEffect selesai menyinkronkan state.
+- Masalah 4: Status kesiapan (computePreparationReadiness) tidak sejalan dengan prasyarat tahap
+  Akar masalah: Cabang akhir computePreparationReadiness() dapat mengembalikan PERLU_DITINJAU atau SIAP_AWAL hanya dari pemeriksaan berkas wajib dan temuan error/warning tanpa memastikan step1Kebutuhan, step2Data, dan consentAccepted masih terpenuhi. Akibatnya mencabut centang persetujuan setelah pemeriksaan selesai membuat Tahap 3 tidak selesai tetapi status kesiapan masih tampak SIAP_AWAL.
+- Masalah 5: Migrasi penyimpanan lama membuat bukti pemeriksaan yang tidak pernah tercatat
+  Akar masalah: loadOrMigratePreparations() mengisi snapshot hasil migrasi dari prep-meta:v2 / prep-meta:v1 dengan currentGuideSig, currentRulesSig, dan evaluatedScopes lengkap milik aplikasi saat ini, sehingga draf lama tampak memiliki bukti pemeriksaan terhadap versi panduan dan aturan terbaru.
+
+2. RINGKASAN PERUBAHAN TEKNIS DAN BERKAS YANG DIUBAH
+--------------------------------------------------------------------------------
+- frontend/src/types/preparation.ts:
+  * Menghapus nilai "citizen_confirmed" dari tipe EvaluationStatus dan menambahkan sumber eksplisit pada userCorrection ({ note, correctedAt, source }).
+  * Menambahkan properti legacyUnverifiedSnapshot?: boolean pada InspectionSnapshot.
+  * Menambahkan helper getRequiredInspectionScopes(service, adminRules) untuk menghitung cakupan pemeriksaan otomatis yang wajib berdasarkan layanan dan aturan aktif.
+  * Memperbarui evaluatePreparationDraft() agar cakupan "analisis_isi_dokumen" hanya masuk ke evaluatedScopes apabila seluruh berkas wajib menggunakan fixture simulasi yang dapat dievaluasi; berkas perangkat pengguna (user_file) tetap menghasilkan finding berstatus evaluationStatus: "not_evaluated" dan resolved: false.
+  * Memperbarui computePreparationReadiness() agar mewajibkan seluruh prasyarat (step1Kebutuhan, step2Data, seluruh berkas wajib terunggah, consentAccepted === true), menolak snapshot bermigrasi yang belum diverifikasi (legacyUnverifiedSnapshot), memeriksa kelengkapan cakupan otomatis (missingScopes dan notEvaluatedFindings), dan tidak pernah menghasilkan SIAP_AWAL apabila masih ada item not_evaluated.
+  * Menambahkan helper terpusat resolveApplicationPreparationLink() untuk memvalidasi kepemilikan dan ikatan 1-ke-1 antara ApplicationRecord dan PreparationRecord serta mendeteksi status "valid", "application_not_found", "unlinked_application", dan "mismatch".
+- frontend/src/context/AppContext.tsx:
+  * Memperbarui confirmFindingCorrection() agar untuk temuan berstatus evaluationStatus === "not_evaluated", catatan mandiri warga disimpan pada userCorrection dengan sumber jelas tanpa mengubah resolved menjadi true dan tanpa mengubah evaluationStatus.
+  * Menambahkan sanitizeStoredFinding() saat memuat data v3 agar temuan unverified-file-* atau custom-rule-* lama yang pernah tersimpan sebagai citizen_confirmed dikembalikan ke evaluationStatus: "not_evaluated" dan resolved: false dengan tetap mempertahankan catatan warga.
+  * Memperbarui loadOrMigratePreparations() pada migrasi prep-meta:v2 dan prep-meta:v1 agar mengisi guideSignature dan rulesSignature berlabel legacy, mengosongkan evaluatedScopes ([]), dan menandai legacyUnverifiedSnapshot: true.
+  * Memperbarui updateActivePreparation() agar tidak membuat draf baru secara diam-diam atau memutasi placeholder ketika persiapan aktif tidak valid.
+  * Menambahkan createLinkedRevisionPreparation(applicationId) untuk membuat dan mengaitkan draf perbaikan secara eksplisit bagi pengajuan lama yang belum memiliki preparation_id yang dapat dibuktikan.
+  * Memperbarui resubmitApplication() agar menggunakan resolveApplicationPreparationLink(), mewajibkan kecocokan targetPrep.id dengan preparation_id pengajuan, menolak fallback ke activePreparation, dan mengambil lampiran dari persiapan yang terhubung.
+- frontend/src/components/PreparationLayout.tsx:
+  * Menangani secara eksplisit 5 kondisi resolusi sebelum me-mount {children} dan {actions}: (1) inisialisasi draf baru (?new=1 atau guestIntent), (2) parameter ?prep= tidak ditemukan ("Persiapan tidak ditemukan" tanpa menampilkan/mengubah activePreparation), (3) parameter ?application= tidak ditemukan / belum terhubung / tidak cocok dengan ?prep=, (4) belum ada persiapan terpilih, dan (5) jeda sinkronisasi 1 siklus render hingga activePreparation.id === resolvedPrep.id.
+  * Memberikan key={activePreparation.id} pada pembungkus konten tahap dan tombol aksi agar perpindahan antardraf dan tombol kembali browser selalu merender state yang deterministik.
+- frontend/src/pages/PreparationNeedPage.tsx:
+  * Membatasi pembuatan persiapan otomatis hanya ketika ?new=1 atau terdapat guestIntent tanpa parameter ?prep= dan tanpa ?application=.
+- frontend/src/pages/PreparationInspectionPage.tsx:
+  * Membedakan secara visual 4 status pada kartu temuan: "Simulasi Fixture", "Evaluasi aturan nyata", "Analisis otomatis belum tersedia" (tetap berstatus utama "Belum dianalisis otomatis"), serta kotak "Catatan warga" lengkap dengan waktu dan sumber yang menegaskan bahwa catatan mandiri tidak menggantikan analisis otomatis OCR/sistem.
+- frontend/src/pages/PreparationSummaryPage.tsx:
+  * Menggunakan resolveApplicationPreparationLink() untuk menentukan pengajuan yang sedang direvisi, menampilkan status persetujuan pemrosesan berkas pada kartu dokumen, serta memperjelas alasan status PERLU_DILENGKAPI dan PERLU_DITINJAU.
+- frontend/src/pages/TrackingPage.tsx:
+  * Menggunakan resolveApplicationPreparationLink() tanpa fallback ke "prep-sample-kk-01" atau pencocokan service_id, serta menampilkan tindakan pembuatan & pengaitan draf perbaikan apabila pengajuan lama belum memiliki hubungan persiapan yang dapat dibuktikan.
+- frontend/src/pages/PreparationListPage.tsx:
+  * Menampilkan informasi tambahan pada kartu daftar persiapan apabila terdapat berkas yang belum dianalisis otomatis atau persetujuan pemrosesan yang belum dicentang.
+- frontend/docs/PROGRESS.md, frontend/docs/PRODUCT-DECISIONS.md, frontend/docs/LAPORAN-PEMBARUAN.txt:
+  * Memperbarui dokumentasi progres, keputusan produk, dan laporan pembaruan.
+
+3. PERILAKU SEBELUM DAN SESUDAH PERBAIKAN
+--------------------------------------------------------------------------------
+- Konfirmasi mandiri pada berkas perangkat (user_file) / aturan admin tanpa evaluator:
+  * Sebelum: Menekan "Simpan konfirmasi mandiri" mengubah temuan menjadi resolved: true ("Dikonfirmasi mandiri") dan membuat kesiapan draf berubah menjadi SIAP_AWAL ("Pemeriksaan awal selesai").
+  * Sesudah: Menekan "Simpan catatan mandiri warga" menyimpan catatan warga beserta waktu dan sumbernya, tetapi mempertahankan evaluationStatus: "not_evaluated", resolved: false, dan status kesiapan tetap PERLU_DITINJAU ("Perlu ditinjau mandiri").
+- Revisi pengajuan dengan banyak draf pada layanan yang sama:
+  * Sebelum: resubmitApplication() mengizinkan draf mana pun dengan serviceId yang sama dan dapat memakai activePreparation sebagai fallback.
+  * Sesudah: Hanya persiapan yang terikat secara eksplisit ke pengajuan tersebut (preparation_id === targetPrep.id) yang diizinkan mencatat perbaikan. Kombinasi ?prep= dan ?application= yang tidak cocok ditolak dengan layar peringatan dan tautan ke draf asal yang benar.
+- Membuka URL dengan ?prep=invalid-id:
+  * Sebelum: Halaman tetap menampilkan isi dan formulir dari activePreparation yang sedang aktif di memori.
+  * Sesudah: Halaman menampilkan keadaan "Persiapan tidak ditemukan" dengan tombol "Kembali ke Daftar persiapan" dan tidak me-mount form input maupun memutasi activePreparation.
+- Mencabut centang persetujuan pemrosesan setelah pemeriksaan selesai:
+  * Sebelum: Tahap 3 pada stepper menjadi belum selesai, tetapi status kesiapan draf masih dapat menampilkan SIAP_AWAL.
+  * Sesudah: Begitu centang persetujuan dicabut di Tahap 3, computePreparationReadiness() langsung menurunkan status menjadi PERLU_DILENGKAPI dan step4Pemeriksaan menjadi false.
+- Membuka draf lama hasil migrasi (prep-meta:v2 / prep-meta:v1):
+  * Sebelum: Snapshot hasil migrasi diberi guideSignature, rulesSignature, dan evaluatedScopes terbaru sehingga bisa tampak tidak usang.
+  * Sesudah: Snapshot hasil migrasi ditandai legacyUnverifiedSnapshot: true dengan evaluatedScopes: [], sehingga selalu berstatus PERLU_PERIKSA_ULANG sampai warga menjalankan pemeriksaan ulang. Menekan "Tandai sudah ditinjau" hanya menutup banner catatan migrasi dan tidak memvalidasi hasil pemeriksaan.
+
+4. LANGKAH UJI MANUAL (6 SKENARIO UTAMA)
+--------------------------------------------------------------------------------
+Skenario 1 - Unggah berkas pengguna vs fixture simulasi dan dampak konfirmasi mandiri:
+  1. Masuk sebagai warga (warga@daftarin.test / DaftarIn2026!).
+  2. Buka atau buat persiapan, pastikan Tahap 1 dan Tahap 2 lengkap, lalu buka Tahap 3 (/persiapan/dokumen).
+  3. Pilih berkas PDF/JPG dari perangkat lokal untuk salah satu dokumen wajib dan centang persetujuan pemrosesan.
+  4. Buka Tahap 4 (/persiapan/pemeriksaan) dan klik "Jalankan pemeriksaan".
+  5. Perhatikan kartu temuan berkas perangkat menampilkan badge "Analisis otomatis belum tersedia" dan status "Belum dianalisis otomatis".
+  6. Klik "Tambah catatan pemeriksaan mandiri" pada kartu tersebut, isi catatan, lalu klik "Simpan catatan mandiri warga".
+  7. Pastikan kotak "Catatan warga" tampil dengan sumber jelas, namun status utama kartu tetap "Belum dianalisis otomatis" dan status kesiapan draf di bagian atas serta di Tahap 5 tetap "Perlu ditinjau mandiri" (bukan "Pemeriksaan awal selesai").
+  8. Kembali ke Tahap 3, klik "[Simulasi] Fixture perbaikan (utuh)", kembali ke Tahap 4, dan klik "Periksa ulang". Pastikan status berubah menjadi "Pemeriksaan awal selesai (Simulasi Fixture)" dengan label "Simulasi Fixture" pada hasil analisis isi berkas.
+
+Skenario 2 - Dua persiapan untuk layanan yang sama ketika salah satu terhubung ke pengajuan perlu perbaikan:
+  1. Buka "/layanan/1" (Pembaruan Data Kartu Keluarga) dan klik "Buat persiapan baru (Urusan terpisah)" untuk membuat draf kedua pada layanan KK (mis. PREP-2026-0002 untuk anggota keluarga).
+  2. Buka "/pelacakan" dan lihat pengajuan CONTOH-KK-001 (sample-kk-01) yang berstatus "Perlu perbaikan" dan terhubung ke PREP-2026-0001 (prep-sample-kk-01).
+  3. Klik "Perbaiki berkas sekarang" -> pastikan URL yang dibuka adalah "/persiapan/dokumen?prep=prep-sample-kk-01&application=sample-kk-01".
+  4. Ubah parameter ?prep= di bilah alamat browser menjadi ID draf kedua (mis. "?prep=<id-draf-kedua>&application=sample-kk-01").
+  5. Pastikan aplikasi menolak kombinasi tersebut dan menampilkan halaman "Kombinasi persiapan dan pengajuan tidak cocok" dengan tombol untuk membuka persiapan asal yang benar (PREP-2026-0001).
+
+Skenario 3 - Membuka URL dengan ?prep=invalid-id:
+  1. Saat login sebagai warga, ubah URL di browser menjadi "/#/persiapan/data?prep=invalid-id" (atau tahap persiapan lainnya dengan ID yang tidak ada).
+  2. Pastikan halaman menampilkan "Persiapan tidak ditemukan" beserta tombol "Kembali ke Daftar persiapan" dan "Mulai persiapan baru".
+  3. Pastikan form input data pemohon dan tombol aksi bawah tidak ditampilkan, serta draf persiapan lain milik pengguna tidak ikut berubah.
+
+Skenario 4 - Mengubah persiapan melalui tombol kembali (Back/Forward) browser:
+  1. Buka "/persiapan" (Daftar persiapan saya) yang memiliki minimal dua draf (mis. PREP-2026-0001 dan PREP-2026-0002).
+  2. Buka draf pertama hingga Tahap 2 (/persiapan/data?prep=prep-sample-kk-01), perhatikan nama pemohon pada form.
+  3. Kembali ke "/persiapan", lalu buka draf kedua pada Tahap 2 (/persiapan/data?prep=<id-draf-kedua>) dan ubah nama pemohon.
+  4. Tekan tombol Back dan Forward pada browser untuk berpindah di antara kedua URL draf tersebut, lalu coba reload halaman (F5).
+  5. Pastikan nama pemohon, referensi di header, dan stepper selalu sesuai dengan parameter ?prep= pada URL saat ini tanpa kebocoran nilai form antardraf.
+
+Skenario 5 - Mencabut persetujuan setelah pemeriksaan selesai:
+  1. Pada draf yang sudah lulus pemeriksaan awal (berstatus "Pemeriksaan awal selesai (Simulasi Fixture)" dan Tahap 4 bertanda centang selesai), buka kembali Tahap 3 (/persiapan/dokumen).
+  2. Hapus centang pada kotak "Saya setuju berkas dan data pada draf ini diproses untuk pemeriksaan awal di DaftarIn".
+  3. Perhatikan stepper di bagian atas: tanda selesai pada Tahap 3 (Dokumen) dan Tahap 4 (Pemeriksaan) langsung hilang, dan tombol "Lanjut ke pemeriksaan" menjadi nonaktif.
+  4. Buka Tahap 5 (/persiapan/ringkasan) melalui stepper: pastikan status kesiapan langsung turun menjadi "Perlu dilengkapi" dengan penjelasan bahwa persetujuan pemrosesan berkas belum dicentang atau telah dicabut.
+
+Skenario 6 - Membuka data lama hasil migrasi:
+  1. Apabila terdapat draf yang dimigrasikan dari format penyimpanan lama (prep-meta:v2 / prep-meta:v1), buka draf tersebut.
+  2. Perhatikan banner "Catatan migrasi data lama" di bagian atas dan status pemeriksaan yang menampilkan "Perlu diperiksa ulang" karena bukti cakupan pemeriksaan dan versi aturan/panduan pada data lama tidak tercatat lengkap.
+  3. Klik tombol "Tandai sudah ditinjau" pada banner migrasi.
+  4. Pastikan hanya banner catatan migrasi yang tertutup, sedangkan status kesiapan tetap "Perlu diperiksa ulang" hingga pengguna benar-benar menekan "Periksa ulang berkas" di Tahap 4.
+
+5. BAGIAN YANG MASIH MEMAKAI DATA DUMMY ATAU MENUNGGU BACKEND
+--------------------------------------------------------------------------------
+- Analisis keterbacaan isi dokumen nyata (OCR/LLM) untuk berkas yang diunggah dari perangkat pengguna (user_file) masih menunggu integrasi layanan OCR/AI pada backend; saat ini berkas perangkat ditandai secara jujur sebagai "not_evaluated" ("Belum dianalisis otomatis").
+- Preset pengujian "[Simulasi] Fixture contoh (ada bagian terpotong)" dan "[Simulasi] Fixture perbaikan (utuh)" menggunakan data simulasi di sisi klien untuk memperagakan alur gagal/lulus pemeriksaan isi dokumen.
+- Penyimpanan draf persiapan, pengajuan, aturan admin, dan sesi pengguna masih menggunakan localStorage/sessionStorage browser karena backend NestJS (backend/src/) masih berupa scaffold awal ("Hello World!").
+
+6. HASIL BUILD YANG BENAR-BENAR DIJALANKAN
+--------------------------------------------------------------------------------
+- Perintah yang dijalankan: npm.cmd run build (tsc -b && vite build) pada direktori C:\Users\DzGha\Downloads\Repo Lomva\DaftarIn\frontend.
+- Hasil: Berhasil (exit code 0, 62 modul ditransformasi, 0 error TypeScript, bundel produksi terbangun dalam 770 ms).
+
+7. BAGIAN YANG BELUM DIPERIKSA MELALUI PENGGUNAAN LANGSUNG
+--------------------------------------------------------------------------------
+- Sesuai arahan, tidak ada pengujian browser otomatis, Playwright, atau tangkapan layar yang dijalankan.
+- Interaksi klik langsung pada antarmuka browser untuk keenam skenario uji manual di atas belum diperiksa melalui penggunaan langsung oleh agen dan disiapkan untuk diuji langsung oleh pengguna.
+
+8. DAMPAK TERHADAP DATA BROWSER LAMA
+--------------------------------------------------------------------------------
+- Data pada kunci penyimpanan "daftarin:<userId>:preparations:v3" tetap dipertahankan. Apabila di dalam data v3 terdapat temuan "unverified-file-*" atau "custom-rule-*" yang sebelumnya pernah disimpan dengan status "citizen_confirmed", fungsi sanitizeStoredFinding() otomatis memulihkannya menjadi evaluationStatus: "not_evaluated" dan resolved: false tanpa menghapus catatan warga (userCorrection).
+- Data dari kunci lama ("prep-meta:v2", "prep-meta:v1", "form", "documents", "inspections") tetap dimigrasikan tanpa menghapus localStorage, namun snapshot pemeriksaannya kini ditandai legacyUnverifiedSnapshot: true dan evaluatedScopes: [] agar wajib diperiksa ulang secara jujur.
+
+9. PEKERJAAN BERIKUTNYA YANG TERSISA
+--------------------------------------------------------------------------------
+- Membangun endpoint API backend NestJS + Prisma/PostgreSQL sesuai kontrak API untuk menyimpan PreparationRecord, ApplicationRecord, panduan layanan, dan aturan pemeriksaan di server.
+- Menghubungkan unggahan dokumen ke penyimpanan objek privat (S3/MinIO) dan pekerja OCR/LLM nyata di sisi server.
+
+================================================================================
+TANGGAL DAN JUDUL
+31 Oktober 2026 - Pemisahan Model Urusan Persiapan (PreparationRecord), Pemeriksaan Berbasis Bukti, Penyatuan Aturan Tahap, dan Perbaikan Alur Revisi Pengajuan
+================================================================================
+
+RINGKASAN
+Pembaruan ini memperbaiki arsitektur data persiapan dan pemeriksaan di DaftarIn agar setiap urusan warga berdiri sendiri dengan ID unik (PreparationRecord), menghapus penyimpulan kualitas berkas berbasis nama file atau nomor versi, menyatukan aturan perpindahan antar 5 tahap persiapan, mengamankan proses pemeriksaan ber-timer dari perubahan state di tengah jalan, mempertahankan konteks pilihan tamu saat login/daftar, serta mengikat alur revisi pengajuan langsung ke ID persiapan yang tepat.
+
+MASALAH YANG DIPERBAIKI
+1. Data formulir pemohon (formData), dokumen (documents), dan hasil pemeriksaan (inspections) sebelumnya disimpan sebagai satu objek global per akun, sedangkan metadata persiapan menggunakan serviceId sebagai kunci. Akibatnya dua pengurusan untuk layanan yang sama (misalnya dua pembaruan KK untuk anggota keluarga berbeda) saling menimpa. Kini setiap persiapan disimpan sebagai objek PreparationRecord mandiri dengan ID unik (prep-...) dan referensi unik (PREP-2026-XXXX) di dalam daftarin:<userId>:preparations:v3.
+2. Pemeriksaan berkas sebelumnya menyimpulkan kualitas dokumen dari nama file (terpotong/buram) dan menganggap setiap dokumen versi > 1 otomatis utuh/selesai. Kini nama file dan nomor versi tidak lagi dijadikan bukti keterbacaan isi dokumen. Pemeriksaan dipisahkan menjadi 4 cakupan eksplisit: format_formulir, keberadaan_berkas, analisis_isi_dokumen (berlabel Simulasi Fixture untuk preset contoh vs Belum dianalisis otomatis untuk berkas pengguna), dan aturan_admin (dicatat sebagai belum dievaluasi otomatis bila belum memiliki evaluator).
+3. Tahap 2 (PreparationDataPage) sebelumnya memanggil confirmNeedStep() secara diam-diam sehingga pengguna dapat melewati Tahap 1 tanpa konfirmasi. Auto-confirm tersebut telah dihapus; prasyarat setiap tahap kini divalidasi secara terpusat di computePreparationReadiness().
+4. Validitas pemeriksaan (InspectionSnapshot) kini membandingkan sidik jari data (dataSignature), dokumen (docSignature), versi dan rincian syarat panduan layanan (guideSignature), serta rincian isi aturan aktif admin (rulesSignature), bukan sekadar menghitung jumlah aturan aktif.
+5. Proses runAIScanSimulation() (timer 700ms) kini dikunci per ID persiapan yang sedang dipindai, menangkap snapshot input saat mulai, menolak klik ganda pada persiapan yang sama, dan mengabaikan hasil apabila data/dokumen diubah sebelum timer selesai.
+6. Pilihan layanan, wilayah, dan kondisi dari halaman panduan publik sebelum login kini disimpan di sessionStorage (daftarin:guest-intent:v1) dan parameter URL (?new=1&service=...&condition=...), serta diizinkan oleh permittedReturnPath() saat melewati halaman Masuk atau Daftar.
+7. Revisi pengajuan pada TrackingPage dan PreparationSummaryPage kini terhubung ke preparation_id spesifik (mis. sample-kk-01 terhubung ke prep-sample-kk-01), dan status PERLU_DITINJAU ditangani secara eksplisit pada halaman Ringkasan.
+8. Metadata panduan layanan contoh kini diberi penanda jelas bahwa tautan rujukan mengarah ke portal umum dan standar layanan lokal belum diverifikasi otomatis oleh instansi daerah.
+
+PERUBAHAN PER HALAMAN
+- Katalog Layanan (/katalog - CatalogPage.tsx):
+  Menampilkan jumlah draf persiapan yang tersimpan untuk setiap layanan, mempertahankan layout ruang warga saat sudah login, dan menyimpan konteks pilihan layanan/wilayah bagi pengunjung.
+- Panduan Layanan (/layanan/:id & /panduan - ServiceDetailPage.tsx):
+  Menampilkan status sumber panduan secara jujur (Data panduan contoh vs terverifikasi), menyediakan tombol "Buat persiapan baru (Urusan terpisah)" yang membuat PreparationRecord baru, serta menampilkan daftar draf yang sudah ada untuk layanan tersebut agar warga dapat memilih "Lanjutkan" pada urusan tertentu.
+- Daftar Persiapan Saya (/persiapan - PreparationListPage.tsx):
+  Menampilkan seluruh PreparationRecord milik akun warga lengkap dengan nomor referensi unik, subjek pengurusan (Diri sendiri / Anggota keluarga), nama pemohon, kondisi permohonan, progres dokumen wajib, status kesiapan, dan tautan pengajuan yang terhubung.
+- Tahap 1 Kebutuhan (/persiapan/kebutuhan - PreparationNeedPage.tsx):
+  Menerima konteks dari panduan publik pasca-login (?new=1 atau guestIntent), mengizinkan pemilihan layanan, subjek pengurusan, dan kondisi permohonan, serta menyimpan konfirmasi kebutuhan ke PreparationRecord terkait (?prep=<id>).
+- Tahap 2 Data Pemohon (/persiapan/data - PreparationDataPage.tsx):
+  Menghapus auto-confirm Tahap 1, menampilkan peringatan prasyarat bila Tahap 1 belum dikonfirmasi, serta memvalidasi Nama, 16 angka NIK, 16 angka Nomor KK, alamat domisili, dan alasan permohonan.
+- Tahap 3 Unggah Dokumen (/persiapan/dokumen - PreparationDocsPage.tsx):
+  Memisahkan tombol fixture simulasi ([Simulasi] Fixture contoh terpotong vs utuh) dari unggahan berkas perangkat pengguna, serta mewajibkan kelengkapan berkas wajib dan centang persetujuan pemrosesan sebelum lanjut ke Tahap 4.
+- Tahap 4 Pemeriksaan Berkas (/persiapan/pemeriksaan - PreparationInspectionPage.tsx):
+  Menjalankan pemeriksaan aman per ID persiapan, menampilkan label cakupan pemeriksaan (Format Formulir, Keberadaan Berkas, Analisis Isi Dokumen, Aturan Tambahan Admin) dan status evaluasi (Simulasi Fixture vs Belum dianalisis otomatis), serta menyediakan konfirmasi pemeriksaan mandiri warga untuk catatan peringatan.
+- Tahap 5 Ringkasan Persiapan (/persiapan/ringkasan - PreparationSummaryPage.tsx):
+  Menangani seluruh 5 status kesiapan termasuk PERLU_DITINJAU secara eksplisit, memisahkan tampilan ringkasan, status pemeriksaan awal, pencatatan perbaikan untuk pengajuan yang sedang direvisi, dan pencatatan pengajuan mandiri di luar aplikasi (DICATAT_WARGA).
+- Pelacakan Pengajuan (/pelacakan - TrackingPage.tsx):
+  Menautkan tombol "Perbaiki berkas sekarang" dan "Buka draf persiapan" langsung ke ID persiapan yang terhubung (?prep=...&application=...).
+- Dashboard Warga (/dashboard - DashboardPage.tsx):
+  Menampilkan persiapan terakhir dari daftar PreparationRecord beserta tautan langsung ke tahap yang perlu dilanjutkan.
+
+CARA SAYA MENCOBA
+1. Masuk sebagai Warga Contoh (warga@daftarin.test / DaftarIn2026!):
+   - Buka menu "Persiapan saya" (/persiapan) dan periksa draf PREP-2026-0001 (Pembaruan KK untuk Ayu Contoh) yang berstatus "Perlu perbaikan".
+   - Buka "Cari layanan" -> pilih "Pembaruan Data Kartu Keluarga (KK)" -> klik "Buat persiapan baru (Urusan terpisah)".
+   - Pada Tahap 1, pilih "Anggota keluarga dalam satu KK" dan kondisi "Penambahan anggota keluarga (kelahiran / mutasi)", lalu klik "Konfirmasi kebutuhan & lanjut ke data".
+   - Isi data anggota keluarga (atau klik "Isi data contoh"), lalu buka kembali menu "Persiapan saya" (/persiapan). Pastikan kedua urusan KK tampil terpisah dengan referensi, nama pemohon, dan progres dokumen masing-masing tanpa saling menimpa.
+2. Menguji Pemeriksaan Berbasis Bukti (Fixture vs Berkas Perangkat):
+   - Pada Tahap 3 (/persiapan/dokumen), coba unggah file PDF/JPG dari perangkat lokal, centang persetujuan, lalu jalankan pemeriksaan di Tahap 4. Pastikan hasil pemeriksaan menampilkan status "Belum dianalisis otomatis (OCR belum terhubung)" dan tidak mengklaim seluruh sisi dokumen terlihat utuh hanya dari nama file atau versi dokumen.
+   - Kembali ke Tahap 3, klik "[Simulasi] Fixture perbaikan (utuh)", lalu jalankan pemeriksaan ulang di Tahap 4. Pastikan temuan menggunakan label "[Simulasi Fixture]".
+3. Menguji Alur Revisi Pengajuan (CONTOH-KK-001):
+   - Buka menu "Pengajuan saya" (/pelacakan) untuk melihat pengajuan CONTOH-KK-001 yang berstatus "Perlu perbaikan".
+   - Klik "Perbaiki berkas sekarang" -> aplikasi membuka draf PREP-2026-0001 pada Tahap 3.
+   - Klik "[Simulasi] Fixture perbaikan (utuh)" -> lanjut ke Tahap 4 -> klik "Periksa ulang berkas" -> lanjut ke Tahap 5 (Ringkasan perbaikan).
+   - Klik "Catat perbaikan pada nomor pengajuan ini". Pastikan nomor pengajuan tetap CONTOH-KK-001, lampiran diperbarui ke Versi 2, dan status menjadi menunggu tinjauan petugas.
+4. Menguji Konteks Tamu (Sebelum Login -> Masuk -> Tahap Kebutuhan):
+   - Keluar dari akun, buka "/layanan/1" (Panduan Pembaruan KK), pilih kondisi "Perubahan status perkawinan", lalu klik "Mulai persiapan baru (Tahap 1)".
+   - Masuk dengan akun warga pada halaman login. Pastikan aplikasi langsung mengarahkan ke "/persiapan/kebutuhan?prep=..." dengan layanan Pembaruan KK dan kondisi "Perubahan status perkawinan" sudah terpilih.
+
+STATUS PENGERJAAN
+- Pemisahan model PreparationRecord dengan ID unik dan URL ?prep=<id>: SELESAI
+- Migrasi penyimpanan browser lama (prep-meta:v2 / form / documents / inspections): SELESAI
+- Pemeriksaan awal berbasis bukti (pemisahan fixture simulasi vs berkas pengguna): SELESAI
+- Penyatuan aturan perpindahan tahap & penghapusan auto-confirm Tahap 1 di Tahap 2: SELESAI
+- Perhitungan validitas InspectionSnapshot (data, dokumen, panduan, aturan admin): SELESAI
+- Pengamanan timer runAIScanSimulation per persiapan: SELESAI
+- Penyimpanan konteks tamu melewati login/registrasi: SELESAI
+- Pengaitan revisi pengajuan dengan preparation_id & penanganan PERLU_DITINJAU: SELESAI
+- Verifikasi build TypeScript & Vite (npm run build): SELESAI (0 error)
+
+BERKAS YANG BERUBAH
+- frontend/src/auth/types.ts
+- frontend/src/types/preparation.ts
+- frontend/src/context/AppContext.tsx
+- frontend/src/components/PreparationLayout.tsx
+- frontend/src/components/PreparationStepper.tsx
+- frontend/src/pages/CatalogPage.tsx
+- frontend/src/pages/ServiceDetailPage.tsx
+- frontend/src/pages/PreparationListPage.tsx
+- frontend/src/pages/PreparationNeedPage.tsx
+- frontend/src/pages/PreparationDataPage.tsx
+- frontend/src/pages/PreparationDocsPage.tsx
+- frontend/src/pages/PreparationInspectionPage.tsx
+- frontend/src/pages/PreparationSummaryPage.tsx
+- frontend/src/pages/DashboardPage.tsx
+- frontend/src/pages/TrackingPage.tsx
+- frontend/docs/PROGRESS.md
+- frontend/docs/PRODUCT-DECISIONS.md
+- frontend/docs/LAPORAN-PEMBARUAN.txt
+
+CATATAN DATA LAMA
+- Penyimpanan baru menggunakan kunci localStorage "daftarin:<userId>:preparations:v3" dan "daftarin:<userId>:active-prep-id:v1".
+- Saat pengguna membuka aplikasi dengan data browser lama ("prep-meta:v2", "prep-meta:v1", "form", "documents", "inspections"), fungsi loadOrMigratePreparations() secara otomatis memigrasikan draf lama ke dalam PreparationRecord tanpa menghapus seluruh localStorage.
+- Apabila data lama memiliki lebih dari satu layanan yang berbagi satu objek formData, setiap PreparationRecord hasil migrasi diberi penanda migrationNote yang tampil di bagian atas halaman persiapan hingga warga menekan tombol "Tandai sudah ditinjau".
+
+LANGKAH BERIKUTNYA
+- Implementasi modul backend NestJS + Prisma/PostgreSQL untuk menyimpan PreparationRecord, ApplicationRecord, dan panduan layanan di database server.
+- Integrasi layanan penyimpanan objek privat (S3/MinIO) dan pekerja OCR/LLM nyata pada backend untuk menggantikan evaluator simulasi fixture pada berkas unggahan warga.
+================================================================================

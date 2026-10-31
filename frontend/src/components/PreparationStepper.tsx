@@ -1,42 +1,75 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 
-interface PreparationStepperProps {
-  currentStep: number; // 1 to 5
-}
+export function PreparationStepper({ currentStep }: { currentStep: number }) {
+  const { readiness, activePreparation } = useApp();
+  const [params] = useSearchParams();
+  const prepId =
+    params.get("prep") ||
+    (activePreparation.id !== "prep-draft-uninitialized"
+      ? activePreparation.id
+      : "");
+  const applicationId = params.get("application");
 
-export const PreparationStepper: React.FC<PreparationStepperProps> = ({ currentStep }) => {
+  const queryParts: string[] = [];
+  if (prepId) queryParts.push("prep=" + encodeURIComponent(prepId));
+  if (applicationId)
+    queryParts.push("application=" + encodeURIComponent(applicationId));
+  const querySuffix = queryParts.length > 0 ? "?" + queryParts.join("&") : "";
+
+  const normalizedCurrentStep = Math.min(Math.max(currentStep, 1), 4);
+
   const steps = [
-    { num: 1, label: '01 Kebutuhan', path: '/panduan' },
-    { num: 2, label: '02 Data Pemohon', path: '/persiapan/data' },
-    { num: 3, label: '03 Unggah Berkas', path: '/persiapan/dokumen' },
-    { num: 4, label: '04 Audit AI Dokumen', path: '/persiapan/pemeriksaan' },
-    { num: 5, label: '05 Ringkasan Kesiapan', path: '/persiapan/ringkasan' },
+    {
+      label: "Kebutuhan",
+      path: "/persiapan/kebutuhan" + querySuffix,
+      completed: readiness.steps.step1Kebutuhan,
+    },
+    {
+      label: "Data",
+      path: "/persiapan/data" + querySuffix,
+      completed: readiness.steps.step2Data,
+    },
+    {
+      label: "Dokumen",
+      path: "/persiapan/dokumen" + querySuffix,
+      completed: readiness.steps.step3Dokumen,
+    },
+    {
+      label: "Tinjau & kirim",
+      path: "/persiapan/ringkasan" + querySuffix,
+      completed: readiness.steps.step4Pemeriksaan,
+    },
   ];
-
   return (
-    <div className="jmw-progress">
-      {steps.map((step) => {
-        const isComplete = step.num < currentStep;
-        const isCurrent = step.num === currentStep;
-
-        let stepClass = 'jmw-step';
-        if (isComplete) stepClass += ' is-complete';
-        if (isCurrent) stepClass += ' is-current';
-
-        return (
-          <Link key={step.num} to={step.path} className={stepClass}>
-            <div className="jmw-step-dot">
-              {isComplete ? (
-                <span className="material-symbols-outlined text-[14px]">check</span>
-              ) : (
-                step.num
-              )}
-            </div>
-            <span className="jmw-step-label">{step.label}</span>
-          </Link>
-        );
-      })}
-    </div>
+    <nav aria-label="Tahap persiapan" className="preparation-navigation">
+      <ol className="jmw-progress">
+        {steps.map((step, index) => {
+          const isCurrent = index + 1 === normalizedCurrentStep;
+          const isComplete = step.completed;
+          return (
+            <li key={step.label}>
+              <Link
+                to={step.path}
+                aria-current={isCurrent ? "step" : undefined}
+                className={
+                  "jmw-step" +
+                  (isCurrent
+                    ? " is-current"
+                    : isComplete
+                      ? " is-complete"
+                      : "")
+                }
+              >
+                <span className="jmw-step-dot" aria-hidden="true">
+                  {isComplete ? "✓" : index + 1}
+                </span>
+                <span>{step.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
-};
+}

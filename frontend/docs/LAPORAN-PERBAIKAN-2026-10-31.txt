@@ -1,0 +1,95 @@
+LAPORAN PERBAIKAN DAN UJI ULANG FRONTEND DAFTARIN
+31 Oktober 2026 pukul 14.40 WIB
+
+HASIL TERBARU
+- 47 pemeriksaan fungsi unik: 47 PASS, 0 FAIL, 0 terhalang.
+- 66 kombinasi halaman/peran/ukuran layar: 0 overflow horizontal dan 0 halaman gagal dibuka.
+- 0 error JavaScript yang tertangkap selama pengujian.
+- npm run build: berhasil. Bundel JavaScript 561,03 kB sebelum gzip; peringatan ukuran >500 kB masih ada.
+- npm run lint: exit code 0. Peringatan React/Fast Refresh, effects, dan dependencies yang telah ada masih tercatat.
+
+PERBAIKAN AKTUAL
+1. Tahap Kebutuhan: menghapus min-width 240 px yang memaksa kolom melebar dan menggunakan field-select dengan min-width:0. Dropdown mengikuti lebar kolom.
+2. Badge status netral/perhatian: teks panjang dapat membungkus dalam lebar yang tersedia.
+3. Panduan layanan: kolom grid memakai minmax(0,1fr), anak grid boleh menyusut, tombol dapat membungkus, serta teks sumber/metadata panjang tidak memaksa kolom melebar.
+4. Ringkasan: tautan rincian validasi tidak lagi dipaksa shrink-0; lebar dibatasi dan teks bisa membungkus.
+5. Modal pratinjau memakai dialog native yang dibuka dengan showModal(). Fokus awal menuju tombol Tutup pratinjau, latar menjadi inert, scroll halaman dikunci, Escape menutup, Tab/Shift+Tab tetap dalam modal, dan fokus serta scroll dipulihkan saat ditutup.
+6. Menambahkan listener Escape pada dokumen frame PDF saat dipasang/dimuat, berikut pembersihan listener saat frame berubah atau modal ditutup. Uji dilakukan juga setelah frame selesai memuat.
+Perbaikan layout tidak menggunakan overflow-x:hidden pada seluruh halaman sebagai penutup masalah.
+
+BERKAS APLIKASI YANG DIUBAH PADA PERBAIKAN INI
+- frontend/src/index.css
+- frontend/src/pages/PreparationNeedPage.tsx
+- frontend/src/pages/PreparationSummaryPage.tsx
+- frontend/src/components/DocumentPreviewModal.tsx
+
+METODE DAN BATAS PENGUJIAN
+Chrome headless melalui Playwright pada http://127.0.0.1:5173/, dengan browser context terpisah dan data contoh. Browser dan penyimpanan milik pengguna tidak dipakai.
+Ukuran layar: 1440, 390, dan 320 px. Peran: tamu, warga, petugas, admin. Modal juga diperiksa pada lebar 390/320 px.
+Alur utama mencakup unggah PNG hampir 5 MB, kirim snapshot ke petugas contoh, revisi v2, mempertahankan riwayat/Blob v1, penilaian eksplisit petugas, dan pemisahan status hasil pemerintah.
+PDF 2 MB diperiksa dari isi Blob/header PDF yang dibuka dalam iframe. Uji keyboard tambahan memakai frame PDF dan unggahan PNG nyata; mencakup fokus, latar inert, Escape, pengembalian fokus, dan scroll.
+Belum diuji: perangkat fisik, Safari/Firefox, pembaca layar, layanan backend produksi, AI/OCR, maupun integrasi pemerintah. Perilaku pembaca PDF yang diisolasi oleh browser lain belum diverifikasi.
+Ini hasil uji frontend lokal dengan data contoh, bukan sertifikasi kesiapan produksi backend.
+
+DAFTAR PEMERIKSAAN FUNGSI UNIK
+1. [PASS] Tamu: halaman pribadi diarahkan ke masuk
+2. [PASS] Masuk: kata sandi salah ditolak
+3. [PASS] Warga: katalog mempertahankan sidebar dan topbar akun
+4. [PASS] Warga: dilarang membuka admin
+5. [PASS] ID draf tidak valid tidak membuka draf lain
+6. [PASS] Pasangan draf-pengajuan tidak sesuai ditolak
+7. [PASS] Buat urusan baru dimulai pada tahap Kebutuhan
+8. [PASS] Format NIK salah menghalangi lanjut
+9. [PASS] Berkas lebih dari 5 MB ditolak
+10. [PASS] Format file tidak didukung ditolak
+11. [PASS] File hampir 5 MB tersimpan dan dapat dipratinjau
+12. [PASS] Gagal penyimpanan mempertahankan berkas sebelumnya
+13. [PASS] Dua berkas wajib lengkap membuka ringkasan tanpa AI
+14. [PASS] Pengiriman membutuhkan persetujuan berbagi
+15. [PASS] Kirim permintaan baru masuk pelacakan dan memiliki snapshot
+16. [PASS] Perubahan draf tidak mengubah snapshot kiriman
+17. [PASS] Petugas melihat snapshot kiriman milik penugasan
+18. [PASS] Petugas dapat membuka file hampir 5 MB setelah warga keluar
+19. [PASS] Modal pratinjau dapat ditutup dengan Escape
+20. [PASS] Tinjauan tidak dapat selesai sebelum dimulai
+21. [PASS] Mulai tinjauan menghasilkan VERIFIKASI
+22. [PASS] Selesai diblokir sebelum penilaian eksplisit
+23. [PASS] Permintaan revisi berisi masalah dan tindakan
+24. [PASS] Penggantian v2 tidak menghapus Blob v1
+25. [PASS] Kirim revisi mempertahankan nomor dan riwayat v1
+26. [PASS] Petugas menyelesaikan kiriman v2 setelah penilaian
+27. [PASS] Konfirmasi hasil pemerintah tidak menimpa status tinjauan
+28. [PASS] Reload mempertahankan snapshot dan hasil tinjauan
+29. [PASS] Sembilan penggantian tambahan tidak menghapus Blob kiriman v1
+30. [PASS] Dua draf layanan sama tetap menyimpan nama berbeda
+31. [PASS] Pasangan dua ID valid tetapi tidak berkaitan ditolak
+32. [PASS] Fokus dipindahkan ke modal dan tetap di dalam modal saat Tab
+33. [PASS] Logout mencegah membuka ulang halaman pribadi
+34. [PASS] Pemulihan kata sandi contoh berhasil
+35. [PASS] Tautan pemulihan tidak dapat digunakan dua kali
+36. [PASS] Simpan draf panduan tidak langsung mengubah katalog publik
+37. [PASS] Terbitkan panduan memperbarui katalog dan mencatat riwayat
+38. [PASS] Daftar: formulir kosong ditolak dengan pesan field
+39. [PASS] Daftar: akun warga baru masuk dan mendapat data kosong
+40. [PASS] Admin: navigasi tab dan daftar akun dapat dibuka
+41. [PASS] Admin: tambah petugas berhasil tersimpan
+42. [PASS] PDF 2 MB bernama contoh-kk.pdf menyimpan dan membuka isi asli
+43. [PASS] Blob hilang setelah reload memblokir kelanjutan dan tidak mengganti dokumen dengan fixture
+44. [PASS] Navigasi ponsel dapat membuka katalog dalam ruang warga
+45. [PASS] PDF: Tab dua arah, Escape dari iframe, dan fokus kembali ke pembuka
+46. [PASS] Pratinjau pada 390 dan 320 px: panel dan tombol tutup tetap dalam layar
+47. [PASS] Gambar: fokus terkunci, latar inert, Escape mengembalikan fokus dan scroll
+
+BUKTI PENGUJIAN
+Folder: outputs/qa-fix-20261031/ (di direktori workspace, sejajar folder DaftarIn).
+- workflow-results.json
+- extended-results.json
+- screens-auth-results.json
+- files-mobile-results.json
+- modal-keyboard-results.json
+- Screenshot modal-pdf-320.png dan modal-pdf-390.png untuk panel/tombol tutup pada layar kecil.
+File JSON menyimpan hasil setiap skrip. Skenario yang diulang di beberapa skrip dihitung satu kali pada total 47.
+
+RIWAYAT
+Hasil sebelum perbaikan tetap disimpan di frontend/docs/LAPORAN-PENGUJIAN-2026-10-31.txt dan outputs/qa-20261031/. Temuan 6 overflow dan 2 kegagalan keyboard pada laporan awal telah diperbaiki dan diuji ulang.
+Perubahan tersimpan lokal; tidak dilakukan commit atau push.

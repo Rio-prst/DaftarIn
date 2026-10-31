@@ -1,341 +1,527 @@
-import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
-import { PreparationStepper } from '../components/PreparationStepper';
+import { useRef, useState, type ChangeEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { PreparationLayout } from "../components/PreparationLayout";
+import {
+  DocumentPreviewModal,
+  isDocumentContentAvailable,
+  type PreviewableDocument,
+} from "../components/DocumentPreviewModal";
+import { useApp } from "../context/AppContext";
+import {
+  documentSlots,
+  getSelectedConditionOption,
+   type DocumentSlotItem,
+} from "../types/preparation";
+import {
+  formatFileSize,
+  MAX_UPLOAD_FILE_LABEL,
+  readAndStoreUploadedFile,
+  validateUploadFile,
+} from "../utils/fileStorage";
 
-export const PreparationDocsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { selectedService, formData, showToast, openChat } = useApp();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  interface DocItem {
-    id: string;
-    name: string;
-    icon: string;
+interface UploadTargetContext {
+  prepId: string;
+  prepRef: string;
+  slotId: string;
+  slotName: string;
+  slotRequired: boolean;
+  existingDocName?: string;
+  existingDocVersion?: number;
+  nextVersion: number;
+}
+
+export function PreparationDocsPage() {
+  const {
+    services,
+    activePreparation,
+    documents,
+    addDocument,
+    removeDocument,
+    loadSampleDocuments,
+    readiness,
+    showToast,
+  } = useApp();
+  const [params] = useSearchParams();
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(
+    null,
+  );
+  const [uploadingSlotId, setUploadingSlotId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<{
+    slotId: string;
+    slotName: string;
     fileName: string;
-    size: string;
-    pages: string;
-    uploaded: boolean;
-    isRequired: boolean;
-  }
+    message: string;
+    preservedFileName?: string;
+    preservedVersion?: number;
+  } | null>(null);
+  const [simulateFailureOnce, setSimulateFailureOnce] = useState(false);
 
-  const [docs, setDocs] = useState<DocItem[]>([
-    {
-      id: 'skk',
-      name: 'Surat Keterangan Lahir (faskes)',
-      icon: 'description',
-      fileName: 'surat-kelahiran-contoh.jpg',
-      size: '680 KB',
-      pages: '1 halaman',
-      uploaded: true,
-      isRequired: true,
-    },
-    {
-      id: 'kk',
-      name: 'Kartu Keluarga (KK)',
-      icon: 'badge',
-      fileName: 'kartu-keluarga-contoh.pdf',
-      size: '420 KB',
-      pages: '2 halaman',
-      uploaded: true,
-      isRequired: true,
-    },
-    {
-      id: 'nikah',
-      name: 'Buku Nikah / Dokumen Pendukung',
-      icon: 'folder_open',
-      fileName: '',
-      size: '',
-      pages: '',
-      uploaded: false,
-      isRequired: false,
-    },
-  ]);
-  const [activeUploadId, setActiveUploadId] = useState<string>('nikah');
-  const [consent, setConsent] = useState(true);
+  const currentService =
+    services.find((s) => s.id === activePreparation.serviceId) || services[0];
+  const activeCondition = getSelectedConditionOption(
+    currentService,
+    activePreparation.conditionKey,
+  );
+  const slots = documentSlots(currentService, activePreparation.conditionKey);
+  const requiredSlots = slots.filter((slot) => slot.required);
+  const input = useRef<HTMLInputElement>(null);
+  const uploadContextRef = useRef<UploadTargetContext | null>(null);
+  const navigate = useNavigate();
 
-  const handleTriggerUpload = (id: string) => {
-    setActiveUploadId(id);
-    fileInputRef.current?.click();
+  const buildQuery = () => {
+    const q = new URLSearchParams();
+    const prepId =
+      params.get("prep") ||
+      (activePreparation.id !== "prep-draft-uninitialized"
+        ? activePreparation.id
+        : "");
+    if (prepId) q.set("prep", prepId);
+    const appId = params.get("application");
+    if (appId) q.set("application", appId);
+    const qs = q.toString();
+    return qs ? "?" + qs : "";
   };
 
-  const handleSimulateUploadExample = () => {
-    setDocs((prev) =>
-      prev.map((d) =>
-        d.id === 'nikah'
-          ? { ...d, fileName: 'buku-nikah-legalisir-contoh.pdf', size: '1.2 MB', pages: '4 halaman', uploaded: true }
-          : d
-      )
+  const querySuffix = buildQuery();
+
+  const uploadedRequired = requiredSlots.filter((slot) =>
+    documents.some(
+      (doc) =>
+        doc.id === slot.id &&
+        doc.status === "TERUNGGAH" &&
+        isDocumentContentAvailable(doc),
+    ),
+  ).length;
+  const canProceedToReview = readiness.steps.step3Dokumen;
+
+  const choose = (slot: DocumentSlotItem) => {
+    const existing = documents.find(
+      (item) => item.id === slot.id && item.status === "TERUNGGAH",
     );
-    showToast('Berkas contoh "Buku Nikah Legalisir" berhasil dimuat (Kesiapan 100%)!', 'success');
+    const nextVersion = existing ? (existing.version || 1) + 1 : 1;
+    uploadContextRef.current = {
+      prepId: activePreparation.id,
+      prepRef: activePreparation.internalReference,
+      slotId: slot.id,
+      slotName: slot.name,
+      slotRequired: slot.required,
+      existingDocName: existing?.fileName,
+      existingDocVersion: existing?.version || 1,
+      nextVersion,
+    };
+    input.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const f = e.target.files[0];
-      const sizeStr = f.size > 1024 * 1024 ? `${(f.size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(f.size / 1024)} KB`;
-      setDocs((prev) =>
-        prev.map((d) =>
-          d.id === activeUploadId
-            ? { ...d, fileName: f.name, size: sizeStr, pages: '1 halaman', uploaded: true }
-            : d
-        )
+  const pickFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const ctx = uploadContextRef.current;
+    if (!ctx) return;
+
+    const validation = validateUploadFile(file);
+    if (!validation.valid) {
+      setUploadError({
+        slotId: ctx.slotId,
+        slotName: ctx.slotName,
+        fileName: file.name,
+        message: validation.message,
+        preservedFileName: ctx.existingDocName,
+        preservedVersion: ctx.existingDocVersion,
+      });
+      showToast(validation.message, "error");
+      return;
+    }
+
+    setUploadError(null);
+    setUploadingSlotId(ctx.slotId);
+    const shouldFail = simulateFailureOnce;
+    if (simulateFailureOnce) {
+      setSimulateFailureOnce(false);
+    }
+
+    try {
+      const stored = await readAndStoreUploadedFile({
+        file,
+        prepId: ctx.prepId,
+        slotId: ctx.slotId,
+        version: ctx.nextVersion,
+        simulateStorageFailure: shouldFail,
+      });
+      const sizeText = formatFileSize(stored.sizeBytes);
+
+      // Hanya masukkan metadata TERUNGGAH setelah isi berkas diverifikasi tersimpan di IndexedDB,
+      // dan ikat ke ctx.prepId asal meskipun pengguna berpindah draf saat pembacaan berlangsung.
+      addDocument(
+        {
+          id: ctx.slotId,
+          name: ctx.slotName,
+          fileName: stored.fileName,
+          size: sizeText,
+          status: "TERUNGGAH",
+          required: ctx.slotRequired,
+          fileType: validation.fileType,
+          version: ctx.nextVersion,
+          qualityPreset: "user_file",
+          previewKey: stored.storageId,
+        },
+        ctx.prepId,
       );
-      showToast(`Berkas "${f.name}" berhasil diunggah!`, 'success');
-      e.target.value = '';
+
+      showToast(
+        `Berkas "${stored.fileName}" (${sizeText}, v${ctx.nextVersion}) berhasil disimpan ke persiapan ${ctx.prepRef}.`,
+        "success",
+      );
+    } catch (err) {
+      const errMsg =
+        err instanceof Error
+          ? err.message
+          : "Gagal membaca atau menyimpan isi berkas ke penyimpanan browser.";
+      setUploadError({
+        slotId: ctx.slotId,
+        slotName: ctx.slotName,
+        fileName: file.name,
+        message: errMsg,
+        preservedFileName: ctx.existingDocName,
+        preservedVersion: ctx.existingDocVersion,
+      });
+      showToast(
+        ctx.existingDocName
+          ? `${errMsg} Berkas lama "${ctx.existingDocName}" (v${ctx.existingDocVersion || 1}) tetap dipertahankan.`
+          : errMsg,
+        "error",
+      );
+    } finally {
+      setUploadingSlotId(null);
     }
   };
 
-  const handleDeleteDoc = (id: string) => {
-    setDocs((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, fileName: '', size: '', pages: '', uploaded: false } : d
-      )
-    );
-    showToast('Berkas dihapus dari draf persiapan.', 'info');
-  };
-
-  const uploadedCount = docs.filter((d) => d.uploaded).length;
-  const totalCount = docs.length;
-  const progressPercent = Math.round((uploadedCount / totalCount) * 100);
-
   return (
-    <div className="bg-[#F5F7FB] text-on-surface flex min-h-screen font-sans">
-
-      {/* Left Sidebar (Desktop: 240px, Mobile: hidden) */}
-      <aside className="hidden md:flex w-[240px] bg-[#142C4B] text-white flex-col shrink-0 min-h-screen">
-{/*  Brand Block height 72px  */}
-<div className="h-[72px] px-5 flex items-center gap-3 border-b border-[#233F66]">
-<div className="w-8 h-8 rounded bg-[#1769D2] flex items-center justify-center text-white">
-<span className="material-symbols-outlined text-white">fact_check</span>
-</div>
-<div>
-<div className="font-heading font-black text-base tracking-tight leading-none text-white">DaftarIn</div>
-<div className="text-[10px] text-[#A6BCD7] mt-1 leading-none font-semibold">JejakMasWowo · Layanan Warga</div>
-</div>
-</div>
-{/*  Navigation Rows (height 44px, 8px gap, 16px horizontal margin)  */}
-<nav className="flex-1 py-4 px-4 space-y-2">
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/dashboard" onClick={(e) => { e.preventDefault(); navigate("/dashboard"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">dashboard</span>
-<span>Dashboard</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/katalog" onClick={(e) => { e.preventDefault(); navigate("/katalog"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">search</span>
-<span>Cari Layanan</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-semibold bg-[#1769D2] text-white shadow-sm" href="#/persiapan/data" onClick={(e) => { e.preventDefault(); navigate("/persiapan/data"); }}>
-<span className="material-symbols-outlined text-white">assignment</span>
-<span>Persiapan Saya</span>
-</a>
-<a className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#/pelacakan" onClick={(e) => { e.preventDefault(); navigate("/pelacakan"); }}>
-<span className="material-symbols-outlined text-[#C3D4EA]">send</span>
-<span>Pengajuan Saya</span>
-</a>
-<button type="button" onClick={() => showToast('Tidak ada notifikasi berkas baru.', 'info')} className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition w-full text-left">
-<span className="material-symbols-outlined text-[#C3D4EA]">notifications</span>
-<span>Notifikasi</span>
-</button>
-<button type="button" onClick={() => showToast('Data profil dikelola dari akun terdaftar.', 'info')} className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition w-full text-left">
-<span className="material-symbols-outlined text-[#C3D4EA]">manage_accounts</span>
-<span>Profil &amp; Privasi</span>
-</button>
-</nav>
-{/*  Sidebar Bottom: Keluar & Prototipe · Simulasi  */}
-<div className="p-4 border-t border-[#233F66]">
-<button type="button" onClick={() => navigate('/')} className="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition w-full text-left">
-<span className="material-symbols-outlined text-[#C3D4EA]">logout</span>
-<span>Keluar</span>
-</button>
-<div className="px-3 pt-3 text-[12px] text-[#7E98B9]">Prototipe · Simulasi</div>
-</div>
-</aside>
-{/*  Main Region (starts x240)  */}
-<div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
-{/*  Topbar (height 72px, white, border-bottom)  */}
-<header className="h-[72px] bg-white border-b border-[#DDE5EF] px-4 sm:px-8 flex items-center justify-between flex-shrink-0 z-20 overflow-x-auto">
-{/*  Breadcrumb  */}
-<div className="flex items-center gap-2 text-sm text-[#52657A]">
-<span>Persiapan</span>
-<span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span className="font-medium text-[#172B45]">{selectedService?.name || 'Akta Kelahiran'}</span>
-<span className="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
-<span className="font-semibold text-[#1769D2]">Dokumen</span>
-</div>
-{/*  Right Controls: Location, Bantuan inline, Bell, Avatar  */}
-<div className="flex items-center gap-3">
-<div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F7FB] border border-[#DDE5EF] rounded-full text-xs font-medium text-[#52657A]">
-<span className="material-symbols-outlined text-[#52657A] text-[16px]">location_on</span>
-<span>Kota Contoh · Simulasi</span>
-</div>
-<button className="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-1.5 transition" type="button" onClick={() => openChat()}>
-<span className="material-symbols-outlined text-[#52657A] text-[18px]">help_outline</span>
-<span>Bantuan</span>
-</button>
-<button onClick={() => showToast('Tidak ada notifikasi berkas baru.', 'info')} className="w-9 h-9 rounded-lg border border-[#DDE5EF] bg-white text-[#52657A] flex items-center justify-center hover:bg-[#F5F7FB] transition" type="button">
-<span className="material-symbols-outlined text-[18px]">notifications</span>
-</button>
-<div className="flex items-center gap-2 pl-2 border-l border-[#DDE5EF]">
-<div className="w-8 h-8 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-semibold text-xs">
-  {formData.nama_lengkap ? formData.nama_lengkap.slice(0, 2).toUpperCase() : 'AC'}
-</div>
-<span className="text-sm font-semibold text-[#172B45]">{formData.nama_lengkap || 'Ayu Contoh'}</span>
-</div>
-</div>
-</header>
-{/*  Page Content (inner margin 32px, bottom padding 96px for action bar)  */}
-<input ref={fileInputRef} onChange={handleFileChange} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
-<main className="flex-1 p-4 sm:p-8 pb-28 w-full overflow-y-auto">
-{/*  Page-heading block  */}
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-  <div>
-    <h1 className="text-[28px] leading-[36px] font-bold text-[#172B45]">Unggah dokumen</h1>
-    <p className="text-[14px] leading-[22px] text-[#52657A] mt-1">
-      {selectedService?.name || 'Penerbitan Akta Kelahiran Baru (contoh)'} · Kota Contoh · Persiapan JMW-DEMO-001
-    </p>
-  </div>
-  {!docs.find((d) => d.id === 'nikah')?.uploaded && (
-    <button
-      onClick={handleSimulateUploadExample}
-      className="px-3.5 py-1.5 bg-[#EBF1F8] hover:bg-[#D5E6FF] text-[#1769D2] border border-[#CBD7E6] rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs shrink-0 self-start sm:self-auto"
-      type="button"
+    <PreparationLayout
+      step={3}
+      title="Unggah dokumen"
+      actions={
+        <>
+          <Link
+            to={"/persiapan/data" + querySuffix}
+            className="button-secondary"
+          >
+            Kembali ke data
+          </Link>
+          <button
+            type="button"
+            className="button-primary disabled:opacity-50"
+            disabled={!canProceedToReview || Boolean(uploadingSlotId)}
+            onClick={() => navigate("/persiapan/ringkasan" + querySuffix)}
+          >
+            Lanjut ke tinjau &amp; kirim →
+          </button>
+        </>
+      }
     >
-      <span>⚡ Simulasikan Berkas Lengkap (3/3)</span>
-    </button>
-  )}
-</div>
-{/*  Preparation Stepper (Step 3 active)  */}
-<PreparationStepper currentStep={3} />
-{/*  Grid 2/3 Form + 1/3 Context Card (gap 24px)  */}
-<div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-{/*  2/3 Main Column (col-span-8)  */}
-<div className="lg:col-span-8 space-y-6">
-{/*  Document Upload List Card  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-6 space-y-4">
-  <div>
-    <h2 className="font-heading text-[20px] leading-[28px] font-semibold text-[#172B45]">Daftar Berkas Persiapan</h2>
-    <p className="text-[13px] leading-[20px] text-[#52657A] mt-1">Unggah salinan dokumen untuk diperiksa keterbacaan dan kesesuaian data draf secara mandiri.</p>
-  </div>
-
-  {docs.map((doc) => (
-    doc.uploaded ? (
-      <div key={doc.id} className="border border-[#DDE5EF] rounded-[12px] p-4 flex items-center justify-between bg-white hover:border-[#CBD8E9] transition">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-[#E7F0FF] border border-[#DDE5EF] flex items-center justify-center text-[#1769D2]">
-            <span className="material-symbols-outlined text-[24px]">{doc.icon}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-[#172B45]">{doc.name}</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#ECF8F3] text-[#087F68]">
-                <span className="material-symbols-outlined text-[14px]">check</span>
-                Terunggah
-              </span>
-            </div>
-            <div className="text-xs text-[#52657A] mt-1">{doc.fileName} · {doc.size} · {doc.pages}</div>
-          </div>
+      {!readiness.steps.step1Kebutuhan ? (
+        <div className="case-update-note mb-5 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <strong>Prasyarat belum selesai:</strong> Tahap 1 (Kebutuhan) belum
+            dikonfirmasi pada draf ini.
+          </span>
+          <Link
+            to={"/persiapan/kebutuhan" + querySuffix}
+            className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+          >
+            Konfirmasi kebutuhan (Tahap 1) →
+          </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => handleTriggerUpload(doc.id)} className="h-8 px-3 rounded-lg border border-[#DDE5EF] text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">Ganti</button>
-          <button onClick={() => handleDeleteDoc(doc.id)} className="h-8 px-2 rounded-lg text-xs font-semibold text-[#52657A] hover:text-[#B3261E] transition" type="button">Hapus</button>
+      ) : !readiness.steps.step2Data ? (
+        <div className="case-update-note mb-5 flex flex-wrap items-center justify-between gap-3">
+          <span>
+            <strong>Prasyarat belum selesai:</strong> Data pemohon (Nama, 16
+            angka NIK, 16 angka Nomor KK, alamat, dan alasan) pada Tahap 2 belum
+            lengkap.
+          </span>
+          <Link
+            to={"/persiapan/data" + querySuffix}
+            className="button-primary !py-1.5 !px-3 !text-xs shrink-0"
+          >
+            Lengkapi data pemohon (Tahap 2) →
+          </Link>
+        </div>
+      ) : null}
+
+      <div className="section-heading flex-wrap">
+        <div>
+          <p className="text-sm font-medium text-[#142c4b]">
+            {uploadedRequired} dari {requiredSlots.length} dokumen wajib
+            tersedia untuk kondisi <strong>{activeCondition.label}</strong>
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Validasi dasar memeriksa keberadaan isi berkas wajib, format (PDF,
+            JPG, PNG), dan ukuran (maks. {MAX_UPLOAD_FILE_LABEL}). Isi berkas
+            disimpan sebagai Blob di IndexedDB browser untuk pratinjau warga
+            &amp; petugas (penyimpanan browser ini belum menggantikan
+            penyimpanan privat pada backend).
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="button-secondary text-xs"
+            type="button"
+            onClick={() => loadSampleDocuments("issue", activePreparation.id)}
+          >
+            Muat dokumen contoh (1 berkas terpotong)
+          </button>
+          <button
+            className="button-secondary text-xs"
+            type="button"
+            onClick={() => loadSampleDocuments("fixed", activePreparation.id)}
+          >
+            Muat dokumen contoh (semua berkas utuh)
+          </button>
         </div>
       </div>
-    ) : (
-      <div
-        key={doc.id}
-        onClick={() => handleTriggerUpload(doc.id)}
-        className="border-2 border-dashed border-[#DDE5EF] hover:border-[#1769D2] rounded-[12px] p-5 text-center bg-[#F5F7FB]/50 transition cursor-pointer"
-      >
-        <div className="w-10 h-10 mx-auto rounded-full bg-white border border-[#DDE5EF] flex items-center justify-center text-[#1769D2] mb-2">
-          <span className="material-symbols-outlined text-[20px]">upload_file</span>
-        </div>
-        <div className="text-sm font-semibold text-[#172B45]">{doc.name}</div>
-        <p className="text-xs text-[#52657A] mt-1">
-          {doc.isRequired ? 'Wajib: Format PDF, JPG, atau PNG (maks. 5 MB)' : 'Opsional: Format PDF, JPG, atau PNG (maks. 5 MB)'}
-        </p>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleTriggerUpload(doc.id);
-          }}
-          className="mt-3 h-8 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#1769D2] hover:bg-[#E7F0FF]/40 inline-flex items-center gap-1.5 transition"
-          type="button"
+
+      {uploadError && (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50/90 p-3.5 text-xs text-red-900"
         >
-          <span className="material-symbols-outlined text-[16px]">add</span>
-          Pilih Berkas
-        </button>
-      </div>
-    )
-  ))}
-</div>
-{/*  Consent & Distinction Box  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-5">
-<label className="flex items-start gap-3 cursor-pointer">
-<input checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 rounded text-[#1769D2] focus:ring-0" type="checkbox"/>
-<div className="text-xs leading-[18px] text-[#52657A]">
-                Saya menyetujui pemrosesan draf berkas dengan model AI untuk analisis keterbacaan teks dan verifikasi mandiri sebelum pengajuan ke kanal resmi.
-              </div>
-</label>
-</div>
-</div>
-{/*  1/3 Context Column (col-span-4)  */}
-<div className="lg:col-span-4 space-y-5">
-{/*  Status Pengecekan Card  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-5">
-<h3 className="font-heading text-base font-semibold text-[#172B45] pb-3 border-b border-[#DDE5EF]">Kesiapan Berkas</h3>
-<div className="py-3 space-y-3">
-<div className="flex items-center justify-between text-sm">
-<span className="text-[#52657A]">Status Berkas:</span>
-<span className="font-semibold text-[#172B45]">{uploadedCount} dari {totalCount} Berkas Siap</span>
-</div>
-<div className="w-full bg-[#E7F0FF] rounded-full h-2">
-<div className="bg-[#1769D2] h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
-</div>
-<div className="text-xs text-[#52657A] leading-[18px]">
-                Berkas yang telah diunggah ({progressPercent}%) akan dianalisis kesesuaian nama, NIK, dan keterbacaan cap resmi.
-              </div>
-</div>
-<div className="pt-3 border-t border-[#DDE5EF] space-y-2 text-xs text-[#52657A]">
-<div className="flex items-start gap-2">
-<span className="material-symbols-outlined text-[#087F68] text-[16px] mt-0.5">verified_user</span>
-<span>Pemeriksaan awal membantu mendeteksi ketidaklengkapan lebih dini.</span>
-</div>
-<div className="flex items-start gap-2">
-<span className="material-symbols-outlined text-[#996000] text-[16px] mt-0.5">warning</span>
-<span>Bukan pembuktian keaslian hukum dan tidak menjamin penerimaan di loket.</span>
-</div>
-</div>
-</div>
-{/*  Note Box  */}
-<div className="bg-white border border-[#DDE5EF] rounded-[12px] p-5">
-<div className="flex items-start gap-2.5">
-<span className="material-symbols-outlined text-[#1769D2] text-[20px] mt-0.5">info</span>
-<div className="text-xs leading-[18px] text-[#52657A]">
-                Kelola persiapan dan dokumenmu dari akun ini. Informasi disimpan untuk mempermudah pengecekan mandiri sebelum kamu membawa berkas ke instansi.
-              </div>
-</div>
-</div>
-</div>
-</div>
-</main>
-{/*  Bottom Action Bar (height 64px, white, border-top, fixed bottom aligned to x240+)  */}
-<div className="h-[64px] bg-white border-t border-[#DDE5EF] px-8 flex items-center justify-between flex-shrink-0 z-20">
-<button className="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-2 transition" type="button" onClick={() => navigate("/persiapan/data")}>
-<span className="material-symbols-outlined text-[#52657A]">arrow_back</span>
-<span>Kembali</span>
-</button>
-<div className="flex items-center gap-3">
-<button onClick={() => showToast("Draf berkas berhasil disimpan!", "success")} className="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">
-          Simpan draf
-        </button>
-<button onClick={() => navigate("/persiapan/pemeriksaan")} className="h-[44px] px-4 rounded-lg bg-[#1769D2] text-white text-sm font-semibold hover:bg-[#1257B0] flex items-center gap-2 shadow-sm transition" type="button">
-<span>Periksa berkas dengan AI</span>
-<span className="material-symbols-outlined text-white">arrow_forward</span>
-</button>
-</div>
-</div>
-</div>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-red-900">
+                Gagal menyimpan berkas &ldquo;{uploadError.fileName}&rdquo; pada
+                slot {uploadError.slotName}
+              </p>
+              <p className="mt-1 leading-relaxed text-red-800">
+                {uploadError.message}
+              </p>
+              {uploadError.preservedFileName ? (
+                <p className="mt-1.5 font-medium text-emerald-800">
+                  ✓ Berkas sebelumnya ({uploadError.preservedFileName} · v
+                  {uploadError.preservedVersion || 1}) tetap dipertahankan dan
+                  tidak tertimpa.
+                </p>
+              ) : (
+                <p className="mt-1.5 text-red-700">
+                  Status slot tetap <strong>Belum diunggah</strong>. Silakan
+                  pilih berkas PDF/JPG/PNG (maks. {MAX_UPLOAD_FILE_LABEL}) dan
+                  coba unggah kembali.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="text-xs font-medium text-red-700 hover:underline shrink-0"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
 
-    </div>
+      {readiness.unavailableRequiredDocs.length > 0 && (
+        <div
+          role="alert"
+          className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950"
+        >
+          <p className="font-semibold">
+            Perhatian: {readiness.unavailableRequiredDocs.length} berkas wajib
+            tidak memiliki isi berkas yang tersimpan
+          </p>
+          <p className="mt-1 text-amber-900">
+            Berkas berikut tercatat pada metadata tetapi isinya tidak tersedia
+            di penyimpanan browser:{" "}
+            <strong>
+              {readiness.unavailableRequiredDocs.map((d) => d.name).join(", ")}
+            </strong>
+            . Pilih ulang berkas tersebut agar dapat diperiksa dan dikirim ke
+            petugas.
+          </p>
+        </div>
+      )}
+
+      <input
+        ref={input}
+        type="file"
+        className="hidden"
+        tabIndex={-1}
+        accept=".pdf,.jpg,.jpeg,.png"
+        aria-label="Pilih dokumen"
+        onChange={pickFile}
+      />
+
+      <div className="document-list">
+        {slots.map((slot) => {
+          const doc = documents.find(
+            (item) => item.id === slot.id && item.status === "TERUNGGAH",
+          );
+          const isUploading = uploadingSlotId === slot.id;
+          const contentAvailable = doc ? isDocumentContentAvailable(doc) : false;
+          const sourceBadge =
+            doc?.qualityPreset === "sample_issue"
+              ? "Dokumen contoh (bagian bawah terpotong)"
+              : doc?.qualityPreset === "sample_clean"
+                ? "Dokumen contoh (utuh & lengkap)"
+                : doc
+                  ? "Berkas dari perangkat Anda"
+                  : null;
+          return (
+            <section className="document-item" key={slot.id}>
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <span
+                  className="material-symbols-outlined text-slate-400 mt-1"
+                  aria-hidden="true"
+                >
+                  description
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-medium text-sm">{slot.name}</h2>
+                    <span
+                      className={
+                        slot.required ? "status-attention" : "status-neutral"
+                      }
+                    >
+                      {slot.required ? "Wajib" : "Tambahan"}
+                    </span>
+                    {isUploading && (
+                      <span className="status-neutral">
+                        Menyimpan isi berkas...
+                      </span>
+                    )}
+                    {doc && contentAvailable && (
+                      <span className="status-ready">
+                        Terunggah · v{doc.version || 1}
+                      </span>
+                    )}
+                    {doc && !contentAvailable && (
+                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800 border border-red-200">
+                        Berkas tidak tersedia · v{doc.version || 1}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1.5 break-words">
+                    {doc ? (
+                      <>
+                        <strong>{doc.fileName}</strong> · {doc.size}
+                        {sourceBadge ? ` · ${sourceBadge}` : ""}
+                        {!contentAvailable ? (
+                          <span className="block text-red-700 font-medium mt-1">
+                            Isi berkas tidak tersedia di penyimpanan browser —
+                            silakan pilih ulang berkas sebelum mengirim.
+                          </span>
+                        ) : null}
+                      </>
+                    ) : (
+                      slot.conditionNote || "Belum dipilih"
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {doc && (
+                  <button
+                    type="button"
+                    className="btn-secondary !py-1 !px-2.5 !text-xs"
+                    onClick={() =>
+                      setPreviewDoc({
+                        id: doc.id,
+                        name: doc.name,
+                        fileName: doc.fileName,
+                        size: doc.size,
+                        fileType: doc.fileType,
+                        version: doc.version || 1,
+                        uploadedAt: doc.uploadedAt,
+                        qualityPreset: doc.qualityPreset,
+                        previewKey: doc.previewKey,
+                        fixtureId: doc.fixtureId,
+                        previewUrl: doc.previewUrl,
+                      })
+                    }
+                  >
+                    Lihat berkas
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="text-link disabled:opacity-50"
+                  disabled={isUploading}
+                  aria-label={(doc ? "Ganti " : "Pilih ") + slot.name}
+                  onClick={() => choose(slot)}
+                >
+                  {isUploading
+                    ? "Menyimpan..."
+                    : doc
+                      ? contentAvailable
+                        ? "Ganti berkas"
+                        : "Pilih ulang berkas"
+                      : "Pilih berkas"}
+                </button>
+                {doc && (
+                  <button
+                    type="button"
+                    className="text-sm text-slate-500 hover:text-red-700"
+                    aria-label={"Hapus " + slot.name}
+                    onClick={() => removeDocument(slot.id)}
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={simulateFailureOnce}
+            onChange={(e) => setSimulateFailureOnce(e.target.checked)}
+            className="rounded border-slate-300 text-[#142c4b]"
+          />
+          <span>
+            <strong>Simulasi uji kegagalan penyimpanan:</strong> gagalkan
+            penyimpanan saat memilih berkas berikutnya (untuk menguji penanganan
+            error &amp; perlindungan berkas lama).
+          </span>
+        </label>
+        {simulateFailureOnce && (
+          <span className="rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+            Aktif untuk 1 unggahan berikutnya
+          </span>
+        )}
+      </div>
+
+      {!canProceedToReview && (
+        <p className="text-xs text-slate-500 mt-4">
+          Untuk lanjut ke tahap <strong>Tinjau &amp; kirim</strong>: pastikan
+          Tahap 1 &amp; 2 selesai dan seluruh {requiredSlots.length} dokumen
+          persyaratan wajib telah dipilih serta isinya tersimpan.
+        </p>
+      )}
+
+      <DocumentPreviewModal
+        doc={previewDoc}
+        applicantName={activePreparation.formData.nama_lengkap}
+        applicantNik={activePreparation.formData.nik}
+        applicantNoKk={activePreparation.formData.no_kk}
+        applicantAddress={activePreparation.formData.alamat}
+        onClose={() => setPreviewDoc(null)}
+        onReupload={
+          previewDoc?.id
+            ? () => {
+                const targetSlot = slots.find((s) => s.id === previewDoc.id);
+                setPreviewDoc(null);
+                if (targetSlot) {
+                  choose(targetSlot);
+                }
+              }
+            : undefined
+        }
+      />
+    </PreparationLayout>
   );
-};
+}

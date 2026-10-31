@@ -6,3 +6,21 @@ coverage/
 !.env.example
 backend/src/generated/
 *.log
+
+# Local assistant instructions and state
+AGENTS.md
+agents.md
+.agents/
+.agent/
+.codex/
+.antigravity/
+.gemini/
+
+# Local test output and temporary files
+/work/
+/outputs/
+playwright-report/
+test-results/
+*.tsbuildinfo
+Thumbs.db
+.DS_Store
