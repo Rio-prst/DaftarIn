@@ -29,10 +29,10 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="bg-white text-[#142C4B] antialiased min-h-screen flex flex-col font-sans selection:bg-[#1769D2] selection:text-white">
       {/* 1. TOP ANNOUNCEMENT RIBBON — DEEP CIVIC NAVY */}
-      <div className="bg-[#142C4B] text-white px-4 py-2.5 text-xs sm:text-sm border-b border-[#233F66]">
+      <div className="bg-[#142C4B] text-white px-4 py-2 text-xs sm:text-sm border-b border-[#233F66]">
         <div className="max-w-6xl mx-auto w-full flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-full bg-[#1769D2] text-white font-bold text-xs tracking-wider uppercase font-mono shadow-xs">
+            <span className="px-2.5 py-0.5 rounded-full bg-[#1769D2] text-white font-bold text-xs tracking-wider font-mono shadow-xs">
               100% GRATIS
             </span>
             <span className="text-slate-200 text-xs sm:text-sm font-medium">
@@ -46,9 +46,9 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. MINIMALIST BESPOKE NAVBAR DENGAN INTEGRASI AUTH */}
+      {/* 2. MINIMALIST BESPOKE NAVBAR */}
       <header className="bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] sticky top-0 z-40 transition-all">
-        <div className="w-full px-6 max-w-6xl mx-auto flex items-center justify-between h-[74px]">
+        <div className="w-full px-6 max-w-6xl mx-auto flex items-center justify-between h-[72px]">
           {/* Logo Brand: DaftarIn */}
           <div
             onClick={() => navigate('/')}
@@ -69,7 +69,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Links (Ukuran Nyaman 15px) */}
+          {/* Navigation Links (Ukuran Nyaman 15px, Bersih & Konsisten) */}
           <nav className="hidden md:flex items-center gap-8 text-[15px] font-semibold text-[#52657A]">
             <a
               href="#/katalog"
@@ -99,12 +99,12 @@ export const LandingPage: React.FC = () => {
             </button>
           </nav>
 
-          {/* Action Header: Unified Pill Button System */}
+          {/* Action Header: Konsisten & Rapi */}
           <div className="flex items-center gap-3">
             {user ? (
               <button
                 onClick={() => navigate(roleHome[user.role])}
-                className="px-5 py-2.5 rounded-full bg-[#142C4B] hover:bg-[#1769D2] text-white font-bold text-xs sm:text-sm tracking-wide shadow-xs transition-all flex items-center gap-2"
+                className="h-[42px] px-5 rounded-full bg-[#142C4B] hover:bg-[#1769D2] text-white font-semibold text-sm tracking-wide shadow-xs transition-all flex items-center gap-2"
                 type="button"
               >
                 <span>Ruang Saya ({user.name.split(' ')[0]})</span>
@@ -114,14 +114,14 @@ export const LandingPage: React.FC = () => {
               <>
                 <button
                   onClick={() => navigate('/masuk')}
-                  className="text-sm font-bold text-[#52657A] hover:text-[#142C4B] px-3 py-2 transition"
+                  className="h-[42px] px-4 rounded-full text-sm font-semibold text-[#52657A] hover:text-[#142C4B] transition"
                   type="button"
                 >
                   Masuk
                 </button>
                 <button
                   onClick={() => navigate('/daftar')}
-                  className="px-5 py-2.5 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="h-[42px] px-5 rounded-full bg-[#1769D2] hover:bg-[#1255AC] text-white font-semibold text-sm shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all"
                   type="button"
                 >
                   Daftar
@@ -136,7 +136,7 @@ export const LandingPage: React.FC = () => {
       <section className="relative pt-10 pb-16 md:pt-14 md:pb-24 overflow-hidden bg-gradient-to-r from-white via-[#F8FAFD] to-[#E9F3F2] border-b border-[#E2E8F0]">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Left Column (7 cols): Editorial Headline & Unified Capsule CTA */}
+            {/* Left Column (7 cols): Editorial Headline & Unified Capsule Input + CTA */}
             <div className="lg:col-span-7 space-y-6 text-left">
               {/* Civic Pill Tag */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#CBD7E6] shadow-xs text-xs sm:text-sm font-semibold text-[#142C4B]">
@@ -157,38 +157,39 @@ export const LandingPage: React.FC = () => {
                 Pra-verifikasi mandiri ejaan nama KTP-el, nomor Kartu Keluarga, dan kelengkapan dokumen sebelum ke loket dinas. Bebas calo dan Rp 0 resmi sesuai amanat UU No. 24/2013.
               </p>
 
-              {/* Search & Actions Bar with Unified Pill Button System */}
+              {/* Search & Actions Bar: Sempurna 1 Garis Sejajar h-[52px] */}
               <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-xl">
-                <form onSubmit={handleSearchSubmit} className="flex-1 bg-white p-1.5 rounded-full border-2 border-[#CBD7E6] shadow-xs flex items-center gap-2 focus-within:border-[#1769D2] transition-colors">
-                  <div className="flex-1 flex items-center gap-2 pl-3">
-                    <svg className="w-4 h-4 text-[#52657A] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari syarat (misal: Akta Kelahiran, KK, KTP)..."
-                      className="w-full text-sm font-medium outline-none text-[#142C4B] placeholder:text-slate-400 bg-transparent h-[40px]"
-                    />
-                  </div>
+                <form
+                  onSubmit={handleSearchSubmit}
+                  className="flex-1 h-[52px] bg-white pl-4 pr-1.5 rounded-full border border-slate-300 shadow-xs flex items-center gap-2 focus-within:border-[#1769D2] focus-within:ring-2 focus-within:ring-[#1769D2]/20 transition-all"
+                >
+                  <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari syarat berkas (Akta, KK, KTP)..."
+                    className="w-full text-[14px] sm:text-[15px] font-normal outline-none text-[#142C4B] placeholder:text-slate-400 bg-transparent"
+                  />
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-full bg-[#142C4B] hover:bg-[#1769D2] text-white text-xs sm:text-sm font-bold uppercase tracking-wider shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xs"
+                    className="h-[40px] px-5 rounded-full bg-[#142C4B] hover:bg-[#1769D2] text-white text-[14px] font-semibold shrink-0 transition-all active:scale-95 shadow-2xs"
                   >
                     Cari
                   </button>
                 </form>
 
-                {/* Unified Master CTA Button (Capsule style with nested arrow) */}
+                {/* Master CTA Button (Exact h-[52px] Alignment & Cohesive Title Case) */}
                 <button
                   onClick={() => navigate(user ? '/persiapan' : '/panduan')}
-                  className="px-6 py-3.5 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white text-xs sm:text-sm font-bold uppercase tracking-wider shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm flex items-center justify-center gap-2.5"
+                  className="h-[52px] px-6 rounded-full bg-[#1769D2] hover:bg-[#1255AC] text-white text-[15px] font-semibold shrink-0 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm flex items-center justify-center gap-2.5"
                   type="button"
                 >
                   <span>Mulai Cek Berkas</span>
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                     </svg>
                   </div>
@@ -196,7 +197,7 @@ export const LandingPage: React.FC = () => {
               </div>
 
               {/* Clean Micro Indicators (Jelas & Terbaca 13-14px) */}
-              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs sm:text-sm text-[#52657A] font-medium">
+              <div className="pt-1 flex flex-wrap items-center gap-6 text-xs sm:text-sm text-[#52657A] font-medium">
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -250,7 +251,7 @@ export const LandingPage: React.FC = () => {
       <section className="py-16 px-6 max-w-6xl mx-auto w-full" id="kenapa-kami">
         <div className="bg-white rounded-3xl border border-[#CBD7E6] p-8 md:p-12 shadow-sm space-y-8">
           <div className="text-center max-w-2xl mx-auto space-y-2.5">
-            <span className="px-3.5 py-1.5 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
+            <span className="px-3.5 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
               NAVIGASI PENGURUSAN MANDIRI
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-[#142C4B]">
@@ -261,12 +262,12 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Unified Pill Buttons for Service Selector */}
+          {/* Unified Pill Buttons for Service Selector (Consistent Title Case) */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => setSelectedService('akta')}
-              className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2.5 min-h-[46px] ${
+              className={`h-[48px] px-6 rounded-full font-semibold text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'akta'
                   ? 'bg-[#142C4B] text-white shadow-md scale-102'
                   : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
@@ -281,7 +282,7 @@ export const LandingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedService('kk')}
-              className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2.5 min-h-[46px] ${
+              className={`h-[48px] px-6 rounded-full font-semibold text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'kk'
                   ? 'bg-[#142C4B] text-white shadow-md scale-102'
                   : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
@@ -296,7 +297,7 @@ export const LandingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedService('ktp')}
-              className={`px-6 py-3 rounded-full font-bold text-sm transition-all flex items-center gap-2.5 min-h-[46px] ${
+              className={`h-[48px] px-6 rounded-full font-semibold text-sm transition-all flex items-center gap-2.5 ${
                 selectedService === 'ktp'
                   ? 'bg-[#142C4B] text-white shadow-md scale-102'
                   : 'bg-[#F8FAFD] text-[#52657A] hover:bg-slate-100 border border-[#CBD7E6]'
@@ -342,12 +343,12 @@ export const LandingPage: React.FC = () => {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => handleStartService(selectedService)}
-                className="w-full py-3.5 px-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-xs uppercase tracking-wider shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 min-h-[46px]"
+                className="w-full h-[48px] px-6 rounded-full bg-[#1769D2] hover:bg-[#1255AC] text-white font-semibold text-sm shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                 type="button"
               >
                 <span>Lihat Panduan &amp; Mulai Cek</span>
-                <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                   </svg>
                 </div>
@@ -363,7 +364,7 @@ export const LandingPage: React.FC = () => {
       {/* 5. ALUR 4 TAHAP PROSEDURAL */}
       <section id="cara-kerja" className="py-16 px-6 max-w-6xl mx-auto space-y-12 w-full text-center">
         <div className="space-y-2.5 max-w-2xl mx-auto">
-          <span className="px-3.5 py-1.5 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
+          <span className="px-3.5 py-1 rounded-full bg-[#EBF1F8] text-[#1769D2] font-mono font-bold text-xs uppercase tracking-wider">
             SISTEMATIKA PROSES
           </span>
           <h2 className="text-3xl font-extrabold font-display text-[#142C4B]">
@@ -543,12 +544,12 @@ export const LandingPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={() => navigate(user ? '/persiapan' : '/panduan')}
-              className="px-8 py-4 rounded-full bg-[#1769D2] hover:bg-[#1257B0] text-white font-bold text-sm shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5 min-h-[48px]"
+              className="h-[52px] px-8 rounded-full bg-[#1769D2] hover:bg-[#1255AC] text-white font-semibold text-sm shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2.5"
               type="button"
             >
               <span>Mulai Persiapan Mandiri</span>
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                 </svg>
               </div>
