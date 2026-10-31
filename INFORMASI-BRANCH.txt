@@ -10,6 +10,16 @@ Akun GitHub untuk push: XakiTooo
 Penulis commit: Dzaki Ghatfaan Abhipraya
 Email commit: 179832370+XakiTooo@users.noreply.github.com
 
+STATUS PUBLIKASI TERAKHIR
+Branch dan perubahan sudah di-commit secara lokal.
+Commit implementasi frontend: 1c3e1d6.
+Percobaan push ke origin ditolak GitHub dengan HTTP 403:
+Permission to Rio-prst/DaftarIn.git denied to XakiTooo.
+Branch ini BELUM terunggah ke GitHub pada percobaan tersebut.
+Agar dapat dipush ke repository yang sama, akun XakiTooo perlu mendapatkan
+akses tulis/collaborator, atau autentikasi perlu menggunakan akun berizin.
+Tidak dibuat fork dan tidak dilakukan perubahan pada branch remote lain.
+
 TUJUAN BRANCH
 Menyimpan seluruh pembaruan frontend lokal yang telah dikerjakan, termasuk
 penyempurnaan alur warga/petugas/admin dan perbaikan hasil pengujian browser.
