@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { AppContextProvider } from "./context/AppContext";
 import { ToastContainer } from "./components/ToastContainer";
 import { ChatbotModal } from "./components/ChatbotModal";
+import { DemoToolbar } from "./components/DemoToolbar";
 import { RouteFocus } from "./components/RouteFocus";
 import { LandingPage } from "./pages/LandingPage";
 import { CatalogPage } from "./pages/CatalogPage";
@@ -24,6 +25,7 @@ import { PreparationSummaryPage } from "./pages/PreparationSummaryPage";
 import { TrackingPage } from "./pages/TrackingPage";
 import { OfficerPage } from "./pages/OfficerPage";
 import { AdminPage } from "./pages/AdminPage";
+
 function Application() {
   const { user } = useAuth();
   return (
@@ -85,10 +87,12 @@ function Application() {
         </Routes>
         <ToastContainer />
         <ChatbotModal />
+        <DemoToolbar />
       </div>
     </AppContextProvider>
   );
 }
+
 export function App() {
   return (
     <HashRouter>
@@ -98,4 +102,5 @@ export function App() {
     </HashRouter>
   );
 }
+
 export default App;
