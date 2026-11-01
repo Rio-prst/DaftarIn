@@ -264,11 +264,11 @@ function OfficerDetail({ record, historyVersion, readOnly }: { record: Applicati
     allItemsMarkedSesuai &&
     completeNote.trim().length >= 5;
 
-  const handleStart = (e: FormEvent) => {
+  const handleStart = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     try {
-      officerStartReview(record.id, startNote);
+      await officerStartReview(record.id, startNote);
       setStartNote("");
       setActionTab("complete");
     } catch (cause) {
@@ -278,11 +278,11 @@ function OfficerDetail({ record, historyVersion, readOnly }: { record: Applicati
     }
   };
 
-  const handleRevision = (e: FormEvent) => {
+  const handleRevision = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     try {
-      officerRequestRevision(
+      await officerRequestRevision(
         record.id,
         {
           targetItem,
@@ -303,11 +303,11 @@ function OfficerDetail({ record, historyVersion, readOnly }: { record: Applicati
     }
   };
 
-  const handleComplete = (e: FormEvent) => {
+  const handleComplete = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     try {
-      officerCompleteReview(record.id, completeNote, buildItemAssessments());
+      await officerCompleteReview(record.id, completeNote, buildItemAssessments());
       setCompleteNote("");
     } catch (cause) {
       setError(

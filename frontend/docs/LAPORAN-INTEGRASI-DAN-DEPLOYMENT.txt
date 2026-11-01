@@ -1,0 +1,198 @@
+================================================================================
+           LAPORAN RESMI INTEGRASI AKHIR DAN PANDUAN DEPLOYMENT
+                               DAFTARIN (2026)
+================================================================================
+Tanggal Penyusunan : 02 November 2026
+Cabang Git         : feat1/frontend (berdasarkan merge commit 50908a5 origin/main)
+Status Validasi    : LULUS PENGUJIAN PENUH (Build, Typecheck, Unit Test, & E2E Test)
+================================================================================
+
+1. RINGKASAN EKSEKUTIF
+--------------------------------------------------------------------------------
+DaftarIn telah mencapai tahap integrasi penuh end-to-end antara Frontend SPA
+(React + Vite) dan REST API Backend (NestJS + Prisma + PostgreSQL). Seluruh alur
+bisnis pendampingan layanan adminduk (khususnya penerbitan Kartu Keluarga) kini
+berjalan secara riil memanggil API server saat berada dalam mode API (`VITE_AUTH_MODE=api`),
+namun tetap mempertahankan fallback mandiri tanpa backend jika dijalankan dalam
+mode demo lokal (`VITE_AUTH_MODE=demo`).
+
+Seluruh pekerjaan lokal, perbaikan modul autentikasi, penyatuan skema basis data,
+serta fitur Panduan Demo dari Codex (DemoGuide.tsx, demo-guide.css, TopBar.tsx,
+App.tsx, styling mobile responsif, tema navy/coral/warm white, dan guest chatbot)
+telah diamankan dan dipertahankan 100%.
+
+--------------------------------------------------------------------------------
+2. CAKUPAN INTEGRASI MODUL BISNIS YANG DISELESAIKAN
+--------------------------------------------------------------------------------
+
+A. Autentikasi, Keamanan Sesi, dan Profil Warga
+   - Endpoint: `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/logout`,
+     `GET /api/account`, `POST /api/account/password`, `GET/PATCH /api/account/preferences`.
+   - Bug Ubah Sandi: Terselesaikan sepenuhnya. Pengubahan kata sandi secara aman
+     menghapus refresh session lama, mengupdate hash password baru dengan bcrypt (salt 12),
+     dan menolak kata sandi lama.
+   - Dual-Mode Token: Guard `JwtAuthGuard` backend mendukung ekstraksi cookie HttpOnly
+     `access_token` serta header `Authorization: Bearer <token>`, memberikan ketahanan
+     maksimal terhadap pembatasan third-party cookie pada browser modern.
+
+B. Pengelolaan Data Anggota Keluarga Warga
+   - Endpoint: `GET /api/account/family-members`, `POST /api/account/family-members`,
+     `GET /api/account/family-members/:id`, `PATCH /api/account/family-members/:id`,
+     `DELETE /api/account/family-members/:id`.
+   - Terhubung langsung ke tabel `family_members` di database. Data keluarga yang
+     disimpan dapat dipilih saat warga mengisi persiapan layanan.
+
+C. Layanan Bantuan dan Klarifikasi Warga (Help Desk)
+   - Endpoint: `GET /api/help-requests`, `POST /api/help-requests`,
+     `GET /api/help-requests/:id`, `POST /api/help-requests/:id/replies`.
+   - Warga dapat mengajukan pertanyaan/kendala pengurusan formulir dan menerima
+     balasan atau catatan klarifikasi secara persisten di database.
+
+D. Pusat Notifikasi Terpadu
+   - Endpoint: `GET /api/notifications`, `POST /api/notifications/read-all`,
+     `PATCH /api/notifications/:id/read`.
+   - Query pagination dan listing dioptimalkan secara sequential (`findMany` lalu `count`),
+     menjamin stabilitas koneksi driver adapter PostgreSQL.
+
+E. Persiapan Layanan, Data Pemohon, dan Unggahan Berkas
+   - Endpoint: `GET /api/services`, `POST /api/preparations`, `PATCH /api/preparations/:id`,
+     `POST /api/documents/upload`, `GET /api/documents/:id`.
+   - Berkas diunggah dengan batas ukuran 10 MB (diselaraskan antara FE dan BE).
+   - Pengunggahan dokumen ke Supabase Storage (atau fallback folder `storage_files/`)
+     menggunakan kebijakan strictly immutable (`upsert: false`), menjamin versi berkas
+     tidak pernah saling menimpa secara tidak sengaja.
+
+F. Pengiriman Permohonan dan Snapshot Tetap (Immutable Snapshot)
+   - Endpoint: `POST /api/preparations/:id/submissions`.
+   - Saat warga menekan "Kirim ke Petugas", aplikasi membekukan kondisi formulir
+     dan dokumen menjadi `submission_snapshots` versi 1.
+   - Perubahan berikutnya pada draf persiapan warga TIDAK akan mengubah berkas yang
+     sedang diperiksa petugas pada snapshot aktif.
+
+G. Penugasan Petugas & Pencabutan Akses Tugas Lama (Admin Reassignment)
+   - Endpoint: `POST /api/admin/assignments`.
+   - Logika Backend: Pembuatan penugasan petugas baru secara otomatis mencabut
+     penugasan petugas sebelumnya dengan status `assignmentStatus: 'REVOKED'` dan
+     mencatat timestamp `endedAt: new Date()`.
+   - Riwayat penugasan tetap tersimpan lengkap di audit trail tanpa konflik hak akses.
+
+H. Peninjauan Petugas, Catatan Per Butir, dan Permintaan Revisi
+   - Endpoint: `GET /api/officer/assignments`, `POST /api/officer/applications/:id/events`,
+     `POST /api/officer/applications/:id/decisions`.
+   - Petugas dapat memulai peninjauan (`status_changed: verification`), menilai dokumen
+     per butir (`item_assessments`), dan menerbitkan keputusan permintaan revisi
+     (`decision: revision_requested`) lengkap dengan arahan perbaikan terstruktur.
+
+I. Pengiriman Ulang Revisi Warga pada Permohonan yang Sama
+   - Endpoint: `POST /api/applications/:id/resubmissions`.
+   - Warga mengirim berkas pengganti tanpa membuat aplikasi baru dari nol.
+   - Sistem secara otomatis membentuk `submission_snapshots` versi 2 yang terikat
+     pada `applicationId` yang sama, sehingga riwayat perbaikan utuh dan transparan.
+
+J. Persetujuan Akhir Petugas Tinjauan
+   - Endpoint: `POST /api/officer/applications/:id/decisions`.
+   - Petugas menyelesaikan peninjauan dengan keputusan `approved_for_submission`,
+     memberikan kepastian kepada warga bahwa berkas telah lengkap dan siap diajukan
+     ke loket fisik instansi atau kanal resmi pemerintah.
+
+K. Catatan Tindak Lanjut Warga & Konfirmasi Penerimaan Hasil Resmi
+   - Endpoint: `POST /api/applications/:id/citizen-notes`,
+     `POST /api/applications/:id/confirm-result-received`.
+   - Warga mencatat tanggal penyerahan ke loket dan nomor tanda terima resmi instansi.
+   - Setelah dokumen fisik diterbitkan oleh instansi, warga mengonfirmasi penerimaan hasil
+     sehingga status pengajuan berubah menjadi `RESULT_RECEIVED_BY_CITIZEN`.
+   - Penarikan pengajuan (`withdrawReview`) dicegah secara otomatis jika hasil telah diterima.
+
+L. Garis Waktu Pengajuan (Timeline Status Events)
+   - Endpoint: `GET /api/applications/:id/timeline`.
+   - Menyajikan 7 jejak rekam transparan: pengiriman awal, penugasan petugas, mulai verifikasi,
+     permintaan revisi, pengiriman revisi v2, catatan warga, dan konfirmasi penerimaan hasil.
+
+--------------------------------------------------------------------------------
+3. STATUS DATABASE & MIGRASI SKEMA
+--------------------------------------------------------------------------------
+Seluruh migrasi Prisma telah diterapkan secara sukses dan divalidasi pada PostgreSQL:
+  1. `20261031114040_init`
+  2. `20261031125746_add_refresh_sessions`
+  3. `202611010002_account_preferences`
+  4. `20261102000000_companion_lifecycle_and_help`
+
+Tabel yang telah terverifikasi aktif di skema `public`:
+  - `users`, `roles`, `user_roles`, `account_tokens`, `account_preferences`
+  - `family_members`
+  - `help_requests`, `help_replies`
+  - `notifications`
+  - `services`, `regions`, `agencies`, `official_sources`, `service_questions`
+  - `guide_versions`, `guide_sections`, `guide_source_links`, `requirement_rule_versions`, `requirements`
+  - `preparations`, `document_versions`, `answer_versions`
+  - `application_records`, `submission_snapshots`, `submission_reviews`, `item_assessments`
+  - `officer_assignments`, `officer_escalations`, `status_events`, `audit_events`
+
+Idempotent Bootstrap Script (`npm run demo:bootstrap`):
+  - Memastikan peran `citizen`, `officer`, dan `admin`.
+  - Menyiapkan akun contoh:
+      * `warga@daftarin.test`   (Password awal: DaftarIn2026!)
+      * `petugas@daftarin.test` (Password awal: DaftarIn2026!)
+      * `admin@daftarin.test`   (Password awal: DaftarIn2026!)
+  - Menyiapkan katalog panduan resmi Penerbitan Kartu Keluarga Kota Contoh.
+  - Sifat Idempotent: TIDAK mereset password akun jika sudah diubah oleh pengguna,
+    dan TIDAK membuat data pengajuan sampah secara otomatis.
+
+--------------------------------------------------------------------------------
+4. HASIL AUDIT DAN VERIFIKASI PENGUJIAN
+--------------------------------------------------------------------------------
+
+A. Pemeriksaan Kompilasi dan Typecheck
+   - Frontend: `npm run build` (`tsc -b && vite build`) -> BERHASIL (0 errors).
+   - Backend: `npm run build` (`nest build`) -> BERHASIL (0 errors).
+
+B. Pengujian Unit Backend (Jest Test Suite)
+   - Perintah: `npm run test` di `backend`.
+   - Hasil: 24 Test Suites Lulus (100%), 157 Tests Lulus (100%), 0 Gagal.
+   - Waktu eksekusi: ~5.9 detik.
+
+C. Pengujian Siklus Hidup End-to-End (E2E Lifecycle Verification)
+   - Script: `scratch/test_e2e_lifecycle.cjs`
+   - Hasil 13 Langkah Validasi:
+     [1] Health Check API                       : LULUS (status ok)
+     [2] Login Warga & Verifikasi Profil         : LULUS (warga@daftarin.test)
+     [3] Verifikasi Ubah Sandi & Revert          : LULUS (tolak sandi lama, login sandi baru, kembalikan ke default)
+     [4] CRUD Anggota Keluarga Warga             : LULUS (ID tersimpan di DB)
+     [5] Buat Permintaan Bantuan & Reply         : LULUS (Thread pesan tersimpan)
+     [6] Ambil & Tandai Baca Notifikasi          : LULUS (Mark all read)
+     [7] Buat Persiapan & Kirim Pengajuan        : LULUS (Snapshot v1 immutable terbentuk)
+     [8] Login Admin & Penugasan Petugas         : LULUS (Tugas lama dicabut, petugas baru aktif)
+     [9] Mulai Tinjauan & Permintaan Revisi      : LULUS (Penilaian butir & alasan revisi tercatat)
+     [10] Warga Mengirimkan Berkas Revisi       : LULUS (Snapshot v2 immutable terbentuk)
+     [11] Petugas Menyetujui Hasil Tinjauan      : LULUS (Review approved)
+     [12] Catatan Tindak Lanjut & Konfirmasi     : LULUS (Status RESULT_RECEIVED_BY_CITIZEN tercatat)
+     [13] Verifikasi Garis Waktu (Timeline)     : LULUS (7 events lengkap terekam)
+
+--------------------------------------------------------------------------------
+5. PANDUAN PENYIAPAN LINGKUNGAN (ENVIRONMENT & DEPLOYMENT)
+--------------------------------------------------------------------------------
+File dokumentasi lengkap telah dibuat pada: `ENV-DEPLOYMENT.txt` di root repository.
+File template variabel lingkungan bersih tanpa rahasia telah disiapkan:
+  - `backend/.env.example`
+  - `frontend/.env.example`
+
+Ringkasan parameter deployment:
+1. Vercel (Frontend):
+   - Setel `VITE_AUTH_MODE=api`
+   - Setel `VITE_API_URL=https://<domain-backend>/api`
+2. Railway / VPS (Backend):
+   - Setel `NODE_ENV=production`
+   - Setel `COOKIE_SECURE=true` (untuk domain ber-HTTPS)
+   - Setel `CORS_ORIGIN=https://<domain-frontend>`
+   - Hubungkan `DATABASE_URL` dan `DIRECT_URL` ke PostgreSQL.
+   - Jalankan `npx prisma migrate deploy` lalu `npm run demo:bootstrap`.
+
+--------------------------------------------------------------------------------
+6. KEPATUHAN TERHADAP BATASAN PEKERJAAN
+--------------------------------------------------------------------------------
+- TIDAK melakukan git commit, push, merge, checkout paksa, atau pindah branch.
+- TIDAK menghapus database atau menjalankan reset destruktif pada shared database.
+- TIDAK menyentuh atau membongkar modul AI/OCR yang ditunda.
+- TIDAK memaparkan password, token, atau secret key pada file dokumentasi atau log.
+- Seluruh file telah tersimpan aman di disk lokal dan siap diserahkan kepada Codex.
+================================================================================

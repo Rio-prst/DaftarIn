@@ -40,7 +40,7 @@ export class AccountController {
   }
   @Post('password')
   @HttpCode(204)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'production' ? 5 : 60, ttl: 60000 } })
   async changePassword(
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: ChangePasswordDto,

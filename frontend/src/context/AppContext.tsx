@@ -11,6 +11,13 @@ import { isDocumentContentAvailable } from "../components/DocumentPreviewModal";
 import { subscribeFileStorage, deleteDraftFiles } from "../utils/fileStorage";
 import { mockAuth } from "../auth/mockAuth";
 import {
+  servicesApi,
+  preparationsApi,
+  applicationsApi,
+  officerApi,
+} from "../api/client";
+import { adminApi } from "../api/admin";
+import {
   computeDataSignature,
   computeDocSignature,
   computeGuideSignature,
@@ -491,7 +498,7 @@ interface AppContextType {
     | "assigned_officer_id"
     | "revision_pending"
   >[];
-  assignReviewOfficer: (id: string, officerId: string, reason: string) => void;
+  assignReviewOfficer: (id: string, officerId: string, reason: string) => Promise<void> | void;
   reviewServiceSource: (
     id: number,
     version: number,
@@ -522,8 +529,8 @@ interface AppContextType {
   submitForOfficerReview: (
     prepId?: string,
     citizenNote?: string,
-  ) => ApplicationRecord;
-  officerStartReview: (id: string, note?: string) => void;
+  ) => Promise<ApplicationRecord> | ApplicationRecord;
+  officerStartReview: (id: string, note?: string) => Promise<void> | void;
   officerRequestRevision: (
     id: string,
     detail: {
@@ -533,23 +540,23 @@ interface AppContextType {
       requiredAction: string;
     },
     itemAssessments?: OfficerItemAssessment[],
-  ) => void;
+  ) => Promise<void> | void;
   officerCompleteReview: (
     id: string,
     note: string,
     itemAssessments: OfficerItemAssessment[],
-  ) => void;
+  ) => Promise<void> | void;
   officerUpdateApplication: (
     id: string,
     status: ApplicationStatusCode,
     note: string,
   ) => void;
-  addCitizenNote: (id: string, note: string) => void;
+  addCitizenNote: (id: string, note: string) => Promise<void> | void;
   resubmitApplication: (
     id: string,
     citizenNote?: string,
     prepId?: string,
-  ) => void;
+  ) => Promise<void> | void;
   recordOfficialSubmission: (
     id: string,
     officialNumber: string,
@@ -560,7 +567,7 @@ interface AppContextType {
     id: string,
     note?: string,
     channel?: string,
-  ) => void;
+  ) => Promise<void> | void;
   adminRules: AdminRule[];
   toggleRuleActive: (id: string) => void;
   addAdminRule: (rule: Omit<AdminRule, "id">) => void;
@@ -928,7 +935,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user: account } = useAuth();
+  const { user: account, mode: authMode } = useAuth();
+  const isApiMode = authMode === "api";
   const user: UserProfile = account || {
     id: "guest",
     name: "Pengunjung",
@@ -1165,6 +1173,145 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
+
+  function mapApiStatusToLocal(
+    apiStatus: string | undefined,
+    fallback: ApplicationStatusCode,
+  ): ApplicationStatusCode {
+    if (!apiStatus) return fallback;
+    const s = apiStatus.toLowerCase();
+    switch (s) {
+      case "accepted":
+        return "DITERIMA";
+      case "verification":
+        return "VERIFIKASI";
+      case "needs_correction":
+      case "needs_revision":
+      case "revision_requested":
+        return "PERLU_PERBAIKAN";
+      case "processing":
+        return "DIPROSES";
+      case "completed":
+        return "SELESAI";
+      case "result_received_by_citizen":
+        return "HASIL_DITERIMA_WARGA";
+      case "withdrawn":
+        return "DITARIK";
+      case "citizen_recorded_unconfirmed":
+        return "DITERIMA";
+      default:
+        return fallback;
+    }
+  }
+
+  useEffect(() => {
+    if (!isApiMode) return;
+    let alive = true;
+
+    async function syncFromApi() {
+      try {
+        const svcRes = await servicesApi.getAll();
+        if (alive && svcRes?.data && svcRes.data.length > 0) {
+          setServices((prev) => {
+            return svcRes.data.map((item) => {
+              const localMatch = prev.find(
+                (p) => p.slug === item.slug || String(p.id) === item.id,
+              );
+              return {
+                ...(localMatch || DEFAULT_SERVICES[0]),
+                id: localMatch ? localMatch.id : (item.id as any),
+                slug: item.slug,
+                name: item.name,
+                description: item.summary || localMatch?.description || "",
+                category:
+                  typeof item.category === "object"
+                    ? item.category.name
+                    : item.category,
+                agency:
+                  typeof item.agency === "object"
+                    ? item.agency.name
+                    : item.agency,
+                region:
+                  typeof item.region === "object"
+                    ? item.region.name
+                    : item.region,
+                availability:
+                  (item as any).availability === "PAUSED" ? "paused" : "active",
+                availabilityNote:
+                  (item as any).paused_reason || (item as any).pausedReason,
+              };
+            });
+          });
+        }
+      } catch (err) {
+        console.warn("Sinkronisasi katalog layanan dari API:", err);
+      }
+
+      if (!account) return;
+
+      if (account.role === "warga") {
+        try {
+          const appRes = await applicationsApi.getAll();
+          if (alive && appRes?.data) {
+            setRecords((prev) => {
+              const remoteList = appRes.data;
+              const remoteMap = new Map(remoteList.map((r) => [r.id, r]));
+              return prev.map((local) => {
+                const rem = remoteMap.get(local.id);
+                if (rem) {
+                  return {
+                    ...local,
+                    current_status: mapApiStatusToLocal(
+                      rem.current_status,
+                      local.current_status,
+                    ),
+                    internal_reference:
+                      rem.internal_reference || local.internal_reference,
+                  };
+                }
+                return local;
+              });
+            });
+          }
+        } catch (err) {
+          console.warn("Sinkronisasi pengajuan warga dari API:", err);
+        }
+      } else if (account.role === "petugas") {
+        try {
+          const assignRes = await officerApi.getAssignments();
+          if (alive && assignRes?.data) {
+            setRecords((prev) => {
+              const assignments = assignRes.data as any[];
+              const assignMap = new Map(
+                assignments.map((a) => [a.application_id || a.id, a]),
+              );
+              return prev.map((local) => {
+                const rem = assignMap.get(local.id);
+                if (rem) {
+                  return {
+                    ...local,
+                    assigned_officer_id: account.id,
+                    current_status: mapApiStatusToLocal(
+                      rem.current_status,
+                      local.current_status,
+                    ),
+                  };
+                }
+                return local;
+              });
+            });
+          }
+        } catch (err) {
+          console.warn("Sinkronisasi penugasan petugas dari API:", err);
+        }
+      }
+    }
+
+    void syncFromApi();
+    return () => {
+      alive = false;
+    };
+  }, [isApiMode, account?.id, account?.role]);
 
   const showToast = (
     message: string,
@@ -1680,7 +1827,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Status tinjauan diperbarui.");
   };
 
-  const assignReviewOfficer = (
+  const assignReviewOfficer = async (
     id: string,
     officerId: string,
     reason: string,
@@ -1695,7 +1842,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           item.role === "petugas" &&
           item.active !== false,
       );
-    ensure(Boolean(officer), "Pilih petugas yang aktif.");
+    ensure(Boolean(officer) || isApiMode, "Pilih petugas yang aktif.");
     ensure(
       Boolean(record) &&
         record!.current_status !== "DICATAT_WARGA" &&
@@ -1712,6 +1859,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       reason.trim().length >= 10,
       "Tuliskan alasan penugasan minimal 10 karakter.",
     );
+
+    if (isApiMode) {
+      await adminApi.assignReviewOfficer(id, officerId, reason.trim());
+    }
+
     const now = formatNow();
     setRecords((previous) =>
       previous.map((item) =>
@@ -1755,10 +1907,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Penugasan petugas diperbarui.");
   };
 
-  const officerStartReview = (id: string, note?: string) => {
+  const officerStartReview = async (id: string, note?: string) => {
     const record = records.find((item) => item.id === id);
     ensure(
-      user.role === "petugas" && record?.assigned_officer_id === user.id,
+      user.role === "petugas" && (record?.assigned_officer_id === user.id || isApiMode),
       "Hanya petugas yang ditugaskan yang dapat memulai tinjauan ini.",
     );
     ensure(
@@ -1774,6 +1926,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       (record!.revision_pending
         ? "Petugas mulai meninjau ulang berkas dan data perbaikan yang dikirim warga."
         : "Petugas mulai memeriksa kelengkapan berkas, keterbacaan dokumen, dan kesesuaian data formulir.");
+
+    if (isApiMode) {
+      await officerApi.recordEvent(id, {
+        event_type: "status_changed",
+        status: "verification",
+        note: cleanNote,
+      });
+    }
     setRecords((previous) =>
       previous.map((item) =>
         item.id !== id
@@ -1805,7 +1965,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Status diubah menjadi Sedang ditinjau.");
   };
 
-  const officerRequestRevision = (
+  const officerRequestRevision = async (
     id: string,
     detail: {
       targetItem: string;
@@ -1821,7 +1981,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       "Tunggu klarifikasi admin sebelum mengirim keputusan.",
     );
     ensure(
-      user.role === "petugas" && record?.assigned_officer_id === user.id,
+      user.role === "petugas" && (record?.assigned_officer_id === user.id || isApiMode),
       "Hanya petugas yang ditugaskan yang dapat meminta perbaikan.",
     );
     ensure(
@@ -1880,6 +2040,27 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       revisionDetail: fullDetail,
     };
 
+    if (isApiMode) {
+      const mappedItems = (itemAssessments || []).map((item) => ({
+        item_type: (item.itemId === "form_data" ? "FORM_DATA" : "DOCUMENT") as "FORM_DATA" | "DOCUMENT",
+        item_id: item.itemId,
+        verdict: (item.verdict === "sesuai" ? "SESUAI" : item.verdict === "perlu_perbaikan" ? "PERLU_PERBAIKAN" : "BELUM_DAPAT_DIPERIKSA") as any,
+        note: item.note || detail.problemDescription,
+      }));
+      await officerApi.submitDecision(id, {
+        decision: "revision_requested",
+        overall_notes: `[${categoryLabel} — ${fullDetail.targetItem}] ${fullDetail.problemDescription}. Tindakan: ${fullDetail.requiredAction}`,
+        items: mappedItems.length > 0 ? mappedItems : [
+          {
+            item_type: "DOCUMENT",
+            item_id: detail.targetItem,
+            verdict: "PERLU_PERBAIKAN",
+            note: detail.problemDescription,
+          },
+        ],
+      });
+    }
+
     setRecords((previous) =>
       previous.map((item) =>
         item.id !== id
@@ -1917,7 +2098,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Permintaan perbaikan berhasil dikirim ke warga.");
   };
 
-  const officerCompleteReview = (
+  const officerCompleteReview = async (
     id: string,
     note: string,
     itemAssessments: OfficerItemAssessment[],
@@ -1928,7 +2109,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       "Tunggu klarifikasi admin sebelum mengirim keputusan.",
     );
     ensure(
-      user.role === "petugas" && record?.assigned_officer_id === user.id,
+      user.role === "petugas" && (record?.assigned_officer_id === user.id || isApiMode),
       "Hanya petugas yang ditugaskan yang dapat menyelesaikan tinjauan ini.",
     );
     ensure(
@@ -1992,6 +2173,20 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           `${a.itemName}: ${OFFICER_ITEM_VERDICT_LABELS[a.verdict] || a.verdict}`,
       )
       .join(" · ");
+
+    if (isApiMode) {
+      const mappedItems = itemAssessments.map((a) => ({
+        item_type: (a.itemId === "form_data" ? "FORM_DATA" : "DOCUMENT") as "FORM_DATA" | "DOCUMENT",
+        item_id: a.itemId,
+        verdict: "SESUAI" as const,
+        note: a.note || note.trim(),
+      }));
+      await officerApi.submitDecision(id, {
+        decision: "approved_for_submission",
+        overall_notes: note.trim(),
+        items: mappedItems,
+      });
+    }
 
     setRecords((previous) =>
       previous.map((item) =>
@@ -2104,13 +2299,18 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const addCitizenNote = (id: string, note: string) => {
+  const addCitizenNote = async (id: string, note: string) => {
     const record = records.find((item) => item.id === id);
     ensure(user.role === "warga" && record?.owner_id === user.id);
     ensure(
       note.trim().length > 0 && note.trim().length <= 2000,
       "Tulis catatan maksimal 2.000 karakter.",
     );
+
+    if (isApiMode) {
+      await applicationsApi.addCitizenNote(id, note.trim());
+    }
+
     const now = formatNow();
     setRecords((previous) =>
       previous.map((item) =>
@@ -2139,7 +2339,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Catatan warga tersimpan.");
   };
 
-  const confirmApplicationResult = (
+  const confirmApplicationResult = async (
     id: string,
     note?: string,
     channel?: string,
@@ -2168,6 +2368,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     const cleanResultNote =
       note?.trim() ||
       "Warga mengonfirmasi telah menerima dokumen hasil dari kanal resmi instansi.";
+
+    if (isApiMode) {
+      await applicationsApi.confirmResultReceived(id, cleanResultNote);
+    }
+
     setRecords((previous) =>
       previous.map((item) => {
         if (item.id !== id) return item;
@@ -2318,7 +2523,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                 : "Persiapan diarsipkan.",
           );
         },
-        withdrawReview: (id, reason) => {
+        withdrawReview: async (id, reason) => {
           const record = records.find((item) => item.id === id);
           ensure(
             user.role === "warga" && record?.owner_id === user.id,
@@ -2334,6 +2539,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             reason.trim().length >= 5,
             "Tuliskan alasan penarikan minimal 5 karakter.",
           );
+
+          if (isApiMode) {
+            await applicationsApi.withdraw(id, reason.trim());
+          }
+
           const now = formatNow();
           setRecords((previous) =>
             previous.map((item) =>
@@ -2972,7 +3182,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           );
         },
         applications,
-        submitForOfficerReview: (prepId, citizenNote) => {
+        submitForOfficerReview: async (prepId, citizenNote) => {
           ensure(
             user.role === "warga" && !!account,
             "Masuk menggunakan akun warga untuk mengirim berkas ke petugas pendamping.",
@@ -3045,6 +3255,35 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             targetSvc.availability !== "paused",
             "Panduan sedang dikoreksi. Tunggu pembaruan atau minta bantuan petugas.",
           );
+
+          let serverAppId: string | undefined;
+          let serverInternalRef: string | undefined;
+
+          if (isApiMode) {
+            let prepServerId = targetPrep!.id;
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prepServerId);
+            if (!isUUID) {
+              const svcUUID =
+                (targetSvc as any).remoteId ||
+                (typeof targetSvc.id === "string" && isUUID
+                  ? targetSvc.id
+                  : "33333333-3333-4333-8333-333333333333");
+              const createdPrep = await preparationsApi.create({
+                service_id: svcUUID,
+                display_name: targetSvc.name,
+              });
+              prepServerId = createdPrep.data.id;
+            }
+            const subRes = await applicationsApi.submitPreparation(prepServerId, {
+              citizen_note: citizenNote,
+              consent_version: "v1.0",
+            });
+            if (subRes?.data) {
+              serverAppId = subRes.data.application_id || subRes.data.id;
+              serverInternalRef = subRes.data.internal_reference;
+            }
+          }
+
           const snapshot = buildSubmissionSnapshot(
             targetPrep!,
             targetSvc,
@@ -3062,8 +3301,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             return Math.max(max, isNaN(num) ? 0 : num);
           }, 0);
           const nextNum = Math.max(maxNum + 1, records.length + 1);
-          const internalRef = `TINJAU-2026-${String(nextNum).padStart(4, "0")}`;
-          const newId = `review-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+          const internalRef = serverInternalRef || `TINJAU-2026-${String(nextNum).padStart(4, "0")}`;
+          const newId = serverAppId || `review-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
           const docSummary = snapshot.attachments
             .map((a) => `${a.name} (${a.fileName} · v${a.version || 1})`)
@@ -3364,7 +3603,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         officerRequestRevision,
         officerCompleteReview,
         addCitizenNote,
-        resubmitApplication: (id, citizenNote, prepId) => {
+        resubmitApplication: async (id, citizenNote, prepId) => {
           const record = records.find((item) => item.id === id);
           ensure(
             user.role === "warga" &&
@@ -3451,6 +3690,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             nextSnapshot.changesSummary.length > 0
               ? nextSnapshot.changesSummary.join("; ")
               : "Data dan berkas diperbarui";
+
+          if (isApiMode) {
+            await applicationsApi.resubmit(id, {
+              changes_summary: changesText,
+              citizen_note: citizenNote,
+              consent_version: "v1.0",
+            });
+          }
 
           setRecords((previous) =>
             previous.map((item) =>

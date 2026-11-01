@@ -32,15 +32,20 @@ export class NotificationsController {
     @Query() query: ListNotificationsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.notificationsService.listNotifications(
-      user.id,
-      query,
-    );
+    try {
+      const result = await this.notificationsService.listNotifications(
+        user.id,
+        query,
+      );
 
-    return new Response({
-      data: result.data,
-      meta: result.meta,
-    });
+      return new Response({
+        data: result.data,
+        meta: result.meta,
+      });
+    } catch (err) {
+      console.error('[NOTIFICATIONS LIST ERROR]:', err);
+      throw err;
+    }
   }
 
   @Post(':id/read')

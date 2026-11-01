@@ -24,15 +24,13 @@ export class NotificationsRepository implements INotificationsRepository {
       ...(input.type ? { notificationType: input.type } : {}),
     };
 
-    const [items, total] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (input.page - 1) * input.pageSize,
-        take: input.pageSize,
-      }),
-      this.prisma.notification.count({ where }),
-    ]);
+    const items = await this.prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (Math.max(1, Number(input.page) || 1) - 1) * Math.max(1, Number(input.pageSize) || 20),
+      take: Math.max(1, Number(input.pageSize) || 20),
+    });
+    const total = await this.prisma.notification.count({ where });
 
     return { items, total };
   }

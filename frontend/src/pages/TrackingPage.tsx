@@ -110,12 +110,12 @@ function TrackingDetailPage({ id }: { id: string }) {
     currentApp?.latest_revision_detail ||
     [...events].reverse().find((e) => e.revision_detail)?.revision_detail;
 
-  const saveNote = (event: FormEvent) => {
+  const saveNote = async (event: FormEvent) => {
     event.preventDefault();
     if (!currentApp || !note.trim()) return;
     setError("");
     try {
-      addCitizenNote(currentApp.id, note.trim());
+      await addCitizenNote(currentApp.id, note.trim());
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Catatan belum tersimpan.",
@@ -590,10 +590,10 @@ function TrackingDetailPage({ id }: { id: string }) {
                     </div>
                   </div>
 
-                  {confirmingResult && <form className="auth-form mt-4 border-t border-slate-200 pt-4" onSubmit={event => {
+                  {confirmingResult && <form className="auth-form mt-4 border-t border-slate-200 pt-4" onSubmit={async event => {
                     event.preventDefault();
                     if (!receivedConfirmed) {setError('Konfirmasi bahwa dokumen hasil layanan sudah diterima.'); return;}
-                    try {confirmApplicationResult(currentApp.id, resultNote, resultChannel); setConfirmingResult(false); setError('');}
+                    try {await confirmApplicationResult(currentApp.id, resultNote, resultChannel); setConfirmingResult(false); setError('');}
                     catch(cause) {setError(cause instanceof Error ? cause.message : 'Konfirmasi belum tersimpan.');}
                   }}>
                     <p className="text-sm">Konfirmasi ini mencatat laporanmu tentang hasil dari instansi. Pastikan dokumen yang diterima sudah sesuai sebelum menutup pengurusan.</p>
@@ -659,7 +659,7 @@ function TrackingDetailPage({ id }: { id: string }) {
                 </div>
               )}
 
-              {!currentApp.official_submission&&['DITERIMA','VERIFIKASI','DIPROSES','PERLU_PERBAIKAN'].includes(currentApp.current_status)&&<details className="plain-panel mt-5"><summary className="cursor-pointer min-h-[44px] py-2 font-medium">Salah memilih atau tidak ingin melanjutkan tinjauan?</summary><p className="text-sm mt-2">Penarikan hanya menutup tinjauan pendamping di DaftarIn. Catatan dan kiriman tetap disimpan; pengajuan pada instansi tidak ikut dibatalkan.</p><form className="auth-form" onSubmit={event=>{event.preventDefault();const form=event.currentTarget;try{withdrawReview(currentApp.id,String(new FormData(form).get('withdrawReason')||''));setError('');}catch(cause){setError(cause instanceof Error?cause.message:'Penarikan belum berhasil.');}}}><div className="form-field"><label htmlFor="withdraw-reason">Alasan penarikan</label><textarea id="withdraw-reason" name="withdrawReason" rows={2} maxLength={1000}/></div><label className="consent-field"><input type="checkbox" required/><span>Saya memahami tinjauan akan ditutup dan riwayat tetap tersedia.</span></label><button type="submit" className="button-secondary">Tarik permintaan tinjauan</button></form></details>}
+              {!currentApp.official_submission&&['DITERIMA','VERIFIKASI','DIPROSES','PERLU_PERBAIKAN'].includes(currentApp.current_status)&&<details className="plain-panel mt-5"><summary className="cursor-pointer min-h-[44px] py-2 font-medium">Salah memilih atau tidak ingin melanjutkan tinjauan?</summary><p className="text-sm mt-2">Penarikan hanya menutup tinjauan pendamping di DaftarIn. Catatan dan kiriman tetap disimpan; pengajuan pada instansi tidak ikut dibatalkan.</p><form className="auth-form" onSubmit={async event=>{event.preventDefault();const form=event.currentTarget;try{await withdrawReview(currentApp.id,String(new FormData(form).get('withdrawReason')||''));setError('');}catch(cause){setError(cause instanceof Error?cause.message:'Penarikan belum berhasil.');}}}><div className="form-field"><label htmlFor="withdraw-reason">Alasan penarikan</label><textarea id="withdraw-reason" name="withdrawReason" rows={2} maxLength={1000}/></div><label className="consent-field"><input type="checkbox" required/><span>Saya memahami tinjauan akan ditutup dan riwayat tetap tersedia.</span></label><button type="submit" className="button-secondary">Tarik permintaan tinjauan</button></form></details>}
               <SubmissionReviewHistory record={currentApp} />
 
               {/* Daftar Dokumen pada Kiriman Ini (dengan Pratinjau) */}

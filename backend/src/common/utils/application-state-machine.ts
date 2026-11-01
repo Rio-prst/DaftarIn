@@ -43,6 +43,7 @@ const validApplicationTransitions: Record<
     ApplicationStatus.PROCESSING,
     ApplicationStatus.NEEDS_CORRECTION,
     ApplicationStatus.COMPLETED,
+    ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN,
   ],
   [ApplicationStatus.VERIFICATION]: [
     ApplicationStatus.PROCESSING,

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -12,6 +13,17 @@ async function bootstrap(): Promise<void> {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  const isOriginAllowed = (origin: string | undefined): boolean => {
+    if (!origin) return true;
+    if (corsOrigins.includes(origin)) return true;
+    if (process.env.NODE_ENV !== 'production') {
+      return /^http:\/\/(localhost|127\.0\.0\.1):(5173|5174|5175|3000|3001)$/.test(
+        origin,
+      );
+    }
+    return false;
+  };
+
   app.setGlobalPrefix('api');
   app.use(helmet());
   app.use(cookieParser());
@@ -23,7 +35,7 @@ async function bootstrap(): Promise<void> {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
       const origin = request.headers.origin;
 
-      if (origin && !corsOrigins.includes(origin)) {
+      if (origin && !isOriginAllowed(origin)) {
         response.status(403).json({
           error: {
             code: 'FORBIDDEN',
@@ -38,8 +50,21 @@ async function bootstrap(): Promise<void> {
     next();
   });
   app.enableCors({
-    origin: corsOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      callback(null, isOriginAllowed(origin));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-request-id',
+      'Idempotency-Key',
+      'Accept',
+    ],
   });
 
   await app.listen(process.env.PORT ?? 3000);

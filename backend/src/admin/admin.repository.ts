@@ -319,6 +319,11 @@ export class AdminRepository implements IAdminRepository {
   }
 
   async createOfficerAssignment(applicationId: string, officerUserId: string) {
+    await this.prisma.officerAssignment.updateMany({
+      where: { applicationId, assignmentStatus: 'ACTIVE' },
+      data: { assignmentStatus: 'REVOKED', endedAt: new Date() },
+    });
+
     return this.prisma.officerAssignment.create({
       data: {
         applicationId,

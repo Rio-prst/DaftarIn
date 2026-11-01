@@ -7,6 +7,7 @@ import {
   useFamilyMembers,
   type FamilyMember,
 } from "../family/members";
+
 export function FamilyPage() {
   const location = useLocation();
   const previous = location.state?.returnTo;
@@ -19,6 +20,7 @@ export function FamilyPage() {
     undefined,
   );
   const [error, setError] = useState("");
+
   return (
     <WorkspaceLayout
       title="Data keluarga"
@@ -30,8 +32,8 @@ export function FamilyPage() {
       }
     >
       <p className="text-sm text-slate-600 mb-5">
-        Data masih berada di perangkat ini. Perubahan profil tidak otomatis
-        mengubah data pada persiapan atau berkas yang sudah dikirim.
+        Data profil keluarga tersimpan untuk memudahkan pengisian permohonan.
+        Perubahan profil tidak otomatis mengubah data pada berkas yang sudah dikirim.
       </p>
       {error && (
         <p role="alert" className="form-error">
@@ -47,9 +49,17 @@ export function FamilyPage() {
             key={editing?.id || "new"}
             initial={editing || undefined}
             onCancel={() => setEditing(undefined)}
-            onSave={(member) => {
-              save(member);
-              setEditing(undefined);
+            onSave={async (member) => {
+              try {
+                await save(member);
+                setEditing(undefined);
+              } catch (cause) {
+                setError(
+                  cause instanceof Error
+                    ? cause.message
+                    : "Gagal menyimpan data keluarga.",
+                );
+              }
             }}
           />
         </section>
@@ -89,19 +99,24 @@ export function FamilyPage() {
                   className="text-link min-h-[44px]"
                   type="button"
                   aria-label={"Hapus " + member.name}
-                  onClick={() => {
+                  onClick={async () => {
                     if (
                       window.confirm(
                         "Hapus profil " +
                           member.name +
                           "? Data pada persiapan yang sudah dibuat tetap tersimpan.",
                       )
-                    )
+                    ) {
                       try {
-                        remove(member.id);
-                      } catch {
-                        setError("Data keluarga belum dapat dihapus.");
+                        await remove(member.id);
+                      } catch (cause) {
+                        setError(
+                          cause instanceof Error
+                            ? cause.message
+                            : "Data keluarga belum dapat dihapus.",
+                        );
                       }
+                    }
                   }}
                 >
                   Hapus

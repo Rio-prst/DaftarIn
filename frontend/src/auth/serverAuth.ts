@@ -1,4 +1,4 @@
-import { ApiError, request } from "../api/transport";
+import { ApiError, request, setStoredToken } from "../api/transport";
 import type { Account, RegisterInput, Role } from "./types";
 export interface ServerUser {
   id: string;
@@ -86,6 +86,8 @@ export const serverAuth = {
       await request<void>("/auth/logout", { method: "POST" });
     } catch (error) {
       if (!(error instanceof ApiError && error.status === 401)) throw error;
+    } finally {
+      setStoredToken(null);
     }
   },
 };
