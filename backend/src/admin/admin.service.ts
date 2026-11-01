@@ -13,6 +13,9 @@ import type { ManageRoleAssignmentDto } from './dto/manage-role-assignment.dto';
 import type { PublishGuideVersionDto } from './dto/publish-guide-version.dto';
 import type { UpdateServiceDto } from './dto/update-service.dto';
 import type { AssignOfficerDto } from './dto/assign-officer.dto';
+import type { PauseServiceDto } from './dto/pause-service.dto';
+import type { ResolveEscalationDto } from './dto/resolve-escalation.dto';
+import { ServiceAvailability } from '../generated/prisma/client';
 import {
   ADMIN_REPOSITORY,
   type AdminServiceWithRelations,
@@ -173,6 +176,15 @@ export class AdminService implements IAdminService {
       throw new NotFoundException('Versi panduan tidak ditemukan.');
     }
 
+    if (
+      dto.expected_version !== undefined &&
+      dto.expected_version !== guideVersion.versionNumber
+    ) {
+      throw new ConflictException(
+        'Versi panduan telah berubah (VERSION_CONFLICT). Muat ulang versi panduan.',
+      );
+    }
+
     const publishedAt = new Date();
     const published = await this.repository.publishGuideVersion(
       guideVersionId,
@@ -274,6 +286,18 @@ export class AdminService implements IAdminService {
   }
 
   async assignOfficerToApplication(adminUserId: string, dto: AssignOfficerDto) {
+    if (dto.expected_version !== undefined) {
+      const app = await this.repository.findApplicationById(dto.application_id);
+      if (!app) {
+        throw new NotFoundException('Pengajuan tidak ditemukan.');
+      }
+      if (app.version !== dto.expected_version) {
+        throw new ConflictException(
+          'Versi pengajuan telah diperbarui (VERSION_CONFLICT). Muat ulang pengajuan.',
+        );
+      }
+    }
+
     const assignment = await this.repository.createOfficerAssignment(
       dto.application_id,
       dto.officer_user_id,
@@ -289,6 +313,7 @@ export class AdminService implements IAdminService {
       metadataJson: {
         applicationId: dto.application_id,
         officerUserId: dto.officer_user_id,
+        reason: dto.reason,
       },
     });
 
@@ -352,5 +377,91 @@ export class AdminService implements IAdminService {
       created_at: service.createdAt.toISOString(),
       updated_at: service.updatedAt.toISOString(),
     };
+  }
+
+  async pauseService(
+    adminUserId: string,
+    serviceId: string,
+    dto: PauseServiceDto,
+  ): Promise<{ message: string }> {
+    const service = await this.repository.findServiceById(serviceId);
+    if (!service) {
+      throw new NotFoundException('Layanan tidak ditemukan.');
+    }
+
+    await this.repository.updateServiceAvailability(
+      serviceId,
+      ServiceAvailability.PAUSED,
+      dto.reason,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'pause_service',
+      objectType: 'service',
+      objectId: serviceId,
+      outcome: 'SUCCESS',
+      metadataJson: { reason: dto.reason },
+    });
+
+    return { message: 'Layanan berhasil dijeda.' };
+  }
+
+  async resumeService(
+    adminUserId: string,
+    serviceId: string,
+  ): Promise<{ message: string }> {
+    const service = await this.repository.findServiceById(serviceId);
+    if (!service) {
+      throw new NotFoundException('Layanan tidak ditemukan.');
+    }
+
+    await this.repository.updateServiceAvailability(
+      serviceId,
+      ServiceAvailability.ACTIVE,
+      null,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'resume_service',
+      objectType: 'service',
+      objectId: serviceId,
+      outcome: 'SUCCESS',
+      metadataJson: {},
+    });
+
+    return { message: 'Layanan berhasil diaktifkan kembali.' };
+  }
+
+  async resolveEscalation(
+    adminUserId: string,
+    escalationId: string,
+    dto: ResolveEscalationDto,
+  ): Promise<{ message: string }> {
+    const escalation = await this.repository.findEscalationById(escalationId);
+    if (!escalation) {
+      throw new NotFoundException('Eskalasi tidak ditemukan.');
+    }
+
+    await this.repository.resolveEscalation(
+      escalationId,
+      adminUserId,
+      dto.resolution_note,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'resolve_escalation',
+      objectType: 'officer_escalation',
+      objectId: escalationId,
+      outcome: 'SUCCESS',
+      metadataJson: { resolutionNote: dto.resolution_note },
+    });
+
+    return { message: 'Eskalasi berhasil diselesaikan.' };
   }
 }

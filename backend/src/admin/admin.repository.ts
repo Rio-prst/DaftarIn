@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { GuideVersionStatus, Prisma } from '../generated/prisma/client';
+import {
+  GuideVersionStatus,
+  Prisma,
+  ServiceAvailability,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AdminServiceWithRelations,
@@ -357,5 +361,47 @@ export class AdminRepository implements IAdminRepository {
     ]);
 
     return { items, total };
+  }
+
+  async updateServiceAvailability(
+    serviceId: string,
+    availability: ServiceAvailability,
+    reason?: string | null,
+  ) {
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        availability,
+        pausedReason: reason ?? null,
+      },
+    });
+  }
+
+  async findEscalationById(escalationId: string) {
+    return this.prisma.officerEscalation.findUnique({
+      where: { id: escalationId },
+    });
+  }
+
+  async resolveEscalation(
+    escalationId: string,
+    adminUserId: string,
+    resolutionNote: string,
+  ) {
+    return this.prisma.officerEscalation.update({
+      where: { id: escalationId },
+      data: {
+        status: 'RESOLVED',
+        resolvedByAdminId: adminUserId,
+        resolutionNote,
+        resolvedAt: new Date(),
+      },
+    });
+  }
+
+  async findApplicationById(applicationId: string) {
+    return this.prisma.applicationRecord.findUnique({
+      where: { id: applicationId },
+    });
   }
 }

@@ -4,12 +4,20 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import {
   ApplicationStatus,
   StatusSourceType,
 } from '../generated/prisma/client';
+import {
+  STORAGE_SERVICE,
+  type IStorageService,
+} from '../storage/interfaces/storage.service.interface';
 import type { CreateOfficerEventDto } from './dto/create-officer-event.dto';
+import type { EvaluationDraftDto } from './dto/evaluation-draft.dto';
+import type { SubmitDecisionDto } from './dto/submit-decision.dto';
+import type { CreateOfficerEscalationDto } from './dto/create-escalation.dto';
 import type { ListAssignmentsQueryDto } from './dto/list-assignments.query.dto';
 import {
   OFFICER_REPOSITORY,
@@ -20,6 +28,7 @@ import {
   type ListAssignmentsResult,
   type OfficerApplicationDetailView,
   type OfficerAssignmentItemView,
+  type OfficerDocumentItemView,
   type OfficerEventResultView,
 } from './interfaces/officer.service.interface';
 
@@ -28,6 +37,8 @@ export class OfficerService implements IOfficerService {
   constructor(
     @Inject(OFFICER_REPOSITORY)
     private readonly repository: IOfficerRepository,
+    @Inject(STORAGE_SERVICE)
+    private readonly storageService: IStorageService,
   ) {}
 
   async listAssignments(
@@ -222,6 +233,66 @@ export class OfficerService implements IOfficerService {
     };
   }
 
+  async getApplicationDocuments(
+    applicationId: string,
+    officerUserId: string,
+  ): Promise<OfficerDocumentItemView[]> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    const docs = await this.repository.findApplicationDocuments(applicationId);
+
+    const latestByType = new Map<string, (typeof docs)[number]>();
+    for (const doc of docs) {
+      if (!latestByType.has(doc.documentType)) {
+        latestByType.set(doc.documentType, doc);
+      }
+    }
+
+    return Array.from(latestByType.values()).map((doc) => ({
+      id: doc.id,
+      document_type: doc.documentType,
+      display_name: doc.originalFilename,
+      version_number: doc.versionNumber,
+      mime_type: doc.detectedMimeType,
+      size_bytes: Number(doc.fileSizeBytes),
+      uploaded_at: doc.uploadedAt.toISOString(),
+    }));
+  }
+
+  async getApplicationDocumentContentUrl(
+    applicationId: string,
+    documentId: string,
+    officerUserId: string,
+  ): Promise<string> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    const doc = await this.repository.findApplicationDocument(
+      applicationId,
+      documentId,
+    );
+    if (!doc) {
+      throw new NotFoundException('Dokumen tidak ditemukan.');
+    }
+
+    return this.storageService.createSignedUrl(doc.storageKey, 300);
+  }
+
   private mapStatusToEnum(status: string): ApplicationStatus {
     switch (status) {
       case 'accepted':
@@ -256,5 +327,124 @@ export class OfficerService implements IOfficerService {
       default:
         return [];
     }
+  }
+
+  async saveEvaluationDraft(
+    applicationId: string,
+    officerUserId: string,
+    dto: EvaluationDraftDto,
+  ): Promise<any> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    const snapshot =
+      await this.repository.findLatestSubmissionSnapshot(applicationId);
+    if (!snapshot) {
+      throw new NotFoundException('Snapshot pengajuan tidak ditemukan.');
+    }
+
+    return this.repository.saveEvaluationDraft({
+      submissionSnapshotId: snapshot.id,
+      officerUserId,
+      overallNotes: dto.overall_notes,
+      items: dto.items.map((i) => ({
+        itemType: i.item_type,
+        itemId: i.item_id,
+        verdict: i.verdict,
+        note: i.note,
+      })),
+    });
+  }
+
+  async submitDecision(
+    applicationId: string,
+    officerUserId: string,
+    dto: SubmitDecisionDto,
+  ): Promise<any> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    const snapshot =
+      await this.repository.findLatestSubmissionSnapshot(applicationId);
+    if (!snapshot) {
+      throw new NotFoundException('Snapshot pengajuan tidak ditemukan.');
+    }
+
+    if (
+      dto.expected_version !== undefined &&
+      dto.expected_version !== snapshot.versionNumber
+    ) {
+      throw new ConflictException(
+        'Versi pengajuan telah diperbarui oleh pemohon (VERSION_CONFLICT). Muat ulang pengajuan.',
+      );
+    }
+
+    if (dto.decision === 'approved_for_submission') {
+      const hasIssues = dto.items.some((i) => i.verdict !== 'SESUAI');
+      if (hasIssues) {
+        throw new BadRequestException(
+          'Semua item wajib berstatus SESUAI untuk menyetujui pengajuan ke tahap berikutnya.',
+        );
+      }
+    } else if (dto.decision === 'revision_requested') {
+      const hasIssues = dto.items.some((i) => i.verdict !== 'SESUAI');
+      if (!hasIssues) {
+        throw new BadRequestException(
+          'Minimal satu item harus berstatus PERLU_PERBAIKAN atau TIDAK_SESUAI untuk meminta revisi.',
+        );
+      }
+    }
+
+    return this.repository.submitDecision({
+      submissionSnapshotId: snapshot.id,
+      applicationId,
+      officerUserId,
+      decision: dto.decision,
+      overallNotes: dto.overall_notes,
+      revisionDueAt: dto.revision_due_at ? new Date(dto.revision_due_at) : null,
+      items: dto.items.map((i) => ({
+        itemType: i.item_type,
+        itemId: i.item_id,
+        verdict: i.verdict,
+        note: i.note,
+      })),
+    });
+  }
+
+  async createEscalation(
+    applicationId: string,
+    officerUserId: string,
+    dto: CreateOfficerEscalationDto,
+  ): Promise<any> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    return this.repository.createEscalation({
+      applicationId,
+      officerUserId,
+      reason: dto.reason,
+      targetRole: dto.target_role ?? 'admin',
+    });
   }
 }

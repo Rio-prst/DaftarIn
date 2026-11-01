@@ -5,6 +5,7 @@ import type {
   Prisma,
   Role,
   Service,
+  ServiceAvailability,
   ServicePublicationStatus,
   User,
   UserRole,
@@ -158,4 +159,16 @@ export interface IAdminRepository {
   listAuditEvents(
     input: ListAuditEventsRepositoryInput,
   ): Promise<{ items: AuditEvent[]; total: number }>;
+  updateServiceAvailability(
+    serviceId: string,
+    availability: ServiceAvailability,
+    reason?: string | null,
+  ): Promise<Service>;
+  findEscalationById(escalationId: string): Promise<any | null>;
+  resolveEscalation(
+    escalationId: string,
+    adminUserId: string,
+    resolutionNote: string,
+  ): Promise<any>;
+  findApplicationById(applicationId: string): Promise<any | null>;
 }

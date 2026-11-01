@@ -15,9 +15,25 @@ export class StorageService implements IStorageService {
 
   constructor(private readonly configService: ConfigService) {
     const supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL');
-    const supabaseServiceKey = this.configService.getOrThrow<string>(
-      'SUPABASE_SERVICE_ROLE_KEY',
-    );
+    let supabaseServiceKey =
+      this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') ||
+      this.configService.get<string>('SUPABASE_SECRET_KEY');
+
+    if (!supabaseServiceKey) {
+      try {
+        supabaseServiceKey = this.configService.getOrThrow<string>(
+          'SUPABASE_SERVICE_ROLE_KEY',
+        );
+      } catch {
+        // Handled by validation below
+      }
+    }
+
+    if (!supabaseServiceKey) {
+      throw new Error(
+        'Neither SUPABASE_SERVICE_ROLE_KEY nor SUPABASE_SECRET_KEY is configured.',
+      );
+    }
     this.bucket =
       this.configService.get<string>('SUPABASE_STORAGE_BUCKET') ?? 'documents';
 

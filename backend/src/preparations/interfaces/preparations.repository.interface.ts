@@ -49,6 +49,7 @@ export type CreatePreparationRepositoryInput = {
 
 export type UpdatePreparationAnswersRepositoryInput = {
   id: string;
+  expectedDataVersion?: number;
   nextDataVersion: number;
   answers?: {
     questionId: string;
@@ -85,4 +86,7 @@ export interface IPreparationsRepository {
     | null
   >;
   findQuestionsForService(serviceId: string): Promise<ServiceQuestion[]>;
+  restore(id: string, userId: string): Promise<PreparationWithRelations>;
+  delete(id: string, userId: string): Promise<void>;
+  countSubmissions(id: string): Promise<number>;
 }

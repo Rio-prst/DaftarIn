@@ -4,11 +4,15 @@ import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AdminModule } from './admin/admin.module';
+import { FamilyModule } from './account/family/family.module';
+import { HelpModule } from './help/help.module';
+import { ChatModule } from './chat/chat.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApplicationsModule } from './applications/applications.module';
 import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { CommonModule } from './common/common.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -33,6 +37,7 @@ import { StorageModule } from './storage/storage.module';
       },
     ]),
     PrismaModule,
+    CommonModule,
     StorageModule,
     AuthModule,
     CatalogModule,
@@ -44,6 +49,9 @@ import { StorageModule } from './storage/storage.module';
     DashboardModule,
     OfficerModule,
     AdminModule,
+    FamilyModule,
+    HelpModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

@@ -43,4 +43,12 @@ export interface IAuthService {
   refresh(refreshToken?: string): Promise<AuthSessionResult>;
   logout(refreshToken?: string): Promise<void>;
   me(userId: string): Promise<AuthUserView>;
+  forgotPassword(
+    email: string,
+  ): Promise<{ message: string; debug_token?: string }>;
+  resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }>;
+  verifyEmail(token: string): Promise<{ message: string }>;
 }

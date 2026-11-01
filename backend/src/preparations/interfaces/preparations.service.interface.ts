@@ -1,5 +1,4 @@
 import type {
-  CreatePreparationRepositoryInput,
   ListPreparationsRepositoryInput,
   UpdatePreparationAnswersRepositoryInput,
 } from './preparations.repository.interface';
@@ -110,12 +109,25 @@ export type ListPreparationsResult = {
   meta: PaginationMeta;
 };
 
+export type CreatePreparationServiceInput = {
+  userId: string;
+  serviceId: string;
+  regionId?: string;
+  guideVersion?: number;
+  questionnaireVersion?: number;
+  displayName?: string;
+  answers: {
+    questionId: string;
+    value: unknown;
+  }[];
+};
+
 export interface IPreparationsService {
   listPreparations(
     input: ListPreparationsRepositoryInput,
   ): Promise<ListPreparationsResult>;
   createPreparation(
-    input: CreatePreparationRepositoryInput,
+    input: CreatePreparationServiceInput,
   ): Promise<PreparationDetailView>;
   getPreparation(id: string, userId: string): Promise<PreparationDetailView>;
   updatePreparation(
@@ -132,4 +144,12 @@ export interface IPreparationsService {
     id: string,
     userId: string,
   ): Promise<PreparationRequirementsResult>;
+  restorePreparation(
+    id: string,
+    userId: string,
+  ): Promise<PreparationDetailView>;
+  deletePreparation(
+    id: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }>;
 }

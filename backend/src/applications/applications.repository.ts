@@ -1,14 +1,51 @@
 import { Injectable } from '@nestjs/common';
+import {
+  ApplicationStatus,
+  CompanionReviewStatus,
+  Prisma,
+  StatusSourceType,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApplicationStatus, Prisma } from '../generated/prisma/client';
 import type {
   AddStatusEventRepositoryInput,
   ApplicationRecordWithRelations,
   CreateApplicationRepositoryInput,
+  CreateSubmissionSnapshotRepositoryInput,
   IApplicationsRepository,
   ListApplicationsRepositoryInput,
   StatusEventWithActor,
 } from './interfaces/applications.repository.interface';
+
+const applicationInclude = {
+  service: {
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      slug: true,
+    },
+  },
+  agency: {
+    select: {
+      id: true,
+      name: true,
+      agencyType: true,
+    },
+  },
+  preparation: {
+    select: {
+      id: true,
+      internalReference: true,
+      status: true,
+    },
+  },
+  statusEvents: {
+    orderBy: {
+      occurredAt: 'desc' as const,
+    },
+    take: 1,
+  },
+};
 
 @Injectable()
 export class ApplicationsRepository implements IApplicationsRepository {
@@ -30,6 +67,7 @@ export class ApplicationsRepository implements IApplicationsRepository {
           submissionChannel: input.submissionChannel,
           sourceMode: input.sourceMode,
           statusSummary: input.statusSummary,
+          reviewStatus: input.reviewStatus ?? CompanionReviewStatus.SUBMITTED,
           citizenNotes: input.citizenNotes ?? null,
         },
       });
@@ -49,36 +87,7 @@ export class ApplicationsRepository implements IApplicationsRepository {
 
       return tx.applicationRecord.findUniqueOrThrow({
         where: { id: record.id },
-        include: {
-          service: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-              slug: true,
-            },
-          },
-          agency: {
-            select: {
-              id: true,
-              name: true,
-              agencyType: true,
-            },
-          },
-          preparation: {
-            select: {
-              id: true,
-              internalReference: true,
-              status: true,
-            },
-          },
-          statusEvents: {
-            orderBy: {
-              occurredAt: 'desc',
-            },
-            take: 1,
-          },
-        },
+        include: applicationInclude,
       });
     });
   }
@@ -91,38 +100,8 @@ export class ApplicationsRepository implements IApplicationsRepository {
       where: {
         id,
         ...(userId ? { userId } : {}),
-        archivedAt: null,
       },
-      include: {
-        service: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            slug: true,
-          },
-        },
-        agency: {
-          select: {
-            id: true,
-            name: true,
-            agencyType: true,
-          },
-        },
-        preparation: {
-          select: {
-            id: true,
-            internalReference: true,
-            status: true,
-          },
-        },
-        statusEvents: {
-          orderBy: {
-            occurredAt: 'desc',
-          },
-          take: 1,
-        },
-      },
+      include: applicationInclude,
     });
   }
 
@@ -138,49 +117,24 @@ export class ApplicationsRepository implements IApplicationsRepository {
       ...(input.sourceMode ? { sourceMode: input.sourceMode } : {}),
     };
 
-    const orderBy: Prisma.ApplicationRecordOrderByWithRelationInput = {
-      created_at: { createdAt: input.order },
-      updated_at: { updatedAt: input.order },
-      submitted_date: { submittedDate: input.order },
-      status: { statusSummary: input.order },
-    }[input.sort];
+    const sortField =
+      input.sort === 'submitted_date'
+        ? 'submittedDate'
+        : input.sort === 'status'
+          ? 'statusSummary'
+          : input.sort === 'updated_at'
+            ? 'updatedAt'
+            : 'createdAt';
 
     const [items, total] = await Promise.all([
       this.prisma.applicationRecord.findMany({
         where,
-        orderBy,
+        include: applicationInclude,
+        orderBy: {
+          [sortField]: input.order,
+        },
         skip: (input.page - 1) * input.pageSize,
         take: input.pageSize,
-        include: {
-          service: {
-            select: {
-              id: true,
-              name: true,
-              category: true,
-              slug: true,
-            },
-          },
-          agency: {
-            select: {
-              id: true,
-              name: true,
-              agencyType: true,
-            },
-          },
-          preparation: {
-            select: {
-              id: true,
-              internalReference: true,
-              status: true,
-            },
-          },
-          statusEvents: {
-            orderBy: {
-              occurredAt: 'desc',
-            },
-            take: 1,
-          },
-        },
       }),
       this.prisma.applicationRecord.count({ where }),
     ]);
@@ -218,7 +172,7 @@ export class ApplicationsRepository implements IApplicationsRepository {
   ): Promise<StatusEventWithActor[]> {
     return this.prisma.statusEvent.findMany({
       where: { applicationId },
-      orderBy: [{ occurredAt: 'asc' }, { recordedAt: 'asc' }],
+      orderBy: { occurredAt: 'asc' },
       include: {
         actor: {
           select: {
@@ -233,40 +187,28 @@ export class ApplicationsRepository implements IApplicationsRepository {
   async updateStatus(
     applicationId: string,
     status: ApplicationStatus,
+    officialReference?: string | null,
   ): Promise<ApplicationRecordWithRelations> {
     return this.prisma.applicationRecord.update({
       where: { id: applicationId },
-      data: { statusSummary: status },
-      include: {
-        service: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            slug: true,
-          },
-        },
-        agency: {
-          select: {
-            id: true,
-            name: true,
-            agencyType: true,
-          },
-        },
-        preparation: {
-          select: {
-            id: true,
-            internalReference: true,
-            status: true,
-          },
-        },
-        statusEvents: {
-          orderBy: {
-            occurredAt: 'desc',
-          },
-          take: 1,
-        },
+      data: {
+        statusSummary: status,
+        ...(officialReference !== undefined ? { officialReference } : {}),
       },
+      include: applicationInclude,
+    });
+  }
+
+  async updateReviewStatus(
+    applicationId: string,
+    reviewStatus: CompanionReviewStatus,
+  ): Promise<ApplicationRecordWithRelations> {
+    return this.prisma.applicationRecord.update({
+      where: { id: applicationId },
+      data: {
+        reviewStatus,
+      },
+      include: applicationInclude,
     });
   }
 
@@ -277,36 +219,7 @@ export class ApplicationsRepository implements IApplicationsRepository {
     return this.prisma.applicationRecord.update({
       where: { id: applicationId },
       data: { preparationId },
-      include: {
-        service: {
-          select: {
-            id: true,
-            name: true,
-            category: true,
-            slug: true,
-          },
-        },
-        agency: {
-          select: {
-            id: true,
-            name: true,
-            agencyType: true,
-          },
-        },
-        preparation: {
-          select: {
-            id: true,
-            internalReference: true,
-            status: true,
-          },
-        },
-        statusEvents: {
-          orderBy: {
-            occurredAt: 'desc',
-          },
-          take: 1,
-        },
-      },
+      include: applicationInclude,
     });
   }
 
@@ -345,6 +258,168 @@ export class ApplicationsRepository implements IApplicationsRepository {
         archivedAt: true,
         deletedAt: true,
       },
+    });
+  }
+
+  async findPreparationForSubmission(preparationId: string, userId: string) {
+    return this.prisma.preparation.findFirst({
+      where: {
+        id: preparationId,
+        userId,
+        deletedAt: null,
+      },
+      include: {
+        service: {
+          include: { agency: true, region: true },
+        },
+        guideVersion: true,
+        answerVersions: {
+          include: { question: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        documentVersions: {
+          where: { deletedAt: null },
+          orderBy: { versionNumber: 'desc' },
+        },
+        applicationRecords: true,
+      },
+    });
+  }
+
+  async findUserForSubmission(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+        phone: true,
+      },
+    });
+  }
+
+  async findFamilyMember(familyMemberId: string, userId: string) {
+    return this.prisma.familyMember.findFirst({
+      where: { id: familyMemberId, userId, deletedAt: null },
+    });
+  }
+
+  async createSubmissionSnapshot(
+    input: CreateSubmissionSnapshotRepositoryInput,
+  ) {
+    return this.prisma.submissionSnapshot.create({
+      data: {
+        applicationId: input.applicationId,
+        preparationId: input.preparationId,
+        versionNumber: input.versionNumber,
+        conditionKey: input.conditionKey ?? null,
+        serviceSnapshotJson: input.serviceSnapshotJson,
+        applicantSnapshotJson: input.applicantSnapshotJson,
+        answersSnapshotJson: input.answersSnapshotJson,
+        documentsSnapshotJson: input.documentsSnapshotJson,
+        requiredSlotsJson: input.requiredSlotsJson,
+        citizenNote: input.citizenNote ?? null,
+        changesSummary: input.changesSummary ?? null,
+        consentVersion: input.consentVersion,
+        consentedAt: input.consentedAt,
+      },
+      include: {
+        submissionReviews: {
+          include: {
+            officer: { select: { id: true, displayName: true } },
+            itemAssessments: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findSubmissionSnapshots(applicationId: string) {
+    return this.prisma.submissionSnapshot.findMany({
+      where: { applicationId },
+      orderBy: { versionNumber: 'desc' },
+      include: {
+        submissionReviews: {
+          include: {
+            officer: { select: { id: true, displayName: true } },
+            itemAssessments: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findSubmissionSnapshotByVersion(
+    applicationId: string,
+    versionNumber: number,
+  ) {
+    return this.prisma.submissionSnapshot.findUnique({
+      where: {
+        applicationId_versionNumber: {
+          applicationId,
+          versionNumber,
+        },
+      },
+      include: {
+        submissionReviews: {
+          include: {
+            officer: { select: { id: true, displayName: true } },
+            itemAssessments: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findLatestSubmissionVersion(applicationId: string): Promise<number> {
+    const latest = await this.prisma.submissionSnapshot.findFirst({
+      where: { applicationId },
+      orderBy: { versionNumber: 'desc' },
+      select: { versionNumber: true },
+    });
+    return latest?.versionNumber ?? 0;
+  }
+
+  async withdrawApplication(
+    applicationId: string,
+    userId: string,
+    reason: string,
+  ): Promise<ApplicationRecordWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      const app = await tx.applicationRecord.update({
+        where: { id: applicationId },
+        data: {
+          reviewStatus: CompanionReviewStatus.WITHDRAWN,
+        },
+      });
+
+      await tx.officerAssignment.updateMany({
+        where: {
+          applicationId,
+          endedAt: null,
+        },
+        data: {
+          endedAt: new Date(),
+          assignmentStatus: 'ENDED_WITHDRAWN',
+        },
+      });
+
+      await tx.statusEvent.create({
+        data: {
+          applicationId,
+          actorUserId: userId,
+          statusCode: app.statusSummary,
+          sourceType: StatusSourceType.CITIZEN_REPORT,
+          sourceLabel: 'Warga menarik pengajuan tinjauan',
+          description: `Pengajuan tinjauan ditarik oleh warga: ${reason}`,
+          occurredAt: new Date(),
+        },
+      });
+
+      return tx.applicationRecord.findUniqueOrThrow({
+        where: { id: applicationId },
+        include: applicationInclude,
+      });
     });
   }
 }

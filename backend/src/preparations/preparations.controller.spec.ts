@@ -21,6 +21,8 @@ function makePreparationsService(): jest.Mocked<IPreparationsService> {
     updatePreparation: jest.fn(),
     archivePreparation: jest.fn(),
     getPreparationRequirements: jest.fn(),
+    restorePreparation: jest.fn(),
+    deletePreparation: jest.fn(),
   };
 }
 
@@ -30,7 +32,7 @@ describe('PreparationsController', () => {
 
   beforeEach(() => {
     preparationsService = makePreparationsService();
-    controller = new PreparationsController(preparationsService);
+    controller = new PreparationsController(preparationsService, {} as any);
   });
 
   it('passes list query parameters to the service', async () => {
@@ -103,8 +105,10 @@ describe('PreparationsController', () => {
     expect(preparationsService.createPreparation).toHaveBeenCalledWith({
       userId: USER_ID,
       serviceId: SERVICE_ID,
-      guideVersionId: '',
-      internalReference: '',
+      regionId: REGION_ID,
+      guideVersion: undefined,
+      questionnaireVersion: undefined,
+      displayName: undefined,
       answers: [],
     });
     expect(result.data).toEqual(detail);

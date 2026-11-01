@@ -2,6 +2,11 @@ import type { CreateApplicationDto } from '../dto/create-application.dto';
 import type { ListApplicationsQueryDto } from '../dto/list-applications.query.dto';
 import type { CreateCitizenNoteDto } from '../dto/create-citizen-note.dto';
 import type { ConfirmResultReceivedDto } from '../dto/confirm-result-received.dto';
+import type {
+  CreateResubmissionDto,
+  CreateSubmissionDto,
+} from '../dto/create-submission.dto';
+import type { WithdrawApplicationDto } from '../dto/withdraw-application.dto';
 
 export const APPLICATIONS_SERVICE = Symbol('APPLICATIONS_SERVICE');
 
@@ -42,6 +47,7 @@ export interface ApplicationItemView {
   channel: ApplicationChannelView;
   source_mode: string;
   current_status: string;
+  review_status?: string;
   simulation: boolean;
   created_at: string;
   updated_at: string;
@@ -88,6 +94,26 @@ export interface ListApplicationsResult {
   };
 }
 
+export interface SubmissionSnapshotItemView {
+  id: string;
+  application_id: string;
+  preparation_id: string;
+  version_number: number;
+  submitted_at: string;
+  citizen_note?: string | null;
+  changes_summary?: string | null;
+  consent_version: string;
+  reviews: any[];
+}
+
+export interface SubmissionSnapshotDetailView extends SubmissionSnapshotItemView {
+  service: any;
+  applicant: any;
+  answers: any[];
+  documents: any[];
+  required_slots: any;
+}
+
 export interface IApplicationsService {
   createApplication(
     userId: string,
@@ -113,5 +139,29 @@ export interface IApplicationsService {
     id: string,
     userId: string,
     preparationId: string,
+  ): Promise<ApplicationDetailView>;
+  submitPreparation(
+    preparationId: string,
+    userId: string,
+    dto: CreateSubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView>;
+  resubmitApplication(
+    applicationId: string,
+    userId: string,
+    dto: CreateResubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView>;
+  listSubmissions(
+    applicationId: string,
+    userId: string,
+  ): Promise<SubmissionSnapshotItemView[]>;
+  getSubmissionDetail(
+    applicationId: string,
+    versionNumber: number,
+    userId: string,
+  ): Promise<SubmissionSnapshotDetailView>;
+  withdrawApplication(
+    applicationId: string,
+    userId: string,
+    dto: WithdrawApplicationDto,
   ): Promise<ApplicationDetailView>;
 }

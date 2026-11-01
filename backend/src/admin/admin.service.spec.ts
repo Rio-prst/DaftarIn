@@ -24,6 +24,8 @@ describe('AdminService', () => {
     agencyId,
     regionId,
     publicationStatus: 'PUBLISHED',
+    availability: 'ACTIVE' as any,
+    pausedReason: null,
     publishedAt: new Date('2026-10-20T08:00:00Z'),
     createdAt: new Date('2026-10-20T08:00:00Z'),
     updatedAt: new Date('2026-10-20T08:00:00Z'),
@@ -72,6 +74,10 @@ describe('AdminService', () => {
       createOfficerAssignment: jest.fn(),
       recordAuditEvent: jest.fn(),
       listAuditEvents: jest.fn(),
+      updateServiceAvailability: jest.fn(),
+      findEscalationById: jest.fn(),
+      resolveEscalation: jest.fn(),
+      findApplicationById: jest.fn(),
     };
 
     service = new AdminService(mockRepository);
@@ -279,6 +285,7 @@ describe('AdminService', () => {
       const result = await service.assignOfficerToApplication(adminUserId, {
         application_id: 'app-1',
         officer_user_id: 'officer-1',
+        reason: 'Penugasan normal',
       });
 
       expect(result.assignment_id).toBe('assign-1');

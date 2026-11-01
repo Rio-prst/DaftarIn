@@ -42,6 +42,9 @@ describe('AdminController', () => {
       manageRoleAssignments: jest.fn(),
       assignOfficerToApplication: jest.fn(),
       listAuditEvents: jest.fn(),
+      pauseService: jest.fn(),
+      resumeService: jest.fn(),
+      resolveEscalation: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

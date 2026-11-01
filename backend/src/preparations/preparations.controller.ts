@@ -9,7 +9,9 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Delete,
   Query,
+  forwardRef,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -20,6 +22,11 @@ import { ArchivePreparationDto } from './dto/archive-preparation.dto';
 import { CreatePreparationDto } from './dto/create-preparation.dto';
 import { ListPreparationsQueryDto } from './dto/list-preparations.query.dto';
 import { UpdatePreparationDto } from './dto/update-preparation.dto';
+import { CreateSubmissionDto } from '../applications/dto/create-submission.dto';
+import {
+  APPLICATIONS_SERVICE,
+  type IApplicationsService,
+} from '../applications/interfaces/applications.service.interface';
 import {
   PREPARATIONS_SERVICE,
   type IPreparationsService,
@@ -45,6 +52,8 @@ export class PreparationsController {
   constructor(
     @Inject(PREPARATIONS_SERVICE)
     private readonly preparationsService: IPreparationsService,
+    @Inject(forwardRef(() => APPLICATIONS_SERVICE))
+    private readonly applicationsService: IApplicationsService,
   ) {}
 
   @Get()
@@ -77,8 +86,10 @@ export class PreparationsController {
     const detail = await this.preparationsService.createPreparation({
       userId: user.id,
       serviceId: dto.service_id,
-      guideVersionId: '',
-      internalReference: '',
+      regionId: dto.region_id,
+      guideVersion: dto.guide_version,
+      questionnaireVersion: dto.questionnaire_version,
+      displayName: dto.display_name,
       answers: (dto.answers ?? []).map((a) => ({
         questionId: a.question_id,
         value: a.value,
@@ -154,5 +165,40 @@ export class PreparationsController {
     return new Response({
       data: result,
     });
+  }
+
+  @Post(':preparationId/restore')
+  @HttpCode(HttpStatus.OK)
+  async restore(
+    @Param('preparationId', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.preparationsService.restorePreparation(id, user.id);
+    return new Response({ data });
+  }
+
+  @Delete(':preparationId')
+  @HttpCode(HttpStatus.OK)
+  async delete(
+    @Param('preparationId', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.preparationsService.deletePreparation(id, user.id);
+    return new Response({ data });
+  }
+
+  @Post(':preparationId/submissions')
+  @HttpCode(HttpStatus.CREATED)
+  async submitPreparation(
+    @Param('preparationId', ParseUUIDPipe) id: string,
+    @Body() dto: CreateSubmissionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.submitPreparation(
+      id,
+      user.id,
+      dto,
+    );
+    return new Response({ data });
   }
 }

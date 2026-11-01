@@ -36,7 +36,13 @@ export class DocumentsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
   async upload(
     @Param('preparationId', ParseUUIDPipe) preparationId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -91,7 +97,13 @@ export class DocumentsController {
 
   @Post(':documentId/versions')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
   async uploadNewVersion(
     @Param('preparationId', ParseUUIDPipe) preparationId: string,
     @Param('documentId', ParseUUIDPipe) documentId: string,

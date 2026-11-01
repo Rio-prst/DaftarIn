@@ -18,6 +18,8 @@ import { ConfirmResultReceivedDto } from './dto/confirm-result-received.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { CreateCitizenNoteDto } from './dto/create-citizen-note.dto';
 import { LinkPreparationDto } from './dto/link-preparation.dto';
+import { CreateResubmissionDto } from './dto/create-submission.dto';
+import { WithdrawApplicationDto } from './dto/withdraw-application.dto';
 import { ListApplicationsQueryDto } from './dto/list-applications.query.dto';
 import {
   APPLICATIONS_SERVICE,
@@ -137,5 +139,58 @@ export class ApplicationsController {
     return new Response({
       data,
     });
+  }
+
+  @Post(':id/resubmissions')
+  @HttpCode(HttpStatus.CREATED)
+  async resubmit(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateResubmissionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.resubmitApplication(
+      id,
+      user.id,
+      dto,
+    );
+    return new Response({ data });
+  }
+
+  @Get(':id/submissions')
+  async listSubmissions(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.listSubmissions(id, user.id);
+    return new Response({ data });
+  }
+
+  @Get(':id/submissions/:version')
+  async getSubmission(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('version') version: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.getSubmissionDetail(
+      id,
+      Number(version),
+      user.id,
+    );
+    return new Response({ data });
+  }
+
+  @Post(':id/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdraw(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: WithdrawApplicationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.withdrawApplication(
+      id,
+      user.id,
+      dto,
+    );
+    return new Response({ data });
   }
 }

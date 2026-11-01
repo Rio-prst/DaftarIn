@@ -6,6 +6,8 @@ const registerSchema = z
     display_name: z.string().trim().min(1).max(200),
     email: z.string().trim().email().max(320),
     password: z.string().min(8).max(72),
+    terms_accepted: z.boolean().optional(),
+    consent: z.boolean().optional(),
   })
   .strict();
 

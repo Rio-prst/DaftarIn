@@ -6,6 +6,8 @@ import type { ManageRoleAssignmentDto } from '../dto/manage-role-assignment.dto'
 import type { PublishGuideVersionDto } from '../dto/publish-guide-version.dto';
 import type { UpdateServiceDto } from '../dto/update-service.dto';
 import type { AssignOfficerDto } from '../dto/assign-officer.dto';
+import type { PauseServiceDto } from '../dto/pause-service.dto';
+import type { ResolveEscalationDto } from '../dto/resolve-escalation.dto';
 
 export const ADMIN_SERVICE = Symbol('ADMIN_SERVICE');
 
@@ -127,4 +129,18 @@ export interface IAdminService {
       total_pages: number;
     };
   }>;
+  pauseService(
+    adminUserId: string,
+    serviceId: string,
+    dto: PauseServiceDto,
+  ): Promise<{ message: string }>;
+  resumeService(
+    adminUserId: string,
+    serviceId: string,
+  ): Promise<{ message: string }>;
+  resolveEscalation(
+    adminUserId: string,
+    escalationId: string,
+    dto: ResolveEscalationDto,
+  ): Promise<{ message: string }>;
 }

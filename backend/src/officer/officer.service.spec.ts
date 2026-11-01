@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import type { IStorageService } from '../storage/interfaces/storage.service.interface';
 import {
   ApplicationStatus,
   StatusSourceType,
@@ -18,6 +19,7 @@ import type {
 describe('OfficerService', () => {
   let service: OfficerService;
   let mockRepository: jest.Mocked<IOfficerRepository>;
+  let mockStorageService: jest.Mocked<IStorageService>;
 
   const officerUserId = 'officer-uuid-1';
   const citizenUserId = 'citizen-uuid-1';
@@ -43,6 +45,7 @@ describe('OfficerService', () => {
       submissionChannel: 'ONLINE_PORTAL',
       sourceMode: 'CITIZEN_REPORT',
       statusSummary: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
+      reviewStatus: 'SUBMITTED' as any,
       citizenNotes: null,
       version: 1,
       createdAt: new Date('2026-10-28T08:00:00Z'),
@@ -111,9 +114,21 @@ describe('OfficerService', () => {
       listAssignments: jest.fn(),
       findApplicationDetail: jest.fn(),
       createOfficerEvent: jest.fn(),
+      findApplicationDocuments: jest.fn(),
+      findApplicationDocument: jest.fn(),
+      findLatestSubmissionSnapshot: jest.fn(),
+      saveEvaluationDraft: jest.fn(),
+      submitDecision: jest.fn(),
+      createEscalation: jest.fn(),
     };
 
-    service = new OfficerService(mockRepository);
+    mockStorageService = {
+      createSignedUrl: jest.fn(),
+      uploadFile: jest.fn(),
+      deleteFile: jest.fn(),
+    };
+
+    service = new OfficerService(mockRepository, mockStorageService);
   });
 
   describe('listAssignments', () => {
@@ -260,6 +275,80 @@ describe('OfficerService', () => {
           revision_request: null,
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getApplicationDocuments', () => {
+    it('returns document list for assigned officer', async () => {
+      mockRepository.findAssignment.mockResolvedValue(mockAssignment);
+      mockRepository.findApplicationDocuments.mockResolvedValue([
+        {
+          id: 'doc-1',
+          preparationId: 'prep-1',
+          documentType: 'ktp',
+          versionNumber: 1,
+          storageKey: 'users/...',
+          originalFilename: 'ktp.pdf',
+          detectedMimeType: 'application/pdf',
+          fileSizeBytes: BigInt(1024),
+          uploadedAt: new Date('2026-10-28T08:00:00Z'),
+        } as any,
+      ]);
+
+      const docs = await service.getApplicationDocuments(
+        applicationId,
+        officerUserId,
+      );
+
+      expect(docs).toHaveLength(1);
+      expect(docs[0].display_name).toBe('ktp.pdf');
+      expect(docs[0].document_type).toBe('ktp');
+    });
+
+    it('rejects document access if officer is not assigned', async () => {
+      mockRepository.findAssignment.mockResolvedValue(null);
+
+      await expect(
+        service.getApplicationDocuments(applicationId, officerUserId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('getApplicationDocumentContentUrl', () => {
+    it('returns signed preview URL', async () => {
+      mockRepository.findAssignment.mockResolvedValue(mockAssignment);
+      mockRepository.findApplicationDocument.mockResolvedValue({
+        id: 'doc-1',
+        storageKey: 'storage/ktp.pdf',
+      } as any);
+      mockStorageService.createSignedUrl.mockResolvedValue(
+        'https://signed.url',
+      );
+
+      const url = await service.getApplicationDocumentContentUrl(
+        applicationId,
+        'doc-1',
+        officerUserId,
+      );
+
+      expect(url).toBe('https://signed.url');
+      expect(mockStorageService.createSignedUrl).toHaveBeenCalledWith(
+        'storage/ktp.pdf',
+        300,
+      );
+    });
+
+    it('throws NotFoundException if document not found', async () => {
+      mockRepository.findAssignment.mockResolvedValue(mockAssignment);
+      mockRepository.findApplicationDocument.mockResolvedValue(null);
+
+      await expect(
+        service.getApplicationDocumentContentUrl(
+          applicationId,
+          'doc-non-existent',
+          officerUserId,
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

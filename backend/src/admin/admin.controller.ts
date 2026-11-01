@@ -23,6 +23,8 @@ import { ListAuditEventsQueryDto } from './dto/list-audit-events.query.dto';
 import { ManageRoleAssignmentDto } from './dto/manage-role-assignment.dto';
 import { PublishGuideVersionDto } from './dto/publish-guide-version.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { PauseServiceDto } from './dto/pause-service.dto';
+import { ResolveEscalationDto } from './dto/resolve-escalation.dto';
 import {
   ADMIN_SERVICE,
   type IAdminService,
@@ -148,5 +150,37 @@ export class AdminController {
       data: result.data,
       meta: result.meta,
     });
+  }
+
+  @Post('services/:id/pause')
+  @HttpCode(HttpStatus.OK)
+  async pauseService(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PauseServiceDto,
+  ) {
+    const data = await this.adminService.pauseService(admin.id, id, dto);
+    return new Response({ data });
+  }
+
+  @Post('services/:id/resume')
+  @HttpCode(HttpStatus.OK)
+  async resumeService(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const data = await this.adminService.resumeService(admin.id, id);
+    return new Response({ data });
+  }
+
+  @Post('escalations/:id/resolve')
+  @HttpCode(HttpStatus.OK)
+  async resolveEscalation(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResolveEscalationDto,
+  ) {
+    const data = await this.adminService.resolveEscalation(admin.id, id, dto);
+    return new Response({ data });
   }
 }

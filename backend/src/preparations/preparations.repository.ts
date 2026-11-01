@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import {
   GuideVersionStatus,
   PreparationStatus,
@@ -147,14 +147,27 @@ export class PreparationsRepository implements IPreparationsRepository {
     input: UpdatePreparationAnswersRepositoryInput,
   ): Promise<PreparationWithRelations> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.preparation.update({
-        where: { id: input.id },
+      const updateWhere: Prisma.PreparationWhereInput = {
+        id: input.id,
+        ...(input.expectedDataVersion !== undefined
+          ? { currentDataVersion: input.expectedDataVersion }
+          : {}),
+      };
+
+      const result = await tx.preparation.updateMany({
+        where: updateWhere,
         data: {
           currentDataVersion: input.nextDataVersion,
           version: { increment: 1 },
           ...(input.nextStatus ? { status: input.nextStatus } : {}),
         },
       });
+
+      if (result.count === 0) {
+        throw new ConflictException(
+          'Versi data persiapan sudah berubah (VERSION_CONFLICT). Muat ulang persiapan sebelum menyimpan.',
+        );
+      }
 
       if (input.answers && input.answers.length > 0) {
         await tx.answerVersion.createMany({
@@ -248,6 +261,32 @@ export class PreparationsRepository implements IPreparationsRepository {
       orderBy: {
         displayOrder: 'asc',
       },
+    });
+  }
+
+  async restore(id: string, userId: string): Promise<PreparationWithRelations> {
+    return this.prisma.preparation.update({
+      where: { id, userId },
+      data: {
+        status: PreparationStatus.DRAFT,
+        archivedAt: null,
+      },
+      include: preparationInclude,
+    });
+  }
+
+  async countSubmissions(id: string): Promise<number> {
+    return this.prisma.submissionSnapshot.count({
+      where: { preparationId: id },
+    });
+  }
+
+  async delete(id: string, userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.answerVersion.deleteMany({ where: { preparationId: id } });
+      await tx.documentVersion.deleteMany({ where: { preparationId: id } });
+      await tx.inspectionRun.deleteMany({ where: { preparationId: id } });
+      await tx.preparation.delete({ where: { id, userId } });
     });
   }
 }

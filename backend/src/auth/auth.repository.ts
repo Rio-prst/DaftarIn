@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { AccountStatus, type Prisma } from '../generated/prisma/client';
+import {
+  AccountStatus,
+  type AccountToken,
+  type AccountTokenType,
+  type Prisma,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionAlreadyRotatedError } from './errors/session-already-rotated.error';
 import type {
@@ -10,6 +15,7 @@ import type {
   IAuthRepository,
   RefreshSessionRecord,
   RotateRefreshSessionInput,
+  CreateAccountTokenInput,
 } from './interfaces/auth.repository.interface';
 
 const ACTIVE_ROLES_INCLUDE = {
@@ -156,6 +162,60 @@ export class AuthRepository implements IAuthRepository {
         revokedAt: null,
       },
       data: { revokedAt: new Date() },
+    });
+  }
+
+  async createAccountToken(
+    input: CreateAccountTokenInput,
+  ): Promise<AccountToken> {
+    return this.prisma.accountToken.create({
+      data: input,
+    });
+  }
+
+  async findAccountToken(
+    tokenHash: string,
+    type: AccountTokenType,
+  ): Promise<(AccountToken & { user: AuthUser }) | null> {
+    return this.prisma.accountToken.findFirst({
+      where: {
+        tokenHash,
+        type,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        user: {
+          include: ACTIVE_ROLES_INCLUDE,
+        },
+      },
+    });
+  }
+
+  async markAccountTokenUsed(tokenId: string): Promise<void> {
+    await this.prisma.accountToken.update({
+      where: { id: tokenId },
+      data: { usedAt: new Date() },
+    });
+  }
+
+  async updateUserPassword(
+    userId: string,
+    passwordHash: string,
+  ): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+  }
+
+  async verifyUserEmail(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        accountStatus: AccountStatus.ACTIVE,
+        emailVerifiedAt: new Date(),
+      },
     });
   }
 }
