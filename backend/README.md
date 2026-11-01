@@ -2,7 +2,7 @@
 
 Backend API untuk **DaftarIn**, aplikasi persiapan dan pemantauan pengajuan layanan publik. Backend ini menangani katalog layanan, persiapan warga, pemeriksaan dokumen, status pengajuan, notifikasi, dan audit.
 
-Status 1 November 2026: skema Prisma dan autentikasi dari branch backend tim sudah diintegrasikan. Pengaturan akun, preferensi, sesi, serta pengelolaan akses/audit admin sudah diimplementasikan. Modul bisnis, penyimpanan dokumen, email, dan AI belum aktif. Kontrak endpoint yang benar-benar tersedia beserta setup migrasi/deployment: [IMPLEMENTED-API.md](docs/IMPLEMENTED-API.md). Rancangan arsitektur berikut mencakup fitur yang belum diimplementasikan.
+Status snapshot: modul auth/akun, chatbot relay, katalog, persiapan, dokumen, pengajuan, notifikasi, petugas, bantuan dan admin telah tersedia pada source. Integrasi alur bisnis frontend ke API masih parsial; keberhasilan build bukan bukti seluruh alur sudah terhubung ke server. Lihat [status snapshot](../frontend/docs/STATUS-SNAPSHOT-PUSH.txt) dan [laporan handoff](../frontend/docs/LAPORAN-HANDOFF-SEBELUM-PUSH.txt). Jangan menjalankan migration atau seed pada database bersama tanpa persetujuan penerapan.
 
 ## Stack
 
