@@ -32,7 +32,7 @@ import type {
 } from './interfaces/documents.service.interface';
 
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
-const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 
 @Injectable()
 export class DocumentsService implements IDocumentsService {
@@ -77,24 +77,29 @@ export class DocumentsService implements IDocumentsService {
         documentType,
       )) + 1;
 
-    // Unique immutable storage key: prevents concurrent upload overwrites
-    const nonce = randomBytes(4).toString('hex');
-    const storageKey = `users/${userId}/preparations/${preparationId}/documents/${documentType}/v${nextVersion}_${Date.now()}_${nonce}.${ext}`;
+    const fileToken = randomBytes(6).toString('hex');
+    const storageKey = `users/${userId}/preparations/${preparationId}/documents/${documentType}/v${nextVersion}-${fileToken}.${ext}`;
 
     await this.storageService.uploadFile(storageKey, file.buffer, detectedMime);
 
-    const docVersion = await this.documentsRepository.createVersion({
-      preparationId,
-      userId,
-      documentType,
-      versionNumber: nextVersion,
-      storageKey,
-      originalFilename: file.originalname,
-      detectedMimeType: detectedMime,
-      fileSizeBytes: BigInt(file.size),
-      checksumSha256,
-      processingStatus: 'available',
-    });
+    let docVersion: DocumentVersion;
+    try {
+      docVersion = await this.documentsRepository.createVersion({
+        preparationId,
+        userId,
+        documentType,
+        versionNumber: nextVersion,
+        storageKey,
+        originalFilename: file.originalname,
+        detectedMimeType: detectedMime,
+        fileSizeBytes: BigInt(file.size),
+        checksumSha256,
+        processingStatus: 'available',
+      });
+    } catch (error) {
+      await this.storageService.deleteFile(storageKey).catch(() => undefined);
+      throw error;
+    }
 
     return this.mapToItemView(docVersion, displayName, requirementId);
   }
@@ -122,58 +127,6 @@ export class DocumentsService implements IDocumentsService {
       undefined,
       displayName,
     );
-  }
-
-  async reuseDocument(
-    preparationId: string,
-    userId: string,
-    sourceDocumentId: string,
-    documentType: string,
-    userConsent: boolean,
-  ): Promise<DocumentItemView> {
-    if (!userConsent) {
-      throw new BadRequestException(
-        'Persetujuan penggunaan ulang dokumen wajib diberikan oleh pengguna.',
-      );
-    }
-
-    const prep = await this.preparationsRepository.findById(
-      preparationId,
-      userId,
-    );
-    if (!prep) {
-      throw new NotFoundException('Persiapan tidak ditemukan.');
-    }
-
-    const source = await this.documentsRepository.findByDocumentId(
-      sourceDocumentId,
-    );
-    if (!source || source.userId !== userId || source.deletedAt) {
-      throw new NotFoundException(
-        'Dokumen sumber tidak ditemukan atau tidak sah.',
-      );
-    }
-
-    const nextVersion =
-      (await this.documentsRepository.getHighestVersionNumber(
-        preparationId,
-        documentType,
-      )) + 1;
-
-    const docVersion = await this.documentsRepository.createVersion({
-      preparationId,
-      userId,
-      documentType,
-      versionNumber: nextVersion,
-      storageKey: source.storageKey,
-      originalFilename: source.originalFilename,
-      detectedMimeType: source.detectedMimeType,
-      fileSizeBytes: source.fileSizeBytes,
-      checksumSha256: source.checksumSha256,
-      processingStatus: 'available',
-    });
-
-    return this.mapToItemView(docVersion);
   }
 
   async listDocuments(
@@ -219,7 +172,7 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc || doc.userId !== userId) {
+    if (!doc) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 
@@ -228,8 +181,10 @@ export class DocumentsService implements IDocumentsService {
       doc.documentType,
     );
 
+    const activeVersion = allVersions[0] ?? doc;
+
     return {
-      ...this.mapToItemView(doc),
+      ...this.mapToItemView(activeVersion),
       versions: allVersions.map((v) => this.mapToVersionInfo(v)),
     };
   }
@@ -251,11 +206,11 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc || doc.userId !== userId) {
+    if (!doc) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 
-    return this.storageService.createSignedUrl(doc.storageKey);
+    return this.storageService.createSignedUrl(doc.storageKey, 300);
   }
 
   async deleteDocument(
@@ -275,7 +230,7 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc || doc.userId !== userId) {
+    if (!doc) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 
@@ -298,7 +253,7 @@ export class DocumentsService implements IDocumentsService {
 
     if (file.size > this.maxUploadBytes) {
       throw new HttpException(
-        'Ukuran file melebihi batas maksimum 10 MB.',
+        'Ukuran file melebihi batas maksimum 5 MB.',
         HttpStatus.PAYLOAD_TOO_LARGE,
       );
     }

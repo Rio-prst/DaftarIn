@@ -92,6 +92,57 @@ enum ApplicationStatus {
   COMPLETED
   RESULT_RECEIVED_BY_CITIZEN
 }
+enum CompanionReviewStatus {
+  DRAFT_PREPARATION
+  SUBMITTED
+  IN_REVIEW
+  REVISION_REQUESTED
+  REVIEW_COMPLETED
+  WITHDRAWN
+}
+
+enum SubmissionReviewStatus {
+  DRAFT
+  NEEDS_REVISION
+  COMPLETED
+}
+
+enum AssessmentVerdict {
+  SESUAI
+  PERLU_PERBAIKAN
+  BELUM_DAPAT_DIPERIKSA
+}
+
+enum AssessmentItemType {
+  FORM_DATA
+  DOCUMENT
+}
+
+enum ServiceAvailability {
+  ACTIVE
+  PAUSED
+}
+
+enum FamilyRelationship {
+  SPOUSE
+  CHILD
+  PARENT
+  SIBLING
+  WARD
+  OTHER
+}
+
+
+enum AccountTokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+enum HelpTicketStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
 
 model Region {
   id String @id @db.Uuid @default(uuid())
@@ -148,6 +199,8 @@ model Service {
   agencyId String @db.Uuid
   regionId String @db.Uuid
   publicationStatus ServicePublicationStatus @default(DRAFT)
+  availability ServiceAvailability @default(ACTIVE)
+  pausedReason String?
   publishedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -345,6 +398,14 @@ model User {
   userCorrections UserCorrection[]
   assignedUserRoles UserRole[] @relation("UserRoleAssignedBy")
   refreshSessions RefreshSession[]
+
+  familyMembers FamilyMember[]
+  helpRequests HelpRequest[]
+  helpReplies HelpReply[]
+  submissionReviews SubmissionReview[]
+  officerEscalations OfficerEscalation[]
+  idempotencyRecords IdempotencyRecord[]
+  accountTokens AccountToken[]
   preferences AccountPreference?
 
   @@unique([email])
@@ -366,18 +427,6 @@ model RefreshSession {
 
   @@index([userId, expiresAt])
   @@map("refresh_sessions")
-}
-
-model AccountPreference {
-  id String @id @db.Uuid @default(uuid())
-  userId String @unique @db.Uuid
-  fontSize String @default("normal")
-  highContrast Boolean @default(false)
-  notifyInApp Boolean @default(true)
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("account_preferences")
 }
 
 model Role {
@@ -453,6 +502,11 @@ model Preparation {
   documentVersions DocumentVersion[]
   inspectionRuns InspectionRun[]
   applicationRecords ApplicationRecord[]
+
+  familyMemberId String? @db.Uuid
+  familyMember FamilyMember? @relation(fields: [familyMemberId], references: [id], onDelete: SetNull)
+  submissionSnapshots SubmissionSnapshot[]
+  helpRequests HelpRequest[]
 
   @@unique([internalReference])
   @@index([userId, status, updatedAt])
@@ -602,6 +656,11 @@ model ApplicationRecord {
   notifications Notification[]
   reminderPreferences ReminderPreference[]
 
+  reviewStatus CompanionReviewStatus @default(SUBMITTED)
+  submissionSnapshots SubmissionSnapshot[]
+  officerEscalations OfficerEscalation[]
+  helpRequests HelpRequest[]
+
   @@unique([internalReference])
   @@index([userId, updatedAt])
   @@index([preparationId, agencyId])
@@ -697,4 +756,184 @@ model AuditEvent {
 
   @@index([actorUserId, createdAt])
   @@map("audit_events")
+}
+
+model SubmissionSnapshot {
+  id String @id @db.Uuid @default(uuid())
+  applicationId String @db.Uuid
+  preparationId String @db.Uuid
+  versionNumber Int
+  conditionKey String?
+  serviceSnapshotJson Json
+  applicantSnapshotJson Json
+  answersSnapshotJson Json
+  documentsSnapshotJson Json
+  requiredSlotsJson Json
+  citizenNote String?
+  changesSummary String?
+  consentVersion String
+  consentedAt DateTime
+  submittedAt DateTime @default(now())
+
+  application ApplicationRecord @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  preparation Preparation @relation(fields: [preparationId], references: [id], onDelete: Restrict)
+  submissionReviews SubmissionReview[]
+
+  @@unique([applicationId, versionNumber])
+  @@index([preparationId])
+  @@map("submission_snapshots")
+}
+
+model SubmissionReview {
+  id String @id @db.Uuid @default(uuid())
+  submissionSnapshotId String @db.Uuid
+  officerUserId String @db.Uuid
+  reviewStatus SubmissionReviewStatus @default(DRAFT)
+  overallNotes String?
+  decidedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  submissionSnapshot SubmissionSnapshot @relation(fields: [submissionSnapshotId], references: [id], onDelete: Cascade)
+  officer User @relation(fields: [officerUserId], references: [id], onDelete: Restrict)
+  itemAssessments ItemAssessment[]
+
+  @@index([submissionSnapshotId, officerUserId])
+  @@map("submission_reviews")
+}
+
+model ItemAssessment {
+  id String @id @db.Uuid @default(uuid())
+  submissionReviewId String @db.Uuid
+  itemId String
+  itemType AssessmentItemType
+  verdict AssessmentVerdict
+  note String
+  targetAction String?
+  documentVersionId String? @db.Uuid
+  createdAt DateTime @default(now())
+
+  submissionReview SubmissionReview @relation(fields: [submissionReviewId], references: [id], onDelete: Cascade)
+
+  @@index([submissionReviewId])
+  @@map("item_assessments")
+}
+
+model FamilyMember {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  fullName String @db.VarChar(200)
+  relationship FamilyRelationship
+  nik String? @db.VarChar(16)
+  birthDate DateTime?
+  gender String?
+  isUnderAge Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preparations Preparation[]
+
+  @@index([userId, deletedAt])
+  @@map("family_members")
+}
+
+model HelpRequest {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  applicationId String? @db.Uuid
+  preparationId String? @db.Uuid
+  topic String @db.VarChar(200)
+  category String @db.VarChar(80)
+  status HelpTicketStatus @default(OPEN)
+  assignedAdminId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application ApplicationRecord? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  preparation Preparation? @relation(fields: [preparationId], references: [id], onDelete: SetNull)
+  replies HelpReply[]
+
+  @@index([userId, status])
+  @@map("help_requests")
+}
+
+model HelpReply {
+  id String @id @db.Uuid @default(uuid())
+  helpRequestId String @db.Uuid
+  senderUserId String @db.Uuid
+  senderRole String
+  message String
+  createdAt DateTime @default(now())
+
+  helpRequest HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderUserId], references: [id], onDelete: Restrict)
+
+  @@index([helpRequestId])
+  @@map("help_replies")
+}
+
+model OfficerEscalation {
+  id String @id @db.Uuid @default(uuid())
+  applicationId String @db.Uuid
+  officerUserId String @db.Uuid
+  resolvedByAdminId String? @db.Uuid
+  reason String
+  urgency String @default("NORMAL")
+  status String @default("OPEN")
+  resolutionNote String?
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  application ApplicationRecord @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  officer User @relation(fields: [officerUserId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, status])
+  @@map("officer_escalations")
+}
+
+model IdempotencyRecord {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  operationKey String @db.VarChar(100)
+  idempotencyKey String @db.VarChar(128)
+  requestHash String @db.VarChar(64)
+  responseStatus Int
+  responseBodyJson Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, operationKey, idempotencyKey])
+  @@map("idempotency_records")
+}
+
+
+model AccountToken {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  tokenHash String @unique @db.VarChar(64)
+  type AccountTokenType
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("account_tokens")
+}
+
+model AccountPreference {
+  id String @id @db.Uuid @default(uuid())
+  userId String @unique @db.Uuid
+  fontSize String @default("normal")
+  highContrast Boolean @default(false)
+  notifyInApp Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_preferences")
 }

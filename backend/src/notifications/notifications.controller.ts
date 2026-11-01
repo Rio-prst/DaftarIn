@@ -19,7 +19,7 @@ import {
   type INotificationsService,
 } from './interfaces/notifications.service.interface';
 
-@Roles('citizen', 'officer', 'admin')
+@Roles('citizen')
 @Controller('notifications')
 export class NotificationsController {
   constructor(
@@ -40,14 +40,6 @@ export class NotificationsController {
     return new Response({
       data: result.data,
       meta: result.meta,
-    });
-  }
-
-  @Get('unread-count')
-  async countUnread(@CurrentUser() user: AuthenticatedUser) {
-    const count = await this.notificationsService.countUnread(user.id);
-    return new Response({
-      data: { unread_count: count },
     });
   }
 

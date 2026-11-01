@@ -2,6 +2,11 @@ import type { CreateApplicationDto } from '../dto/create-application.dto';
 import type { ListApplicationsQueryDto } from '../dto/list-applications.query.dto';
 import type { CreateCitizenNoteDto } from '../dto/create-citizen-note.dto';
 import type { ConfirmResultReceivedDto } from '../dto/confirm-result-received.dto';
+import type {
+  CreateResubmissionDto,
+  CreateSubmissionDto,
+} from '../dto/create-submission.dto';
+import type { WithdrawApplicationDto } from '../dto/withdraw-application.dto';
 
 export const APPLICATIONS_SERVICE = Symbol('APPLICATIONS_SERVICE');
 
@@ -42,10 +47,10 @@ export interface ApplicationItemView {
   channel: ApplicationChannelView;
   source_mode: string;
   current_status: string;
+  review_status?: string;
   simulation: boolean;
   created_at: string;
   updated_at: string;
-  snapshot?: unknown;
 }
 
 export interface ApplicationDetailView extends ApplicationItemView {
@@ -69,7 +74,6 @@ export interface StatusEventView {
   note: string | null;
   simulation: boolean;
   correction_of_event_id: string | null;
-  metadata?: unknown;
 }
 
 export interface ApplicationTimelineResult {
@@ -88,6 +92,26 @@ export interface ListApplicationsResult {
     total_items: number;
     total_pages: number;
   };
+}
+
+export interface SubmissionSnapshotItemView {
+  id: string;
+  application_id: string;
+  preparation_id: string;
+  version_number: number;
+  submitted_at: string;
+  citizen_note?: string | null;
+  changes_summary?: string | null;
+  consent_version: string;
+  reviews: any[];
+}
+
+export interface SubmissionSnapshotDetailView extends SubmissionSnapshotItemView {
+  service: any;
+  applicant: any;
+  answers: any[];
+  documents: any[];
+  required_slots: any;
 }
 
 export interface IApplicationsService {
@@ -116,25 +140,28 @@ export interface IApplicationsService {
     userId: string,
     preparationId: string,
   ): Promise<ApplicationDetailView>;
-  resubmitRevision(
-    id: string,
+  submitPreparation(
+    preparationId: string,
     userId: string,
-    note?: string,
-  ): Promise<ApplicationDetailView>;
+    dto: CreateSubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView>;
+  resubmitApplication(
+    applicationId: string,
+    userId: string,
+    dto: CreateResubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView>;
+  listSubmissions(
+    applicationId: string,
+    userId: string,
+  ): Promise<SubmissionSnapshotItemView[]>;
+  getSubmissionDetail(
+    applicationId: string,
+    versionNumber: number,
+    userId: string,
+  ): Promise<SubmissionSnapshotDetailView>;
   withdrawApplication(
-    id: string,
+    applicationId: string,
     userId: string,
-    reason?: string,
-  ): Promise<ApplicationDetailView>;
-  recordOfficialSubmission(
-    id: string,
-    userId: string,
-    dto: {
-      official_number?: string;
-      channel?: string;
-      submission_date?: string;
-      receipt_number?: string;
-      note?: string;
-    },
+    dto: WithdrawApplicationDto,
   ): Promise<ApplicationDetailView>;
 }

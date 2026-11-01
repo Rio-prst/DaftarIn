@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { ApplicationStatus, Prisma, StatusSourceType } from '../generated/prisma/client';
+import {
+  ApplicationStatus,
+  AssessmentItemType,
+  AssessmentVerdict,
+  CompanionReviewStatus,
+  DocumentVersion,
+  Prisma,
+  StatusSourceType,
+  SubmissionReviewStatus,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   CreateOfficerEventRepositoryInput,
@@ -9,6 +17,9 @@ import type {
   OfficerApplicationDetailWithRelations,
   OfficerAssignmentWithRelations,
   StatusEventWithActor,
+  SaveEvaluationDraftInput,
+  SubmitDecisionInput,
+  CreateEscalationInput,
 } from './interfaces/officer.repository.interface';
 
 @Injectable()
@@ -171,147 +182,267 @@ export class OfficerRepository implements IOfficerRepository {
     });
   }
 
-  async getSummary(officerUserId: string): Promise<{
-    total_assigned: number;
-    pending_review: number;
-    in_review: number;
-    needs_correction: number;
-    completed: number;
-  }> {
-    const activeAssignments = await this.prisma.officerAssignment.findMany({
-      where: { officerUserId, endedAt: null },
-      include: {
-        application: {
-          select: { statusSummary: true },
-        },
-      },
+  async findApplicationDocuments(
+    applicationId: string,
+  ): Promise<DocumentVersion[]> {
+    const app = await this.prisma.applicationRecord.findUnique({
+      where: { id: applicationId },
+      select: { preparationId: true },
     });
 
-    let pending_review = 0;
-    let in_review = 0;
-    let needs_correction = 0;
-    let completed = 0;
-
-    for (const a of activeAssignments) {
-      const s = a.application.statusSummary;
-      if (
-        s === ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED ||
-        s === ApplicationStatus.ACCEPTED
-      ) {
-        pending_review++;
-      } else if (
-        s === ApplicationStatus.VERIFICATION ||
-        s === ApplicationStatus.PROCESSING
-      ) {
-        in_review++;
-      } else if (s === ApplicationStatus.NEEDS_CORRECTION) {
-        needs_correction++;
-      } else if (
-        s === ApplicationStatus.COMPLETED ||
-        s === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN
-      ) {
-        completed++;
-      }
+    if (!app?.preparationId) {
+      return [];
     }
 
-    return {
-      total_assigned: activeAssignments.length,
-      pending_review,
-      in_review,
-      needs_correction,
-      completed,
-    };
-  }
-
-  async assignOfficer(
-    applicationId: string,
-    officerUserId: string,
-    assignerUserId: string,
-    reason?: string,
-  ) {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.officerAssignment.updateMany({
-        where: {
-          applicationId,
-          endedAt: null,
-        },
-        data: {
-          endedAt: new Date(),
-          assignmentStatus: 'transferred',
-        },
-      });
-
-      const newAssignment = await tx.officerAssignment.create({
-        data: {
-          applicationId,
-          officerUserId,
-          assignmentStatus: 'active',
-          assignedAt: new Date(),
-        },
-      });
-
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: assignerUserId,
-          actorRole: 'system',
-          action: 'OFFICER_ASSIGNMENT_TRANSFER',
-          objectType: 'application',
-          objectId: applicationId,
-          requestId: randomUUID(),
-          outcome: 'success',
-          metadataJson: {
-            assignedOfficerId: officerUserId,
-            reason: reason ?? 'Penugasan petugas pengajuan.',
-          },
-        },
-      });
-
-      return newAssignment;
-    });
-  }
-
-  async saveEvaluation(
-    applicationId: string,
-    officerUserId: string,
-    evaluationJson: Prisma.InputJsonValue,
-  ): Promise<StatusEventWithActor> {
-    return this.prisma.statusEvent.create({
-      data: {
-        applicationId,
-        actorUserId: officerUserId,
-        statusCode: ApplicationStatus.VERIFICATION,
-        sourceType: StatusSourceType.OFFICER,
-        sourceLabel: 'Petugas — Penilaian Berkas Sementara',
-        description: 'Petugas menyimpan penilaian sementara berkas.',
-        occurredAt: new Date(),
-        metadataJson: {
-          evaluation_draft: evaluationJson,
-        },
-      },
-      include: {
-        actor: {
-          select: {
-            id: true,
-            displayName: true,
-          },
-        },
-      },
-    });
-  }
-
-  async getLatestEvaluation(applicationId: string): Promise<Prisma.JsonValue | null> {
-    const event = await this.prisma.statusEvent.findFirst({
+    return this.prisma.documentVersion.findMany({
       where: {
-        applicationId,
-        sourceType: StatusSourceType.OFFICER,
+        preparationId: app.preparationId,
+        deletedAt: null,
       },
-      orderBy: { occurredAt: 'desc' },
-      select: { metadataJson: true },
+      orderBy: {
+        versionNumber: 'desc',
+      },
     });
-    if (!event || typeof event.metadataJson !== 'object' || event.metadataJson === null) {
+  }
+
+  async findApplicationDocument(
+    applicationId: string,
+    documentId: string,
+  ): Promise<DocumentVersion | null> {
+    const app = await this.prisma.applicationRecord.findUnique({
+      where: { id: applicationId },
+      select: { preparationId: true },
+    });
+
+    if (!app?.preparationId) {
       return null;
     }
-    const meta = event.metadataJson as Record<string, unknown>;
-    return (meta.evaluation_draft ?? meta.revision_request ?? null) as Prisma.JsonValue;
+
+    return this.prisma.documentVersion.findFirst({
+      where: {
+        id: documentId,
+        preparationId: app.preparationId,
+        deletedAt: null,
+      },
+    });
+  }
+
+  async findLatestSubmissionSnapshot(applicationId: string) {
+    return this.prisma.submissionSnapshot.findFirst({
+      where: { applicationId },
+      orderBy: { versionNumber: 'desc' },
+      include: {
+        submissionReviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: {
+            itemAssessments: true,
+          },
+        },
+      },
+    });
+  }
+
+  async saveEvaluationDraft(input: SaveEvaluationDraftInput) {
+    return this.prisma.$transaction(async (tx) => {
+      let review = await tx.submissionReview.findFirst({
+        where: {
+          submissionSnapshotId: input.submissionSnapshotId,
+          officerUserId: input.officerUserId,
+        },
+      });
+
+      if (!review) {
+        review = await tx.submissionReview.create({
+          data: {
+            submissionSnapshotId: input.submissionSnapshotId,
+            officerUserId: input.officerUserId,
+            reviewStatus: SubmissionReviewStatus.DRAFT,
+            overallNotes: input.overallNotes ?? null,
+          },
+        });
+      } else {
+        review = await tx.submissionReview.update({
+          where: { id: review.id },
+          data: {
+            overallNotes: input.overallNotes ?? null,
+          },
+        });
+      }
+
+      await tx.itemAssessment.deleteMany({
+        where: { submissionReviewId: review.id },
+      });
+
+      if (input.items.length > 0) {
+        await tx.itemAssessment.createMany({
+          data: input.items.map((item) => ({
+            submissionReviewId: review.id,
+            itemType: item.itemType as AssessmentItemType,
+            itemId: item.itemId,
+            verdict: item.verdict as AssessmentVerdict,
+            note: item.note ?? '',
+          })),
+        });
+      }
+
+      return tx.submissionReview.findUniqueOrThrow({
+        where: { id: review.id },
+        include: { itemAssessments: true },
+      });
+    });
+  }
+
+  async submitDecision(input: SubmitDecisionInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const isApproved = input.decision === 'approved_for_submission';
+      const subReviewStatus = isApproved
+        ? SubmissionReviewStatus.COMPLETED
+        : SubmissionReviewStatus.NEEDS_REVISION;
+
+      const compStatus = isApproved
+        ? CompanionReviewStatus.REVIEW_COMPLETED
+        : CompanionReviewStatus.REVISION_REQUESTED;
+
+      const appStatus = isApproved
+        ? ApplicationStatus.ACCEPTED
+        : ApplicationStatus.NEEDS_CORRECTION;
+
+      let review = await tx.submissionReview.findFirst({
+        where: {
+          submissionSnapshotId: input.submissionSnapshotId,
+          officerUserId: input.officerUserId,
+        },
+      });
+
+      if (!review) {
+        review = await tx.submissionReview.create({
+          data: {
+            submissionSnapshotId: input.submissionSnapshotId,
+            officerUserId: input.officerUserId,
+            reviewStatus: subReviewStatus,
+            decidedAt: new Date(),
+            overallNotes: input.overallNotes ?? null,
+          },
+        });
+      } else {
+        review = await tx.submissionReview.update({
+          where: { id: review.id },
+          data: {
+            reviewStatus: subReviewStatus,
+            decidedAt: new Date(),
+            overallNotes: input.overallNotes ?? null,
+          },
+        });
+      }
+
+      await tx.itemAssessment.deleteMany({
+        where: { submissionReviewId: review.id },
+      });
+
+      if (input.items.length > 0) {
+        await tx.itemAssessment.createMany({
+          data: input.items.map((item) => ({
+            submissionReviewId: review.id,
+            itemType: item.itemType as AssessmentItemType,
+            itemId: item.itemId,
+            verdict: item.verdict as AssessmentVerdict,
+            note: item.note ?? '',
+          })),
+        });
+      }
+
+      // reviewStatus is tracked on submission_review and application_record
+
+      const app = await tx.applicationRecord.update({
+        where: { id: input.applicationId },
+        data: {
+          reviewStatus: compStatus,
+          statusSummary: appStatus,
+          version: { increment: 1 },
+        },
+        include: { user: true },
+      });
+
+      const eventDescription = isApproved
+        ? 'Hasil tinjauan berkas pendamping: Disetujui untuk diajukan ke instansi.'
+        : input.overallNotes || 'Permintaan perbaikan berkas dari pendamping.';
+
+      await tx.statusEvent.create({
+        data: {
+          applicationId: input.applicationId,
+          actorUserId: input.officerUserId,
+          statusCode: appStatus,
+          sourceType: StatusSourceType.OFFICER,
+          sourceLabel: 'Pendamping (DaftarIn)',
+          description: eventDescription,
+          revisionReason: !isApproved ? input.overallNotes : null,
+          occurredAt: new Date(),
+          metadataJson: {
+            decision: input.decision,
+            itemsCount: input.items.length,
+          },
+        },
+      });
+
+      const notificationTitle = isApproved
+        ? 'Tinjauan Pendamping Selesai'
+        : 'Perbaikan Berkas Diperlukan';
+      const notificationBody = isApproved
+        ? 'Berkas Anda telah diperiksa dan disetujui untuk diajukan ke instansi resmi.'
+        : 'Pendamping meminta perbaikan pada berkas pengajuan Anda. Silakan periksa catatan revisi.';
+      const targetPath = isApproved
+        ? `/applications/${input.applicationId}`
+        : `/applications/${input.applicationId}/revisions`;
+
+      await tx.notification.create({
+        data: {
+          userId: app.userId,
+          applicationId: input.applicationId,
+          notificationType: isApproved
+            ? 'companion_approved'
+            : 'companion_revision',
+          title: notificationTitle,
+          body: notificationBody,
+          targetPath,
+        },
+      });
+
+      return {
+        decision: input.decision,
+        reviewStatus: subReviewStatus,
+        decidedAt: new Date(),
+        application_id: input.applicationId,
+      };
+    });
+  }
+
+  async createEscalation(input: CreateEscalationInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const escalation = await tx.officerEscalation.create({
+        data: {
+          applicationId: input.applicationId,
+          officerUserId: input.officerUserId,
+          reason: input.reason,
+          urgency: 'NORMAL',
+          status: 'OPEN',
+        },
+      });
+
+      await tx.statusEvent.create({
+        data: {
+          applicationId: input.applicationId,
+          actorUserId: input.officerUserId,
+          statusCode: ApplicationStatus.VERIFICATION,
+          sourceType: StatusSourceType.OFFICER,
+          sourceLabel: 'Petugas Pendamping',
+          description: `Eskalasi ke ${input.targetRole}: ${input.reason}`,
+          occurredAt: new Date(),
+          metadataJson: { escalationId: escalation.id },
+        },
+      });
+
+      return escalation;
+    });
   }
 }

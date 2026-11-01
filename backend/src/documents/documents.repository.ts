@@ -41,12 +41,12 @@ export class DocumentsRepository implements IDocumentsRepository {
 
   async findByDocumentId(
     documentId: string,
-    preparationId?: string,
+    preparationId: string,
   ): Promise<DocumentVersion | null> {
     return this.prisma.documentVersion.findFirst({
       where: {
         id: documentId,
-        ...(preparationId ? { preparationId } : {}),
+        preparationId,
         deletedAt: null,
       },
     });
@@ -72,7 +72,7 @@ export class DocumentsRepository implements IDocumentsRepository {
     preparationId: string,
     documentType: string,
   ): Promise<number> {
-    const highest = await this.prisma.documentVersion.findFirst({
+    const latest = await this.prisma.documentVersion.findFirst({
       where: {
         preparationId,
         documentType,
@@ -85,7 +85,7 @@ export class DocumentsRepository implements IDocumentsRepository {
       },
     });
 
-    return highest?.versionNumber ?? 0;
+    return latest?.versionNumber ?? 0;
   }
 
   async softDeleteDocumentType(

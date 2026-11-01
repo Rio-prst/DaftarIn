@@ -10,10 +10,7 @@ export class PrismaService
 {
   constructor(configService: ConfigService) {
     const databaseUrl = configService.getOrThrow<string>('DATABASE_URL');
-    const adapter = new PrismaPg({
-      connectionString: databaseUrl,
-      max: Number(process.env.DB_POOL_MAX || 10),
-    });
+    const adapter = new PrismaPg({ connectionString: databaseUrl });
     super({ adapter });
   }
 

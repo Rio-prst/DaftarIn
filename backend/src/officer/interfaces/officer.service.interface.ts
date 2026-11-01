@@ -1,5 +1,8 @@
 import type { CreateOfficerEventDto } from '../dto/create-officer-event.dto';
 import type { ListAssignmentsQueryDto } from '../dto/list-assignments.query.dto';
+import type { EvaluationDraftDto } from '../dto/evaluation-draft.dto';
+import type { SubmitDecisionDto } from '../dto/submit-decision.dto';
+import type { CreateOfficerEscalationDto } from '../dto/create-escalation.dto';
 
 export const OFFICER_SERVICE = Symbol('OFFICER_SERVICE');
 
@@ -33,14 +36,6 @@ export interface ListAssignmentsResult {
     total_items: number;
     total_pages: number;
   };
-}
-
-export interface OfficerSummaryView {
-  total_assigned: number;
-  pending_review: number;
-  in_review: number;
-  needs_correction: number;
-  completed: number;
 }
 
 export interface OfficerApplicationTimelineItem {
@@ -80,7 +75,6 @@ export interface OfficerApplicationDetailView {
   current_status: string;
   timeline: OfficerApplicationTimelineItem[];
   allowed_actions: string[];
-  snapshot?: unknown;
 }
 
 export interface OfficerEventResultView {
@@ -100,6 +94,16 @@ export interface OfficerEventResultView {
   simulation: boolean;
 }
 
+export interface OfficerDocumentItemView {
+  id: string;
+  document_type: string;
+  display_name: string;
+  version_number: number;
+  mime_type: string;
+  size_bytes: number;
+  uploaded_at: string;
+}
+
 export interface IOfficerService {
   listAssignments(
     officerUserId: string,
@@ -114,20 +118,28 @@ export interface IOfficerService {
     officerUserId: string,
     dto: CreateOfficerEventDto,
   ): Promise<OfficerEventResultView>;
-  getSummary(officerUserId: string): Promise<OfficerSummaryView>;
-  saveEvaluation(
+  getApplicationDocuments(
     applicationId: string,
     officerUserId: string,
-    evaluation: unknown,
-  ): Promise<{ message: string }>;
-  getEvaluation(
+  ): Promise<OfficerDocumentItemView[]>;
+  getApplicationDocumentContentUrl(
+    applicationId: string,
+    documentId: string,
+    officerUserId: string,
+  ): Promise<string>;
+  saveEvaluationDraft(
     applicationId: string,
     officerUserId: string,
-  ): Promise<unknown>;
-  assignOfficer(
+    dto: EvaluationDraftDto,
+  ): Promise<any>;
+  submitDecision(
     applicationId: string,
-    targetOfficerUserId: string,
-    assignerUserId: string,
-    reason?: string,
-  ): Promise<{ message: string; assignment_id: string }>;
+    officerUserId: string,
+    dto: SubmitDecisionDto,
+  ): Promise<any>;
+  createEscalation(
+    applicationId: string,
+    officerUserId: string,
+    dto: CreateOfficerEscalationDto,
+  ): Promise<any>;
 }

@@ -1,405 +1,467 @@
 import {
-  BadRequestException,
   ConflictException,
-  ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { PrismaService } from '../prisma/prisma.service';
-import type { AuthenticatedUser } from '../common/types/authenticated-user';
-import type { AdminListDto, ChangeAccessDto } from './admin.dto';
-import { ServicePublicationStatus } from '../generated/prisma/client';
-
-const userSelect = {
-  id: true,
-  displayName: true,
-  email: true,
-  accountStatus: true,
-  emailVerifiedAt: true,
-  createdAt: true,
-  updatedAt: true,
-  userRoles: {
-    where: { isActive: true },
-    select: {
-      validFrom: true,
-      validUntil: true,
-      role: { select: { roleCode: true } },
-      agency: { select: { id: true, name: true } },
-    },
-  },
-} as const;
+import type { Prisma } from '../generated/prisma/client';
+import type { CreateGuideVersionDto } from './dto/create-guide-version.dto';
+import type { CreateServiceDto } from './dto/create-service.dto';
+import type { ListAdminServicesQueryDto } from './dto/list-admin-services.query.dto';
+import type { ListAuditEventsQueryDto } from './dto/list-audit-events.query.dto';
+import type { ManageRoleAssignmentDto } from './dto/manage-role-assignment.dto';
+import type { PublishGuideVersionDto } from './dto/publish-guide-version.dto';
+import type { UpdateServiceDto } from './dto/update-service.dto';
+import type { AssignOfficerDto } from './dto/assign-officer.dto';
+import type { PauseServiceDto } from './dto/pause-service.dto';
+import type { ResolveEscalationDto } from './dto/resolve-escalation.dto';
+import { ServiceAvailability } from '../generated/prisma/client';
+import {
+  ADMIN_REPOSITORY,
+  type AdminServiceWithRelations,
+  type IAdminRepository,
+} from './interfaces/admin.repository.interface';
+import {
+  type AdminServiceItemView,
+  type AuditEventItemView,
+  type IAdminService,
+  type OfficerItemView,
+} from './interfaces/admin.service.interface';
 
 @Injectable()
-export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+export class AdminService implements IAdminService {
+  constructor(
+    @Inject(ADMIN_REPOSITORY)
+    private readonly repository: IAdminRepository,
+  ) {}
 
-  async summary() {
-    const [userCount, applicationCount, serviceCount, auditCount] =
-      await Promise.all([
-        this.prisma.user.count({ where: { deletedAt: null } }),
-        this.prisma.applicationRecord.count({ where: { archivedAt: null } }),
-        this.prisma.service.count(),
-        this.prisma.auditEvent.count(),
-      ]);
+  async listServices(query: ListAdminServicesQueryDto) {
+    const { items, total } = await this.repository.listServices({
+      q: query.q,
+      publicationStatus: query.publication_status,
+      regionId: query.region_id,
+      agencyId: query.agency_id,
+      page: query.page,
+      pageSize: query.page_size,
+    });
 
     return {
-      total_users: userCount,
-      total_applications: applicationCount,
-      total_services: serviceCount,
-      total_audits: auditCount,
+      data: items.map((item) => this.mapServiceToView(item)),
+      meta: {
+        page: query.page,
+        page_size: query.page_size,
+        total_items: total,
+        total_pages: Math.ceil(total / query.page_size),
+      },
     };
   }
 
-  async services() {
-    const services = await this.prisma.service.findMany({
-      include: {
-        region: { select: { id: true, name: true } },
-        agency: { select: { id: true, name: true } },
-        guideVersions: {
-          select: { id: true, versionNumber: true, status: true },
-        },
-      },
-      orderBy: { name: 'asc' },
+  async createService(
+    adminUserId: string,
+    dto: CreateServiceDto,
+  ): Promise<AdminServiceItemView> {
+    const existing = await this.repository.findServiceBySlug(dto.slug);
+    if (existing) {
+      throw new ConflictException('Slug layanan sudah digunakan.');
+    }
+
+    const service = await this.repository.createService({
+      name: dto.name,
+      slug: dto.slug,
+      category: dto.category,
+      agencyId: dto.agency_id,
+      regionId: dto.region_id,
+      summary: dto.summary,
     });
 
-    return services.map((s) => ({
-      id: s.id,
-      slug: s.slug,
-      name: s.name,
-      category: s.category,
-      publication_status: s.publicationStatus,
-      region: s.region,
-      agency: s.agency,
-      guide_versions_count: s.guideVersions.length,
-      published_at: s.publishedAt ? s.publishedAt.toISOString() : null,
-      updated_at: s.updatedAt.toISOString(),
-    }));
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'create_service',
+      objectType: 'service',
+      objectId: service.id,
+      outcome: 'SUCCESS',
+      metadataJson: { name: service.name, slug: service.slug },
+    });
+
+    return this.mapServiceToView(service);
   }
 
-  async updateServiceStatus(
+  async updateService(
+    adminUserId: string,
     serviceId: string,
-    status: ServicePublicationStatus,
-    actor: AuthenticatedUser,
-  ) {
-    const service = await this.prisma.service.findUnique({
-      where: { id: serviceId },
+    dto: UpdateServiceDto,
+  ): Promise<AdminServiceItemView> {
+    const existing = await this.repository.findServiceById(serviceId);
+    if (!existing) {
+      throw new NotFoundException('Layanan tidak ditemukan.');
+    }
+
+    const updated = await this.repository.updateService(serviceId, {
+      name: dto.name,
+      category: dto.category,
+      summary: dto.summary,
+      publicationStatus: dto.publication_status,
     });
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'update_service',
+      objectType: 'service',
+      objectId: serviceId,
+      outcome: 'SUCCESS',
+      metadataJson: { changes: { ...dto } },
+    });
+
+    return this.mapServiceToView(updated);
+  }
+
+  async createGuideVersion(
+    adminUserId: string,
+    serviceId: string,
+    dto: CreateGuideVersionDto,
+  ) {
+    const service = await this.repository.findServiceById(serviceId);
     if (!service) {
       throw new NotFoundException('Layanan tidak ditemukan.');
     }
 
-    const updated = await this.prisma.service.update({
-      where: { id: serviceId },
-      data: {
-        publicationStatus: status,
-        ...(status === ServicePublicationStatus.PUBLISHED
-          ? { publishedAt: new Date() }
-          : {}),
-      },
+    const latestVersion =
+      await this.repository.findLatestGuideVersionNumber(serviceId);
+    const newVersionNumber = latestVersion + 1;
+
+    const guideVersion = await this.repository.createGuideVersion({
+      serviceId,
+      versionNumber: newVersionNumber,
+      procedureJson: dto.procedure_steps,
+      officialCostJson: (dto.official_fee ?? undefined) as
+        Prisma.InputJsonValue | undefined,
+      officialDurationJson: (dto.official_processing_time ?? undefined) as
+        Prisma.InputJsonValue | undefined,
+      sourceReviewedAt: dto.reviewed_at ? new Date(dto.reviewed_at) : null,
+      createdById: adminUserId,
     });
 
-    await this.prisma.auditEvent.create({
-      data: {
-        actorUserId: actor.id,
-        actorRole: 'admin',
-        action: 'SERVICE_STATUS_CHANGED',
-        objectType: 'service',
-        objectId: serviceId,
-        requestId: randomUUID(),
-        outcome: 'success',
-        metadataJson: {
-          previous_status: service.publicationStatus,
-          new_status: status,
-        },
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'create_guide_version',
+      objectType: 'guide_version',
+      objectId: guideVersion.id,
+      outcome: 'SUCCESS',
+      metadataJson: {
+        serviceId,
+        versionNumber: newVersionNumber,
       },
     });
 
     return {
-      id: updated.id,
-      publication_status: updated.publicationStatus,
+      guide_version_id: guideVersion.id,
+      service_id: guideVersion.serviceId,
+      version_number: guideVersion.versionNumber,
+      status: guideVersion.status.toLowerCase(),
+      created_at: guideVersion.createdAt.toISOString(),
     };
   }
 
-  async assignOfficer(
-    applicationId: string,
-    officerUserId: string,
-    actor: AuthenticatedUser,
-    reason?: string,
+  async publishGuideVersion(
+    adminUserId: string,
+    guideVersionId: string,
+    dto: PublishGuideVersionDto,
   ) {
-    const target = await this.prisma.user.findFirst({
-      where: {
-        id: officerUserId,
-        deletedAt: null,
-        accountStatus: 'ACTIVE',
-        userRoles: {
-          some: {
-            role: { roleCode: 'officer' },
-            isActive: true,
-          },
-        },
-      },
-    });
+    const guideVersion =
+      await this.repository.findGuideVersionById(guideVersionId);
+    if (!guideVersion) {
+      throw new NotFoundException('Versi panduan tidak ditemukan.');
+    }
 
-    if (!target) {
-      throw new BadRequestException(
-        'Petugas tidak ditemukan, tidak aktif, atau tidak memiliki peran petugas.',
+    if (
+      dto.expected_version !== undefined &&
+      dto.expected_version !== guideVersion.versionNumber
+    ) {
+      throw new ConflictException(
+        'Versi panduan telah berubah (VERSION_CONFLICT). Muat ulang versi panduan.',
       );
     }
 
-    const application = await this.prisma.applicationRecord.findUnique({
-      where: { id: applicationId },
-    });
+    const publishedAt = new Date();
+    const published = await this.repository.publishGuideVersion(
+      guideVersionId,
+      guideVersion.serviceId,
+      publishedAt,
+    );
 
-    if (!application) {
-      throw new NotFoundException('Pengajuan tidak ditemukan.');
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      await tx.officerAssignment.updateMany({
-        where: {
-          applicationId,
-          endedAt: null,
-        },
-        data: {
-          endedAt: new Date(),
-          assignmentStatus: 'transferred',
-        },
-      });
-
-      const newAssignment = await tx.officerAssignment.create({
-        data: {
-          applicationId,
-          officerUserId,
-          assignmentStatus: 'active',
-          assignedAt: new Date(),
-        },
-      });
-
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: actor.id,
-          actorRole: 'admin',
-          action: 'ADMIN_ASSIGNMENT_TRANSFER',
-          objectType: 'application',
-          objectId: applicationId,
-          requestId: randomUUID(),
-          outcome: 'success',
-          metadataJson: {
-            assignedOfficerId: officerUserId,
-            reason: reason ?? 'Penugasan petugas oleh administrator.',
-          },
-        },
-      });
-
-      return {
-        message: 'Petugas berhasil ditugaskan ke pengajuan.',
-        assignment_id: newAssignment.id,
-      };
-    });
-  }
-
-  async users(query: AdminListDto) {
-    const rows = await this.prisma.user.findMany({
-      where: {
-        deletedAt: null,
-        ...(query.q
-          ? {
-              OR: [
-                {
-                  displayName: {
-                    contains: query.q,
-                    mode: 'insensitive' as const,
-                  },
-                },
-                { email: { contains: query.q, mode: 'insensitive' as const } },
-              ],
-            }
-          : {}),
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'publish_guide_version',
+      objectType: 'guide_version',
+      objectId: guideVersionId,
+      outcome: 'SUCCESS',
+      metadataJson: {
+        changeSummary: dto.change_summary,
+        versionNumber: published.versionNumber,
       },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      select: userSelect,
     });
-    const now = new Date();
-    const items = rows.slice(0, query.limit).map((row) => ({
-      id: row.id,
-      display_name: row.displayName,
-      email: row.email,
-      status: row.accountStatus,
-      email_verified: Boolean(row.emailVerifiedAt),
-      created_at: row.createdAt.toISOString(),
-      updated_at: row.updatedAt.toISOString(),
-      roles: row.userRoles
-        .filter(
-          (role) =>
-            (!role.validFrom || role.validFrom <= now) &&
-            (!role.validUntil || role.validUntil > now),
-        )
-        .map((role) => ({ code: role.role.roleCode, agency: role.agency })),
-    }));
+
     return {
-      items,
-      next_cursor: rows.length > query.limit ? items.at(-1)?.id : null,
+      guide_version_id: published.id,
+      service_id: published.serviceId,
+      version_number: published.versionNumber,
+      status: published.status.toLowerCase(),
+      published_at: publishedAt.toISOString(),
     };
   }
 
-  async agencies() {
-    const rows = await this.prisma.agency.findMany({
-      where: { isActive: true },
-      orderBy: [{ name: 'asc' }, { id: 'asc' }],
-      take: 500,
-      select: {
-        id: true,
-        name: true,
-        agencyType: true,
-        region: { select: { id: true, name: true, regionType: true } },
-      },
+  async listOfficers(query: { page: number; page_size: number }) {
+    const { items, total } = await this.repository.listOfficers({
+      page: query.page,
+      pageSize: query.page_size,
     });
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      type: row.agencyType,
-      region: row.region,
+
+    const data: OfficerItemView[] = items.map((officer) => ({
+      id: officer.id,
+      email: officer.email,
+      name: officer.displayName,
+      status: officer.accountStatus.toLowerCase(),
+      roles: officer.userRoles.map((ur) => ({
+        role: ur.role.roleCode,
+        agency: ur.agency?.name ?? null,
+        region: ur.region?.name ?? null,
+        is_active: ur.isActive,
+      })),
+      active_assignments_count: officer.officerAssignments.length,
     }));
+
+    return {
+      data,
+      meta: {
+        page: query.page,
+        page_size: query.page_size,
+        total_items: total,
+        total_pages: Math.ceil(total / query.page_size),
+      },
+    };
   }
 
-  async changeAccess(
-    actor: AuthenticatedUser,
-    id: string,
-    dto: ChangeAccessDto,
-    requestId: string,
+  async manageRoleAssignments(
+    adminUserId: string,
+    targetUserId: string,
+    dto: ManageRoleAssignmentDto,
   ) {
-    if (actor.id === id) {
-      throw new ForbiddenException(
-        'Akun sendiri tidak dapat diubah melalui endpoint ini.',
-      );
+    const targetUser = await this.repository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw new NotFoundException('Pengguna tidak ditemukan.');
     }
-    await this.prisma.$transaction(async (tx) => {
-      const target = await tx.user.findFirst({
-        where: { id, deletedAt: null },
-        select: {
-          id: true,
-          email: true,
-          accountStatus: true,
-          updatedAt: true,
-          userRoles: {
-            where: { isActive: true },
-            select: { id: true, role: { select: { roleCode: true } } },
-          },
-        },
-      });
-      if (!target) throw new NotFoundException('Akun target tidak ditemukan.');
-      if (target.userRoles.some((r) => r.role.roleCode === 'admin')) {
-        throw new ForbiddenException(
-          'Akses akun administrator tidak dapat diubah di sini.',
-        );
+
+    const updatedRoles = await this.repository.updateUserRoleAssignments(
+      targetUserId,
+      dto.assignments.map((a) => ({
+        roleCode: a.role,
+        agencyId: a.agency_id,
+        regionId: a.region_id,
+        isActive: a.active,
+      })),
+      adminUserId,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'update_user_roles',
+      objectType: 'user',
+      objectId: targetUserId,
+      outcome: 'SUCCESS',
+      metadataJson: {
+        reason: dto.reason,
+        rolesCount: updatedRoles.length,
+      },
+    });
+
+    return {
+      message: 'Penugasan peran berhasil diperbarui.',
+      updated_count: updatedRoles.length,
+    };
+  }
+
+  async assignOfficerToApplication(adminUserId: string, dto: AssignOfficerDto) {
+    if (dto.expected_version !== undefined) {
+      const app = await this.repository.findApplicationById(dto.application_id);
+      if (!app) {
+        throw new NotFoundException('Pengajuan tidak ditemukan.');
       }
-      if (
-        target.accountStatus === 'DELETED' ||
-        target.accountStatus === 'DELETION_REQUESTED'
-      ) {
-        throw new BadRequestException('Akun dalam status penghapusan.');
-      }
-      if (
-        dto.expected_updated_at &&
-        target.updatedAt.toISOString() !== dto.expected_updated_at
-      ) {
+      if (app.version !== dto.expected_version) {
         throw new ConflictException(
-          'Data akun telah diperbarui pihak lain. Muat ulang daftar.',
+          'Versi pengajuan telah diperbarui (VERSION_CONFLICT). Muat ulang pengajuan.',
         );
       }
+    }
 
-      let agency: { id: string } | null = null;
-      if (dto.role === 'officer') {
-        if (!dto.agency_id) {
-          throw new BadRequestException('Petugas wajib memiliki instansi.');
-        }
-        agency = await tx.agency.findFirst({
-          where: {
-            id: dto.agency_id,
-            isActive: true,
-            region: { isActive: true },
-          },
-          select: { id: true },
-        });
-        if (!agency) {
-          throw new BadRequestException(
-            'Instansi tidak valid atau tidak aktif.',
-          );
-        }
-      }
+    const assignment = await this.repository.createOfficerAssignment(
+      dto.application_id,
+      dto.officer_user_id,
+    );
 
-      const role = await tx.role.findUnique({
-        where: { roleCode: dto.role },
-        select: { id: true },
-      });
-      if (!role) throw new BadRequestException('Peran tidak tersedia.');
-
-      await tx.user.update({
-        where: { id },
-        data: { accountStatus: dto.status },
-      });
-      await tx.userRole.updateMany({
-        where: { userId: id, isActive: true },
-        data: { isActive: false, validUntil: new Date() },
-      });
-      await tx.userRole.create({
-        data: {
-          userId: id,
-          roleId: role.id,
-          agencyId: agency?.id ?? null,
-          assignedById: actor.id,
-          validFrom: new Date(),
-        },
-      });
-      await tx.refreshSession.updateMany({
-        where: { userId: id, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      await tx.auditEvent.create({
-        data: {
-          actorUserId: actor.id,
-          actorRole: 'admin',
-          action: 'ACCESS_CHANGE',
-          objectType: 'user',
-          objectId: id,
-          requestId,
-          outcome: 'success',
-          metadataJson: {
-            previous_status: target.accountStatus,
-            status: dto.status,
-            role: dto.role,
-            agency_id: agency?.id ?? null,
-          },
-        },
-      });
-    });
-  }
-
-  async audit(query: AdminListDto) {
-    const rows = await this.prisma.auditEvent.findMany({
-      where: query.q
-        ? { action: { contains: query.q, mode: 'insensitive' } }
-        : {},
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-      select: {
-        id: true,
-        action: true,
-        objectType: true,
-        objectId: true,
-        outcome: true,
-        createdAt: true,
-        actor: { select: { displayName: true } },
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'assign_officer',
+      objectType: 'officer_assignment',
+      objectId: assignment.id,
+      outcome: 'SUCCESS',
+      metadataJson: {
+        applicationId: dto.application_id,
+        officerUserId: dto.officer_user_id,
+        reason: dto.reason,
       },
     });
-    const items = rows.slice(0, query.limit);
+
     return {
-      items,
-      next_cursor: rows.length > query.limit ? items.at(-1)?.id : null,
+      assignment_id: assignment.id,
+      message: 'Petugas berhasil ditugaskan ke pengajuan.',
     };
+  }
+
+  async listAuditEvents(query: ListAuditEventsQueryDto) {
+    const { items, total } = await this.repository.listAuditEvents({
+      actorId: query.actor_id,
+      action: query.action,
+      objectType: query.object_type,
+      page: query.page,
+      pageSize: query.page_size,
+    });
+
+    const data: AuditEventItemView[] = items.map((audit) => ({
+      id: audit.id,
+      actor_id: audit.actorUserId,
+      actor_role: audit.actorRole,
+      action: audit.action,
+      object_type: audit.objectType,
+      object_id: audit.objectId,
+      outcome: audit.outcome,
+      metadata: audit.metadataJson,
+      created_at: audit.createdAt.toISOString(),
+    }));
+
+    return {
+      data,
+      meta: {
+        page: query.page,
+        page_size: query.page_size,
+        total_items: total,
+        total_pages: Math.ceil(total / query.page_size),
+      },
+    };
+  }
+
+  private mapServiceToView(
+    service: AdminServiceWithRelations,
+  ): AdminServiceItemView {
+    return {
+      id: service.id,
+      name: service.name,
+      slug: service.slug,
+      category: service.category,
+      summary: service.summary,
+      agency: {
+        id: service.agency.id,
+        name: service.agency.name,
+      },
+      region: {
+        id: service.region.id,
+        name: service.region.name,
+      },
+      publication_status: service.publicationStatus.toLowerCase(),
+      latest_guide_version: service.guideVersions?.[0]?.versionNumber ?? null,
+      created_at: service.createdAt.toISOString(),
+      updated_at: service.updatedAt.toISOString(),
+    };
+  }
+
+  async pauseService(
+    adminUserId: string,
+    serviceId: string,
+    dto: PauseServiceDto,
+  ): Promise<{ message: string }> {
+    const service = await this.repository.findServiceById(serviceId);
+    if (!service) {
+      throw new NotFoundException('Layanan tidak ditemukan.');
+    }
+
+    await this.repository.updateServiceAvailability(
+      serviceId,
+      ServiceAvailability.PAUSED,
+      dto.reason,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'pause_service',
+      objectType: 'service',
+      objectId: serviceId,
+      outcome: 'SUCCESS',
+      metadataJson: { reason: dto.reason },
+    });
+
+    return { message: 'Layanan berhasil dijeda.' };
+  }
+
+  async resumeService(
+    adminUserId: string,
+    serviceId: string,
+  ): Promise<{ message: string }> {
+    const service = await this.repository.findServiceById(serviceId);
+    if (!service) {
+      throw new NotFoundException('Layanan tidak ditemukan.');
+    }
+
+    await this.repository.updateServiceAvailability(
+      serviceId,
+      ServiceAvailability.ACTIVE,
+      null,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'resume_service',
+      objectType: 'service',
+      objectId: serviceId,
+      outcome: 'SUCCESS',
+      metadataJson: {},
+    });
+
+    return { message: 'Layanan berhasil diaktifkan kembali.' };
+  }
+
+  async resolveEscalation(
+    adminUserId: string,
+    escalationId: string,
+    dto: ResolveEscalationDto,
+  ): Promise<{ message: string }> {
+    const escalation = await this.repository.findEscalationById(escalationId);
+    if (!escalation) {
+      throw new NotFoundException('Eskalasi tidak ditemukan.');
+    }
+
+    await this.repository.resolveEscalation(
+      escalationId,
+      adminUserId,
+      dto.resolution_note,
+    );
+
+    await this.repository.recordAuditEvent({
+      actorUserId: adminUserId,
+      actorRole: 'admin',
+      action: 'resolve_escalation',
+      objectType: 'officer_escalation',
+      objectId: escalationId,
+      outcome: 'SUCCESS',
+      metadataJson: { resolutionNote: dto.resolution_note },
+    });
+
+    return { message: 'Eskalasi berhasil diselesaikan.' };
   }
 }

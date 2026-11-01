@@ -1,5 +1,6 @@
 import type {
   ApplicationStatus,
+  CompanionReviewStatus,
   Prisma,
   StatusSourceType,
   SubmissionChannel,
@@ -63,6 +64,7 @@ export interface CreateApplicationRepositoryInput {
   submissionChannel: SubmissionChannel;
   sourceMode: StatusSourceType;
   statusSummary: ApplicationStatus;
+  reviewStatus?: CompanionReviewStatus;
   citizenNotes?: string | null;
   initialEvent: {
     statusCode: ApplicationStatus;
@@ -96,6 +98,22 @@ export interface AddStatusEventRepositoryInput {
   metadataJson?: Prisma.InputJsonValue;
 }
 
+export interface CreateSubmissionSnapshotRepositoryInput {
+  applicationId: string;
+  preparationId: string;
+  versionNumber: number;
+  conditionKey?: string | null;
+  serviceSnapshotJson: Prisma.InputJsonValue;
+  applicantSnapshotJson: Prisma.InputJsonValue;
+  answersSnapshotJson: Prisma.InputJsonValue;
+  documentsSnapshotJson: Prisma.InputJsonValue;
+  requiredSlotsJson: Prisma.InputJsonValue;
+  citizenNote?: string | null;
+  changesSummary?: string | null;
+  consentVersion: string;
+  consentedAt: Date;
+}
+
 export interface IApplicationsRepository {
   create(
     input: CreateApplicationRepositoryInput,
@@ -115,6 +133,11 @@ export interface IApplicationsRepository {
   updateStatus(
     applicationId: string,
     status: ApplicationStatus,
+    officialReference?: string | null,
+  ): Promise<ApplicationRecordWithRelations>;
+  updateReviewStatus(
+    applicationId: string,
+    reviewStatus: CompanionReviewStatus,
   ): Promise<ApplicationRecordWithRelations>;
   linkPreparation(
     applicationId: string,
@@ -126,15 +149,31 @@ export interface IApplicationsRepository {
   findPreparationById(
     preparationId: string,
     userId: string,
-  ): Promise<any | null>;
-  updateOfficialSubmission(
-    id: string,
-    data: {
-      officialNumber?: string | null;
-      channel?: string | null;
-      submittedDate?: Date | null;
-      citizenNotes?: string | null;
-      statusSummary?: ApplicationStatus;
-    },
+  ): Promise<{
+    id: string;
+    serviceId: string;
+    userId: string;
+    archivedAt: Date | null;
+    deletedAt: Date | null;
+  } | null>;
+  findPreparationForSubmission(
+    preparationId: string,
+    userId: string,
+  ): Promise<any>;
+  findUserForSubmission(userId: string): Promise<any>;
+  findFamilyMember(familyMemberId: string, userId: string): Promise<any>;
+  createSubmissionSnapshot(
+    input: CreateSubmissionSnapshotRepositoryInput,
+  ): Promise<any>;
+  findSubmissionSnapshots(applicationId: string): Promise<any[]>;
+  findSubmissionSnapshotByVersion(
+    applicationId: string,
+    versionNumber: number,
+  ): Promise<any>;
+  findLatestSubmissionVersion(applicationId: string): Promise<number>;
+  withdrawApplication(
+    applicationId: string,
+    userId: string,
+    reason: string,
   ): Promise<ApplicationRecordWithRelations>;
 }

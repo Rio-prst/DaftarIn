@@ -4,7 +4,6 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
@@ -33,7 +32,6 @@ const STATUS_CODE_BY_HTTP_STATUS = new Map<number, string>([
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
@@ -45,20 +43,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const normalized = this.normalize(exception);
-    if (status >= 500) {
-      const code =
-        exception && typeof exception === 'object' && 'code' in exception
-          ? exception.code
-          : undefined;
-      this.logger.error({
-        request_id: request.requestId,
-        error_type:
-          exception instanceof Error ? exception.name : 'UnknownError',
-        ...(typeof code === 'string' && /^[A-Z0-9_]{1,40}$/.test(code)
-          ? { error_code: code }
-          : {}),
-      });
-    }
 
     response.status(status).json({
       error: {

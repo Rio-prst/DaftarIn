@@ -1,13 +1,30 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import {
+  CompanionReviewStatus,
+  ServiceAvailability,
+} from '../generated/prisma/client';
+import {
+  assertValidApplicationTransition,
+  assertValidReviewTransition,
+} from '../common/utils/application-state-machine';
+import type {
+  CreateResubmissionDto,
+  CreateSubmissionDto,
+} from './dto/create-submission.dto';
+import type { WithdrawApplicationDto } from './dto/withdraw-application.dto';
+import type {
+  SubmissionSnapshotDetailView,
+  SubmissionSnapshotItemView,
+} from './interfaces/applications.service.interface';
+import {
   ApplicationStatus,
-  Prisma,
   StatusSourceType,
   SubmissionChannel,
 } from '../generated/prisma/client';
@@ -47,8 +64,6 @@ export class ApplicationsService implements IApplicationsService {
       throw new NotFoundException('Layanan tidak ditemukan.');
     }
 
-    let snapshot: Record<string, unknown> | null = null;
-
     if (dto.preparation_id) {
       const prep = await this.repository.findPreparationById(
         dto.preparation_id,
@@ -64,30 +79,6 @@ export class ApplicationsService implements IApplicationsService {
           'Persiapan berkas tidak cocok dengan layanan yang dipilih.',
         );
       }
-
-      // Assemble immutable snapshot of preparation at the moment of submission
-      snapshot = {
-        preparation_id: prep.id,
-        preparation_reference: prep.internalReference,
-        version: prep.version,
-        data_version: prep.currentDataVersion,
-        submitted_at: (dto.submitted_at ? new Date(dto.submitted_at) : new Date()).toISOString(),
-        answers: (prep.answerVersions ?? []).map((a: any) => ({
-          question_id: a.questionId,
-          question_key: a.question?.questionKey,
-          label: a.question?.label,
-          value: a.answerJson,
-        })),
-        documents: (prep.documentVersions ?? []).map((d: any) => ({
-          id: d.id,
-          document_type: d.documentType,
-          version_number: d.versionNumber,
-          original_filename: d.originalFilename,
-          storage_key: d.storageKey,
-          file_size_bytes: d.fileSizeBytes.toString(),
-          checksum_sha256: d.checksumSha256,
-        })),
-      };
     }
 
     const year = new Date().getFullYear();
@@ -114,13 +105,10 @@ export class ApplicationsService implements IApplicationsService {
       initialEvent: {
         statusCode: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
         sourceType: StatusSourceType.CITIZEN_REPORT,
-        sourceLabel: 'Dicatat warga — diajukan untuk tinjauan pendamping',
+        sourceLabel: 'Dicatat warga — belum terkonfirmasi instansi',
         description: dto.note?.trim() || 'Pengajuan dicatat oleh warga.',
         occurredAt: submittedDate,
-        metadataJson: {
-          channel: dto.channel,
-          snapshot,
-        } as unknown as Prisma.InputJsonValue,
+        metadataJson: { channel: dto.channel },
       },
     });
 
@@ -250,11 +238,22 @@ export class ApplicationsService implements IApplicationsService {
       throw new NotFoundException('Catatan pengajuan tidak ditemukan.');
     }
 
+    // Idempotent return if already confirmed
+    if (record.statusSummary === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN) {
+      return this.mapToDetailView(record);
+    }
+
+    assertValidApplicationTransition(
+      record.statusSummary,
+      ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN,
+    );
+
     const occurredAt = dto.received_at ? new Date(dto.received_at) : new Date();
 
     await this.repository.updateStatus(
       id,
       ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN,
+      dto.official_reference_number ?? record.officialReference,
     );
 
     await this.repository.addStatusEvent({
@@ -267,6 +266,13 @@ export class ApplicationsService implements IApplicationsService {
         dto.note?.trim() ||
         'Warga mengonfirmasi bahwa hasil pengajuan telah diterima.',
       occurredAt,
+      metadataJson: {
+        channel: dto.channel ?? record.submissionChannel.toLowerCase(),
+        official_reference_number:
+          dto.official_reference_number ?? record.officialReference,
+        acknowledgement_confirmed: dto.acknowledgement_confirmed ?? true,
+        proof_document_id: dto.proof_document_id ?? null,
+      },
     });
 
     const updated = await this.repository.findById(id, userId);
@@ -300,147 +306,6 @@ export class ApplicationsService implements IApplicationsService {
     }
 
     const updated = await this.repository.linkPreparation(id, preparationId);
-    return this.mapToDetailView(updated);
-  }
-
-  async resubmitRevision(
-    id: string,
-    userId: string,
-    note?: string,
-  ): Promise<ApplicationDetailView> {
-    const record = await this.repository.findById(id, userId);
-    if (!record) {
-      throw new NotFoundException('Pengajuan tidak ditemukan.');
-    }
-
-    if (record.statusSummary !== ApplicationStatus.NEEDS_CORRECTION) {
-      throw new BadRequestException(
-        'Pengajuan hanya dapat direvisi ketika status memerlukan perbaikan (needs_correction).',
-      );
-    }
-
-    let revisionSnapshot: Record<string, unknown> | null = null;
-    if (record.preparationId) {
-      const prep = await this.repository.findPreparationById(
-        record.preparationId,
-        userId,
-      );
-      if (prep) {
-        revisionSnapshot = {
-          preparation_id: prep.id,
-          version: prep.version,
-          data_version: prep.currentDataVersion,
-          resubmitted_at: new Date().toISOString(),
-          answers: (prep.answerVersions ?? []).map((a: any) => ({
-            question_id: a.questionId,
-            value: a.answerJson,
-          })),
-          documents: (prep.documentVersions ?? []).map((d: any) => ({
-            id: d.id,
-            document_type: d.documentType,
-            version_number: d.versionNumber,
-            original_filename: d.originalFilename,
-          })),
-        };
-      }
-    }
-
-    await this.repository.updateStatus(id, ApplicationStatus.VERIFICATION);
-
-    await this.repository.addStatusEvent({
-      applicationId: id,
-      actorUserId: userId,
-      statusCode: ApplicationStatus.VERIFICATION,
-      sourceType: StatusSourceType.CITIZEN_REPORT,
-      sourceLabel: 'Revisi diajukan warga',
-      description: note?.trim() || 'Warga telah mengirimkan berkas hasil perbaikan.',
-      occurredAt: new Date(),
-      metadataJson: {
-        revision_snapshot: revisionSnapshot,
-      } as unknown as Prisma.InputJsonValue,
-    });
-
-    const updated = await this.repository.findById(id, userId);
-    return this.mapToDetailView(updated!);
-  }
-
-  async withdrawApplication(
-    id: string,
-    userId: string,
-    reason?: string,
-  ): Promise<ApplicationDetailView> {
-    const record = await this.repository.findById(id, userId);
-    if (!record) {
-      throw new NotFoundException('Pengajuan tidak ditemukan.');
-    }
-
-    if (
-      record.statusSummary === ApplicationStatus.COMPLETED ||
-      record.statusSummary === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN
-    ) {
-      throw new BadRequestException(
-        'Pengajuan yang telah selesai diproses tidak dapat ditarik.',
-      );
-    }
-
-    await this.repository.addStatusEvent({
-      applicationId: id,
-      actorUserId: userId,
-      statusCode: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
-      sourceType: StatusSourceType.CITIZEN_REPORT,
-      sourceLabel: 'Permohonan ditarik oleh warga',
-      description: reason?.trim() || 'Warga menarik permohonan tinjauan pendamping.',
-      occurredAt: new Date(),
-    });
-
-    const updated = await this.repository.findById(id, userId);
-    return this.mapToDetailView(updated!);
-  }
-
-  async recordOfficialSubmission(
-    id: string,
-    userId: string,
-    dto: {
-      official_number?: string;
-      channel?: string;
-      submission_date?: string;
-      receipt_number?: string;
-      note?: string;
-    },
-  ): Promise<ApplicationDetailView> {
-    const record = await this.repository.findById(id, userId);
-    if (!record) {
-      throw new NotFoundException('Pengajuan tidak ditemukan.');
-    }
-
-    const submittedDate = dto.submission_date
-      ? new Date(dto.submission_date)
-      : new Date();
-
-    const updated = await this.repository.updateOfficialSubmission(id, {
-      officialNumber: dto.official_number || dto.receipt_number,
-      channel: dto.channel,
-      submittedDate,
-      citizenNotes: dto.note,
-      statusSummary: ApplicationStatus.PROCESSING,
-    });
-
-    await this.repository.addStatusEvent({
-      applicationId: id,
-      actorUserId: userId,
-      statusCode: ApplicationStatus.PROCESSING,
-      sourceType: StatusSourceType.CITIZEN_REPORT,
-      sourceLabel: 'Pengajuan resmi dicatat warga',
-      description:
-        dto.note?.trim() ||
-        `Warga mencatat nomor pengajuan resmi instansi: ${dto.official_number || 'Tercatat'}`,
-      occurredAt: submittedDate,
-      metadataJson: {
-        receipt_number: dto.receipt_number,
-        official_channel: dto.channel,
-      },
-    });
-
     return this.mapToDetailView(updated);
   }
 
@@ -514,18 +379,6 @@ export class ApplicationsService implements IApplicationsService {
           : 'citizen_reported'
         : 'not_provided';
 
-    let snapshot: unknown = undefined;
-    for (const e of record.statusEvents ?? []) {
-      if (
-        e.metadataJson &&
-        typeof e.metadataJson === 'object' &&
-        'snapshot' in (e.metadataJson as Record<string, unknown>)
-      ) {
-        snapshot = (e.metadataJson as Record<string, unknown>).snapshot;
-        break;
-      }
-    }
-
     return {
       id: record.id,
       internal_reference: record.internalReference,
@@ -558,7 +411,6 @@ export class ApplicationsService implements IApplicationsService {
       simulation: record.sourceMode === StatusSourceType.SIMULATION,
       created_at: record.createdAt.toISOString(),
       updated_at: record.updatedAt.toISOString(),
-      snapshot,
     };
   }
 
@@ -588,8 +440,6 @@ export class ApplicationsService implements IApplicationsService {
       eventType = 'citizen_note';
     } else if (event.sourceLabel.toLowerCase().includes('dicatat warga')) {
       eventType = 'application_recorded';
-    } else if (event.sourceLabel.toLowerCase().includes('revisi')) {
-      eventType = 'revision_resubmitted';
     }
 
     return {
@@ -610,7 +460,374 @@ export class ApplicationsService implements IApplicationsService {
       note: event.description,
       simulation: event.sourceType === StatusSourceType.SIMULATION,
       correction_of_event_id: null,
-      metadata: event.metadataJson,
+    };
+  }
+  async submitPreparation(
+    preparationId: string,
+    userId: string,
+    dto: CreateSubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView> {
+    const prep = await this.repository.findPreparationForSubmission(
+      preparationId,
+      userId,
+    );
+    if (!prep) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+
+    if (prep.service.availability === 'PAUSED') {
+      throw new ForbiddenException(
+        `Layanan sedang dijeda sementara oleh instansi: ${prep.service.pausedReason || 'Dalam pemeliharaan'}`,
+      );
+    }
+
+    const user = await this.repository.findUserForSubmission(userId);
+
+    let applicantSnapshot: any = {
+      subject_type: 'myself',
+      user_id: user.id,
+      display_name: user.displayName,
+      email: user.email,
+      phone: user.phone,
+    };
+
+    if (dto.family_member_id) {
+      const fam = await this.repository.findFamilyMember(
+        dto.family_member_id,
+        userId,
+      );
+      if (!fam) {
+        throw new NotFoundException('Data anggota keluarga tidak ditemukan.');
+      }
+      applicantSnapshot = {
+        subject_type: 'family_member',
+        family_member_id: fam.id,
+        full_name: fam.fullName,
+        relationship: fam.relationship,
+        nik: fam.nik,
+        birth_date: fam.birthDate?.toISOString() ?? null,
+        gender: fam.gender,
+        manager: {
+          user_id: user.id,
+          display_name: user.displayName,
+          email: user.email,
+        },
+      };
+    }
+
+    const serviceSnapshot = {
+      id: prep.service.id,
+      name: prep.service.name,
+      slug: prep.service.slug,
+      category: prep.service.category,
+      agency: {
+        id: prep.service.agency.id,
+        name: prep.service.agency.name,
+      },
+      region: {
+        id: prep.service.region.id,
+        name: prep.service.region.name,
+      },
+      guide_version: prep.guideVersion.versionNumber,
+    };
+
+    const latestAnswersMap = new Map<string, any>();
+    for (const a of prep.answerVersions) {
+      if (!latestAnswersMap.has(a.questionId)) {
+        latestAnswersMap.set(a.questionId, {
+          question_id: a.questionId,
+          question_key: a.question.questionKey,
+          label: a.question.label,
+          value: (a.answerJson as any)?.value ?? a.answerJson,
+        });
+      }
+    }
+    const answersSnapshot = Array.from(latestAnswersMap.values());
+
+    const latestDocsMap = new Map<string, any>();
+    for (const d of prep.documentVersions) {
+      if (!latestDocsMap.has(d.documentType)) {
+        latestDocsMap.set(d.documentType, {
+          document_type: d.documentType,
+          document_version_id: d.id,
+          version_number: d.versionNumber,
+          storage_key: d.storageKey,
+          original_filename: d.originalFilename,
+          mime_type: d.detectedMimeType,
+          file_size_bytes: Number(d.fileSizeBytes),
+          checksum_sha256: d.checksumSha256,
+        });
+      }
+    }
+    const documentsSnapshot = Array.from(latestDocsMap.values());
+
+    let app = prep.applicationRecords?.[0];
+    if (!app) {
+      const year = new Date().getFullYear();
+      const randomHex = randomBytes(4).toString('hex').toUpperCase();
+      const internalReference = `APP-${year}-${randomHex}`;
+
+      app = await this.repository.create({
+        userId,
+        serviceId: prep.serviceId,
+        agencyId: dto.agency_id ?? prep.service.agencyId,
+        preparationId: prep.id,
+        internalReference,
+        submissionChannel: SubmissionChannel.ONLINE_PORTAL,
+        sourceMode: StatusSourceType.CITIZEN_REPORT,
+        statusSummary: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
+        reviewStatus: CompanionReviewStatus.SUBMITTED,
+        citizenNotes: dto.citizen_note ?? null,
+        initialEvent: {
+          statusCode: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
+          sourceType: StatusSourceType.CITIZEN_REPORT,
+          sourceLabel: 'Warga mengirimkan berkas persiapan',
+          description:
+            dto.citizen_note ||
+            'Berkas persiapan dikirim untuk tinjauan pendamping DaftarIn.',
+          occurredAt: new Date(),
+        },
+      });
+    } else {
+      await this.repository.updateReviewStatus(
+        app.id,
+        CompanionReviewStatus.SUBMITTED,
+      );
+    }
+
+    const versionNumber =
+      (await this.repository.findLatestSubmissionVersion(app.id)) + 1;
+
+    const snapshot = await this.repository.createSubmissionSnapshot({
+      applicationId: app.id,
+      preparationId: prep.id,
+      versionNumber,
+      conditionKey: null,
+      serviceSnapshotJson: serviceSnapshot,
+      applicantSnapshotJson: applicantSnapshot,
+      answersSnapshotJson: answersSnapshot,
+      documentsSnapshotJson: documentsSnapshot,
+      requiredSlotsJson: [],
+      citizenNote: dto.citizen_note ?? null,
+      changesSummary: null,
+      consentVersion: dto.consent_version ?? 'v1.0',
+      consentedAt: new Date(),
+    });
+
+    return this.mapToSubmissionDetailView(snapshot);
+  }
+
+  async resubmitApplication(
+    applicationId: string,
+    userId: string,
+    dto: CreateResubmissionDto,
+  ): Promise<SubmissionSnapshotDetailView> {
+    const app = await this.repository.findById(applicationId, userId);
+    if (!app) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    if (!app.preparationId) {
+      throw new BadRequestException(
+        'Pengajuan ini tidak memiliki draf persiapan terkait.',
+      );
+    }
+
+    const prep = await this.repository.findPreparationForSubmission(
+      app.preparationId,
+      userId,
+    );
+    if (!prep) {
+      throw new NotFoundException('Draf persiapan tidak ditemukan.');
+    }
+
+    const answersMap = new Map<string, any>();
+    for (const a of prep.answerVersions) {
+      if (!answersMap.has(a.questionId)) {
+        answersMap.set(a.questionId, {
+          question_id: a.questionId,
+          question_key: a.question.questionKey,
+          label: a.question.label,
+          value: (a.answerJson as any)?.value ?? a.answerJson,
+        });
+      }
+    }
+
+    const docsMap = new Map<string, any>();
+    for (const d of prep.documentVersions) {
+      if (!docsMap.has(d.documentType)) {
+        docsMap.set(d.documentType, {
+          document_type: d.documentType,
+          document_version_id: d.id,
+          version_number: d.versionNumber,
+          storage_key: d.storageKey,
+          original_filename: d.originalFilename,
+          mime_type: d.detectedMimeType,
+          file_size_bytes: Number(d.fileSizeBytes),
+          checksum_sha256: d.checksumSha256,
+        });
+      }
+    }
+
+    const user = await this.repository.findUserForSubmission(userId);
+    const applicantSnapshot = {
+      subject_type: 'myself',
+      user_id: user.id,
+      display_name: user.displayName,
+      email: user.email,
+    };
+
+    const serviceSnapshot = {
+      id: prep.service.id,
+      name: prep.service.name,
+      slug: prep.service.slug,
+      category: prep.service.category,
+      agency: { id: prep.service.agency.id, name: prep.service.agency.name },
+      region: { id: prep.service.region.id, name: prep.service.region.name },
+      guide_version: prep.guideVersion.versionNumber,
+    };
+
+    const nextVersion =
+      (await this.repository.findLatestSubmissionVersion(applicationId)) + 1;
+
+    const snapshot = await this.repository.createSubmissionSnapshot({
+      applicationId,
+      preparationId: prep.id,
+      versionNumber: nextVersion,
+      conditionKey: null,
+      serviceSnapshotJson: serviceSnapshot,
+      applicantSnapshotJson: applicantSnapshot,
+      answersSnapshotJson: Array.from(answersMap.values()),
+      documentsSnapshotJson: Array.from(docsMap.values()),
+      requiredSlotsJson: [],
+      citizenNote: dto.citizen_note ?? null,
+      changesSummary: dto.changes_summary,
+      consentVersion: dto.consent_version ?? 'v1.0',
+      consentedAt: new Date(),
+    });
+
+    await this.repository.updateReviewStatus(
+      applicationId,
+      CompanionReviewStatus.SUBMITTED,
+    );
+
+    await this.repository.addStatusEvent({
+      applicationId,
+      actorUserId: userId,
+      statusCode: app.statusSummary,
+      sourceType: StatusSourceType.CITIZEN_REPORT,
+      sourceLabel: `Warga mengirimkan perbaikan (Revisi v${nextVersion})`,
+      description: dto.changes_summary,
+      occurredAt: new Date(),
+      metadataJson: {
+        submission_version: nextVersion,
+        changes_summary: dto.changes_summary,
+      },
+    });
+
+    return this.mapToSubmissionDetailView(snapshot);
+  }
+
+  async listSubmissions(
+    applicationId: string,
+    userId: string,
+  ): Promise<SubmissionSnapshotItemView[]> {
+    const app = await this.repository.findById(applicationId, userId);
+    if (!app) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    const snapshots =
+      await this.repository.findSubmissionSnapshots(applicationId);
+    return snapshots.map((s) => this.mapToSubmissionItemView(s));
+  }
+
+  async getSubmissionDetail(
+    applicationId: string,
+    versionNumber: number,
+    userId: string,
+  ): Promise<SubmissionSnapshotDetailView> {
+    const app = await this.repository.findById(applicationId, userId);
+    if (!app) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    const snapshot = await this.repository.findSubmissionSnapshotByVersion(
+      applicationId,
+      versionNumber,
+    );
+    if (!snapshot) {
+      throw new NotFoundException(
+        `Snapshot kiriman versi ${versionNumber} tidak ditemukan.`,
+      );
+    }
+
+    return this.mapToSubmissionDetailView(snapshot);
+  }
+
+  async withdrawApplication(
+    applicationId: string,
+    userId: string,
+    dto: WithdrawApplicationDto,
+  ): Promise<ApplicationDetailView> {
+    const app = await this.repository.findById(applicationId, userId);
+    if (!app) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    if (app.statusSummary === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN) {
+      throw new BadRequestException(
+        'Pengajuan yang sudah selesai diterima hasilnya tidak dapat ditarik kembali.',
+      );
+    }
+
+    const updated = await this.repository.withdrawApplication(
+      applicationId,
+      userId,
+      dto.reason,
+    );
+
+    return this.mapToDetailView(updated);
+  }
+
+  private mapToSubmissionItemView(s: any): SubmissionSnapshotItemView {
+    return {
+      id: s.id,
+      application_id: s.applicationId,
+      preparation_id: s.preparationId,
+      version_number: s.versionNumber,
+      submitted_at: s.submittedAt.toISOString(),
+      citizen_note: s.citizenNote,
+      changes_summary: s.changesSummary,
+      consent_version: s.consentVersion,
+      reviews: (s.submissionReviews || []).map((r: any) => ({
+        id: r.id,
+        review_status: r.reviewStatus.toLowerCase(),
+        overall_notes: r.overallNotes,
+        decided_at: r.decidedAt?.toISOString() ?? null,
+        officer: {
+          id: r.officer?.id,
+          name: r.officer?.displayName,
+        },
+        assessments: (r.itemAssessments || []).map((ia: any) => ({
+          item_id: ia.itemId,
+          item_type: ia.itemType.toLowerCase(),
+          verdict: ia.verdict.toLowerCase(),
+          note: ia.note,
+          target_action: ia.targetAction,
+        })),
+      })),
+    };
+  }
+
+  private mapToSubmissionDetailView(s: any): SubmissionSnapshotDetailView {
+    return {
+      ...this.mapToSubmissionItemView(s),
+      service: s.serviceSnapshotJson,
+      applicant: s.applicantSnapshotJson,
+      answers: s.answersSnapshotJson as any[],
+      documents: s.documentsSnapshotJson as any[],
+      required_slots: s.requiredSlotsJson,
     };
   }
 }

@@ -3,18 +3,13 @@ import { z } from 'zod';
 
 const registerSchema = z
   .object({
-    display_name: z.string().trim().min(3).max(200),
+    display_name: z.string().trim().min(1).max(200),
     email: z.string().trim().email().max(320),
-    password: z
-      .string()
-      .min(8)
-      .max(72)
-      .refine(
-        (value) => Buffer.byteLength(value, 'utf8') <= 72,
-        'Kata sandi terlalu panjang.',
-      ),
-    privacy_accepted: z.literal(true),
-    privacy_notice_version: z.literal('2026-11-01'),
+    password: z.string().min(8).max(72),
+    privacy_accepted: z.boolean().optional(),
+    privacy_notice_version: z.string().max(100).optional(),
+    terms_accepted: z.boolean().optional(),
+    consent: z.boolean().optional(),
   })
   .strict();
 

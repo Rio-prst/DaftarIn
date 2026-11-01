@@ -20,11 +20,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Response } from '../common/response/response';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
-import {
-  ReuseDocumentDto,
-  UploadDocumentDto,
-  UploadVersionDto,
-} from './dto/upload-document.dto';
+import { UploadDocumentDto, UploadVersionDto } from './dto/upload-document.dto';
 import {
   DOCUMENTS_SERVICE,
   type IDocumentsService,
@@ -40,7 +36,13 @@ export class DocumentsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
   async upload(
     @Param('preparationId', ParseUUIDPipe) preparationId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -54,26 +56,6 @@ export class DocumentsController {
       dto.document_type,
       dto.requirement_id,
       dto.display_name,
-    );
-
-    return new Response({
-      data: result,
-    });
-  }
-
-  @Post('reuse')
-  @HttpCode(HttpStatus.CREATED)
-  async reuse(
-    @Param('preparationId', ParseUUIDPipe) preparationId: string,
-    @Body() dto: ReuseDocumentDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const result = await this.documentsService.reuseDocument(
-      preparationId,
-      user.id,
-      dto.source_document_id,
-      dto.document_type,
-      dto.user_consent,
     );
 
     return new Response({
@@ -115,7 +97,13 @@ export class DocumentsController {
 
   @Post(':documentId/versions')
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
   async uploadNewVersion(
     @Param('preparationId', ParseUUIDPipe) preparationId: string,
     @Param('documentId', ParseUUIDPipe) documentId: string,

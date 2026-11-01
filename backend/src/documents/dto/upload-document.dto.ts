@@ -18,13 +18,3 @@ const uploadVersionSchema = z
   .strip();
 
 export class UploadVersionDto extends createZodDto(uploadVersionSchema) {}
-
-const reuseDocumentSchema = z
-  .object({
-    source_document_id: z.string().uuid(),
-    document_type: z.string().trim().min(1).max(64),
-    user_consent: z.boolean(),
-  })
-  .strip();
-
-export class ReuseDocumentDto extends createZodDto(reuseDocumentSchema) {}

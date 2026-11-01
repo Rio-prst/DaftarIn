@@ -33,6 +33,7 @@ describe('ApplicationsService', () => {
     submissionChannel: SubmissionChannel.ONLINE_PORTAL,
     sourceMode: StatusSourceType.CITIZEN_REPORT,
     statusSummary: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
+    reviewStatus: 'SUBMITTED' as any,
     citizenNotes: 'Pengajuan dicatat sendiri.',
     version: 1,
     createdAt: new Date('2026-10-28T08:00:00Z'),
@@ -78,7 +79,16 @@ describe('ApplicationsService', () => {
       updateStatus: jest.fn(),
       linkPreparation: jest.fn(),
       findServiceById: jest.fn(),
+      updateReviewStatus: jest.fn(),
+      findPreparationForSubmission: jest.fn(),
+      findUserForSubmission: jest.fn(),
+      findFamilyMember: jest.fn(),
       findPreparationById: jest.fn(),
+      createSubmissionSnapshot: jest.fn(),
+      findSubmissionSnapshots: jest.fn(),
+      findSubmissionSnapshotByVersion: jest.fn(),
+      findLatestSubmissionVersion: jest.fn(),
+      withdrawApplication: jest.fn(),
     };
 
     service = new ApplicationsService(mockRepository);
@@ -330,11 +340,13 @@ describe('ApplicationsService', () => {
 
       const result = await service.confirmResultReceived(appId, userId, {
         note: 'KTP sudah saya ambil di kantor camat.',
+        acknowledgement_confirmed: true,
       });
 
       expect(mockRepository.updateStatus).toHaveBeenCalledWith(
         appId,
         ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN,
+        'REG-OFFICIAL-123',
       );
       expect(result.current_status).toBe('result_received_by_citizen');
     });

@@ -63,6 +63,8 @@ function makeServiceRecord(): ServiceListRecord {
     agencyId: 'agency-1',
     regionId: 'region-1',
     publicationStatus: ServicePublicationStatus.PUBLISHED,
+    availability: 'ACTIVE' as any,
+    pausedReason: null,
     publishedAt: CREATED_AT,
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,

@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
+import { StorageModule } from '../storage/storage.module';
+import { OFFICER_REPOSITORY } from './interfaces/officer.repository.interface';
+import { OFFICER_SERVICE } from './interfaces/officer.service.interface';
 import { OfficerController } from './officer.controller';
 import { OfficerRepository } from './officer.repository';
 import { OfficerService } from './officer.service';
-import { OFFICER_REPOSITORY } from './interfaces/officer.repository.interface';
-import { OFFICER_SERVICE } from './interfaces/officer.service.interface';
 
 @Module({
+  imports: [StorageModule],
   controllers: [OfficerController],
   providers: [
     {

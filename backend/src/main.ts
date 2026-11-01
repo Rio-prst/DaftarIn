@@ -16,11 +16,7 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(cookieParser());
   app.use((request: Request, response: Response, next: NextFunction) => {
-    const providedRequestId = request.header('x-request-id');
-    const requestId =
-      providedRequestId && /^[0-9a-f-]{36}$/i.test(providedRequestId)
-        ? providedRequestId
-        : randomUUID();
+    const requestId = request.header('x-request-id') ?? randomUUID();
     (request as Request & { requestId?: string }).requestId = requestId;
     response.setHeader('x-request-id', requestId);
 

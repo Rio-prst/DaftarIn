@@ -69,6 +69,9 @@ describe('DocumentsService', () => {
       findLatestPublishedGuide: jest.fn(),
       findRequirementsForRule: jest.fn(),
       findQuestionsForService: jest.fn(),
+      restore: jest.fn(),
+      delete: jest.fn(),
+      countSubmissions: jest.fn(),
     };
 
     const configService = {
@@ -127,7 +130,7 @@ describe('DocumentsService', () => {
     expect(result.active_version).toBe(1);
     expect(result.document_type).toBe('ktp');
     expect(storageService.uploadFile).toHaveBeenCalledWith(
-      expect.stringContaining('ktp/v1.pdf'),
+      expect.stringMatching(/ktp\/v1-[0-9a-f]+\.pdf/),
       file.buffer,
       'application/pdf',
     );
@@ -161,7 +164,7 @@ describe('DocumentsService', () => {
       service.uploadDocument(PREPARATION_ID, USER_ID, oversizedFile, 'ktp'),
     ).rejects.toThrow(
       new HttpException(
-        'Ukuran file melebihi batas maksimum 10 MB.',
+        'Ukuran file melebihi batas maksimum 5 MB.',
         HttpStatus.PAYLOAD_TOO_LARGE,
       ),
     );

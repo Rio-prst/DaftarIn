@@ -75,7 +75,6 @@ describe('AuthRepository integration', () => {
     }
 
     const configService = {
-      get: () => 1,
       getOrThrow: (key: string) => {
         if (key !== 'DATABASE_URL') {
           throw new Error(`Config ${key} tidak tersedia untuk test.`);
@@ -88,7 +87,7 @@ describe('AuthRepository integration', () => {
     prisma = new PrismaService(configService);
     await prisma.$connect();
     repository = new AuthRepository(prisma);
-  });
+  }, 30_000);
 
   beforeEach(async () => {
     await cleanTestUsers();
@@ -100,7 +99,7 @@ describe('AuthRepository integration', () => {
     if (prisma) {
       await prisma.$disconnect();
     }
-  });
+  }, 30_000);
 
   it('creates a citizen user and finds it by email', async () => {
     const user = await createUser('create');

@@ -5,53 +5,65 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
+  ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Response } from '../common/response/response';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
+import {
+  CreateHelpReplyDto,
+  CreateHelpRequestDto,
+} from './dto/create-help-request.dto';
 import { HelpService } from './help.service';
 
-@Roles('citizen', 'officer', 'admin')
-@Controller('help')
+@Controller('help-requests')
 export class HelpController {
-  constructor(private readonly service: HelpService) {}
+  constructor(private readonly helpService: HelpService) {}
 
-  @Get('requests')
+  @Roles('citizen', 'admin')
+  @Get()
   async list(@CurrentUser() user: AuthenticatedUser) {
-    const data = await this.service.list(user);
+    const data = await this.helpService.list(user.id, user.role);
     return new Response({ data });
   }
 
-  @Post('requests')
+  @Roles('citizen', 'admin')
+  @Get(':id')
+  async get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.helpService.getById(id, user.id, user.role);
+    return new Response({ data });
+  }
+
+  @Roles('citizen')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
+    @Body() dto: CreateHelpRequestDto,
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { topic: string; body: string; applicationId?: string },
   ) {
-    const data = await this.service.create(user, body);
+    const data = await this.helpService.create(user.id, dto);
     return new Response({ data });
   }
 
-  @Get('requests/:id')
-  async get(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const data = await this.service.get(id, user);
-    return new Response({ data });
-  }
-
-  @Post('requests/:id/messages')
-  @HttpCode(HttpStatus.OK)
+  @Roles('citizen', 'admin')
+  @Post(':id/replies')
+  @HttpCode(HttpStatus.CREATED)
   async reply(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateHelpReplyDto,
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { text: string; close?: boolean },
   ) {
-    const data = await this.service.reply(id, user, body);
+    const data = await this.helpService.createReply(
+      id,
+      user.id,
+      user.role,
+      dto,
+    );
     return new Response({ data });
   }
 }

@@ -59,6 +59,11 @@ describe('ApplicationsController', () => {
       addCitizenNote: jest.fn(),
       confirmResultReceived: jest.fn(),
       linkPreparation: jest.fn(),
+      submitPreparation: jest.fn(),
+      resubmitApplication: jest.fn(),
+      listSubmissions: jest.fn(),
+      getSubmissionDetail: jest.fn(),
+      withdrawApplication: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -197,7 +202,7 @@ describe('ApplicationsController', () => {
 
       const response = await controller.confirmResultReceived(
         mockDetail.id,
-        { note: 'Berkas diterima lengkap.' },
+        { note: 'Berkas diterima lengkap.', acknowledgement_confirmed: true },
         mockUser,
       );
 

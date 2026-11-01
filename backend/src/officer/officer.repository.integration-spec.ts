@@ -254,4 +254,15 @@ describe('OfficerRepository Integration', () => {
     expect(notifs[0].title).toBe('Status Pengajuan Diperbarui');
     expect(notifs[0].readAt).toBeNull();
   });
+
+  it('retrieves empty application documents when no preparation is linked', async () => {
+    const docs = await repository.findApplicationDocuments(APPLICATION_ID);
+    expect(docs).toEqual([]);
+
+    const doc = await repository.findApplicationDocument(
+      APPLICATION_ID,
+      '00000000-0000-0000-0000-000000000000',
+    );
+    expect(doc).toBeNull();
+  });
 });

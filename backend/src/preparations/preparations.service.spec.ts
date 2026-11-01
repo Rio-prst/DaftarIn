@@ -31,6 +31,7 @@ function makeMockPreparation(
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     archivedAt: null,
     deletedAt: null,
+    familyMemberId: null,
     service: {
       id: SERVICE_ID,
       slug: 'layanan-uji',
@@ -40,6 +41,8 @@ function makeMockPreparation(
       category: 'Kependudukan',
       summary: 'Ringkasan uji',
       publicationStatus: 'PUBLISHED',
+      availability: 'ACTIVE' as any,
+      pausedReason: null,
       publishedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -116,6 +119,9 @@ describe('PreparationsService', () => {
       findLatestPublishedGuide: jest.fn(),
       findRequirementsForRule: jest.fn(),
       findQuestionsForService: jest.fn(),
+      restore: jest.fn(),
+      delete: jest.fn(),
+      countSubmissions: jest.fn(),
     };
 
     service = new PreparationsService(repository);
@@ -153,8 +159,6 @@ describe('PreparationsService', () => {
     const result = await service.createPreparation({
       userId: USER_ID,
       serviceId: SERVICE_ID,
-      guideVersionId: '',
-      internalReference: '',
       answers: [],
     });
 
@@ -177,8 +181,6 @@ describe('PreparationsService', () => {
       service.createPreparation({
         userId: USER_ID,
         serviceId: SERVICE_ID,
-        guideVersionId: '',
-        internalReference: '',
         answers: [],
       }),
     ).rejects.toBeInstanceOf(NotFoundException);

@@ -1,4 +1,8 @@
-import type { Prisma } from '../../generated/prisma/client';
+import type {
+  AccountToken,
+  AccountTokenType,
+  Prisma,
+} from '../../generated/prisma/client';
 
 export const AUTH_REPOSITORY = Symbol('AUTH_REPOSITORY');
 
@@ -46,6 +50,13 @@ export type RotateRefreshSessionInput = {
   expiresAt: Date;
 };
 
+export type CreateAccountTokenInput = {
+  userId: string;
+  tokenHash: string;
+  type: AccountTokenType;
+  expiresAt: Date;
+};
+
 export interface IAuthRepository {
   findUserByEmail(email: string): Promise<AuthUser | null>;
   findUserById(id: string): Promise<AuthUser | null>;
@@ -63,4 +74,12 @@ export interface IAuthRepository {
   revokeRefreshSession(sessionId: string): Promise<void>;
   revokeRefreshSessionByTokenHash(tokenHash: string): Promise<void>;
   revokeAllUserSessions(userId: string): Promise<void>;
+  createAccountToken(input: CreateAccountTokenInput): Promise<AccountToken>;
+  findAccountToken(
+    tokenHash: string,
+    type: AccountTokenType,
+  ): Promise<(AccountToken & { user: AuthUser }) | null>;
+  markAccountTokenUsed(tokenId: string): Promise<void>;
+  updateUserPassword(userId: string, passwordHash: string): Promise<void>;
+  verifyUserEmail(userId: string): Promise<void>;
 }

@@ -1,9 +1,10 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { JwtAuthGuard } from './jwt-auth.guard';
+import { AccountStatus } from '../../generated/prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 type RequestWithUser = {
   cookies?: {
@@ -12,7 +13,7 @@ type RequestWithUser = {
   user?: {
     id: string;
     role: string;
-    sessionId: string;
+    sessionId?: string;
   };
 };
 
@@ -33,34 +34,25 @@ function makeContext(request: RequestWithUser): ExecutionContext {
 describe('JwtAuthGuard', () => {
   let verifyAsync: jest.Mock;
   let getAllAndOverride: jest.Mock;
+  let findUniqueUser: jest.Mock;
+  let findUniqueSession: jest.Mock;
   let guard: JwtAuthGuard;
-  let findUnique: jest.Mock;
 
   beforeEach(() => {
     verifyAsync = jest.fn();
     getAllAndOverride = jest.fn();
-    findUnique = jest.fn().mockResolvedValue({
-      userId: 'user-1',
-      revokedAt: null,
-      expiresAt: new Date(Date.now() + 60000),
-      user: {
-        accountStatus: 'ACTIVE',
-        deletedAt: null,
-        userRoles: [
-          {
-            isActive: true,
-            validFrom: null,
-            validUntil: null,
-            role: { roleCode: 'citizen' },
-          },
-        ],
-      },
-    });
+    findUniqueUser = jest.fn();
+    findUniqueSession = jest.fn();
+
+    const prismaMock = {
+      user: { findUnique: findUniqueUser },
+      refreshSession: { findUnique: findUniqueSession },
+    } as unknown as PrismaService;
 
     guard = new JwtAuthGuard(
       { verifyAsync } as unknown as JwtService,
       { getAllAndOverride } as unknown as Reflector,
-      { refreshSession: { findUnique } } as unknown as PrismaService,
+      prismaMock,
     );
   });
 
@@ -84,13 +76,23 @@ describe('JwtAuthGuard', () => {
     expect(verifyAsync).not.toHaveBeenCalled();
   });
 
-  it('attaches the authenticated user to the request', async () => {
+  it('attaches the authenticated user to the request when user and session are valid', async () => {
     getAllAndOverride.mockReturnValue(false);
     verifyAsync.mockResolvedValue({
       sub: 'user-1',
       role: 'citizen',
       session_id: 'session-1',
     });
+    findUniqueUser.mockResolvedValue({
+      accountStatus: AccountStatus.ACTIVE,
+      deletedAt: null,
+      userRoles: [{ role: { roleCode: 'citizen' } }],
+    });
+    findUniqueSession.mockResolvedValue({
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 100000),
+    });
+
     const request: RequestWithUser = {
       cookies: { access_token: 'access-token' },
     };
@@ -119,60 +121,48 @@ describe('JwtAuthGuard', () => {
     expect(request.user).toBeUndefined();
   });
 
-  it('rejects a valid JWT immediately when its session has been revoked', async () => {
+  it('throws ForbiddenException if user is suspended or deleted', async () => {
+    getAllAndOverride.mockReturnValue(false);
+    verifyAsync.mockResolvedValue({
+      sub: 'user-1',
+      role: 'citizen',
+    });
+    findUniqueUser.mockResolvedValue({
+      accountStatus: AccountStatus.SUSPENDED,
+      deletedAt: null,
+      userRoles: [],
+    });
+
+    const request: RequestWithUser = {
+      cookies: { access_token: 'access-token' },
+    };
+
+    await expect(
+      guard.canActivate(makeContext(request)),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('throws UnauthorizedException if refresh session is revoked', async () => {
+    getAllAndOverride.mockReturnValue(false);
     verifyAsync.mockResolvedValue({
       sub: 'user-1',
       role: 'citizen',
       session_id: 'session-1',
     });
-    findUnique.mockResolvedValue({
-      userId: 'user-1',
+    findUniqueUser.mockResolvedValue({
+      accountStatus: AccountStatus.ACTIVE,
+      deletedAt: null,
+      userRoles: [],
+    });
+    findUniqueSession.mockResolvedValue({
       revokedAt: new Date(),
-      expiresAt: new Date(Date.now() + 60000),
-      user: {
-        accountStatus: 'ACTIVE',
-        deletedAt: null,
-        userRoles: [
-          {
-            isActive: true,
-            validFrom: null,
-            validUntil: null,
-            role: { roleCode: 'citizen' },
-          },
-        ],
-      },
+      expiresAt: new Date(Date.now() + 100000),
     });
+
     const request: RequestWithUser = {
-      cookies: { access_token: 'signed-access-token' },
+      cookies: { access_token: 'access-token' },
     };
-    await expect(
-      guard.canActivate(makeContext(request)),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(request.user).toBeUndefined();
-  });
-  it('rejects a stale JWT role after the role assignment was removed', async () => {
-    verifyAsync.mockResolvedValue({
-      sub: 'user-1',
-      role: 'admin',
-      session_id: 'session-1',
-    });
-    const request: RequestWithUser = {
-      cookies: { access_token: 'signed-access-token' },
-    };
-    await expect(
-      guard.canActivate(makeContext(request)),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(request.user).toBeUndefined();
-  });
-  it('does not authorize a session belonging to a different account', async () => {
-    verifyAsync.mockResolvedValue({
-      sub: 'different-user',
-      role: 'citizen',
-      session_id: 'session-1',
-    });
-    const request: RequestWithUser = {
-      cookies: { access_token: 'signed-access-token' },
-    };
+
     await expect(
       guard.canActivate(makeContext(request)),
     ).rejects.toBeInstanceOf(UnauthorizedException);

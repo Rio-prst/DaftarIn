@@ -1,5 +1,6 @@
 import type {
   ApplicationStatus,
+  DocumentVersion,
   OfficerAssignment,
   Prisma,
   StatusSourceType,
@@ -119,6 +120,40 @@ export interface ListOfficerAssignmentsRepositoryInput {
   pageSize: number;
 }
 
+export interface SaveEvaluationDraftInput {
+  submissionSnapshotId: string;
+  officerUserId: string;
+  overallNotes?: string | null;
+  items: Array<{
+    itemType: 'DOCUMENT' | 'FORM_DATA';
+    itemId: string;
+    verdict: 'SESUAI' | 'PERLU_PERBAIKAN' | 'BELUM_DAPAT_DIPERIKSA';
+    note?: string | null;
+  }>;
+}
+
+export interface SubmitDecisionInput {
+  submissionSnapshotId: string;
+  applicationId: string;
+  officerUserId: string;
+  decision: 'approved_for_submission' | 'revision_requested';
+  overallNotes?: string | null;
+  revisionDueAt?: Date | null;
+  items: Array<{
+    itemType: 'DOCUMENT' | 'FORM_DATA';
+    itemId: string;
+    verdict: 'SESUAI' | 'PERLU_PERBAIKAN' | 'BELUM_DAPAT_DIPERIKSA';
+    note?: string | null;
+  }>;
+}
+
+export interface CreateEscalationInput {
+  applicationId: string;
+  officerUserId: string;
+  reason: string;
+  targetRole: string;
+}
+
 export interface IOfficerRepository {
   findAssignment(
     applicationId: string,
@@ -134,23 +169,13 @@ export interface IOfficerRepository {
   createOfficerEvent(
     input: CreateOfficerEventRepositoryInput,
   ): Promise<StatusEventWithActor>;
-  getSummary(officerUserId: string): Promise<{
-    total_assigned: number;
-    pending_review: number;
-    in_review: number;
-    needs_correction: number;
-    completed: number;
-  }>;
-  assignOfficer(
+  findApplicationDocuments(applicationId: string): Promise<DocumentVersion[]>;
+  findApplicationDocument(
     applicationId: string,
-    officerUserId: string,
-    assignerUserId: string,
-    reason?: string,
-  ): Promise<OfficerAssignment>;
-  saveEvaluation(
-    applicationId: string,
-    officerUserId: string,
-    evaluationJson: Prisma.InputJsonValue,
-  ): Promise<StatusEventWithActor>;
-  getLatestEvaluation(applicationId: string): Promise<Prisma.JsonValue | null>;
+    documentId: string,
+  ): Promise<DocumentVersion | null>;
+  findLatestSubmissionSnapshot(applicationId: string): Promise<any | null>;
+  saveEvaluationDraft(input: SaveEvaluationDraftInput): Promise<any>;
+  submitDecision(input: SubmitDecisionInput): Promise<any>;
+  createEscalation(input: CreateEscalationInput): Promise<any>;
 }

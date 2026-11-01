@@ -1,14 +1,16 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { AccountStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import type {
   AuthenticatedUser,
   JwtAccessPayload,
@@ -49,57 +51,68 @@ export class JwtAuthGuard implements CanActivate {
         'Sesi tidak valid atau sudah kedaluwarsa',
       );
     }
-    if (!payload.sub || !payload.session_id || !payload.role) {
-      throw new UnauthorizedException('Sesi tidak valid.');
-    }
-    const session = await this.prisma.refreshSession.findUnique({
-      where: { id: payload.session_id },
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
       select: {
-        userId: true,
-        revokedAt: true,
-        expiresAt: true,
-        user: {
+        accountStatus: true,
+        deletedAt: true,
+        userRoles: {
+          where: { isActive: true },
           select: {
-            deletedAt: true,
-            accountStatus: true,
-            userRoles: {
+            role: {
               select: {
-                isActive: true,
-                validFrom: true,
-                validUntil: true,
-                role: { select: { roleCode: true } },
+                roleCode: true,
               },
             },
           },
         },
       },
     });
-    const now = new Date();
-    const roleIsActive = session?.user.userRoles.some(
-      (role) =>
-        role.isActive &&
-        role.role.roleCode === payload.role &&
-        (!role.validFrom || role.validFrom <= now) &&
-        (!role.validUntil || role.validUntil > now),
-    );
+
+    const blockedStatuses: AccountStatus[] = [
+      AccountStatus.SUSPENDED,
+      AccountStatus.DELETION_REQUESTED,
+      AccountStatus.DELETED,
+    ];
+
     if (
-      !session ||
-      session.userId !== payload.sub ||
-      session.revokedAt ||
-      session.expiresAt <= now ||
-      session.user.deletedAt ||
-      ['SUSPENDED', 'DELETION_REQUESTED', 'DELETED'].includes(
-        session.user.accountStatus,
-      ) ||
-      !roleIsActive
+      !user ||
+      user.deletedAt ||
+      blockedStatuses.includes(user.accountStatus)
     ) {
-      throw new UnauthorizedException('Sesi tidak valid atau sudah dicabut.');
+      throw new ForbiddenException('Akun tidak aktif');
     }
+
+    if (payload.session_id) {
+      const session = await this.prisma.refreshSession.findUnique({
+        where: { id: payload.session_id },
+        select: {
+          revokedAt: true,
+          expiresAt: true,
+        },
+      });
+
+      if (
+        !session ||
+        session.revokedAt ||
+        session.expiresAt.getTime() <= Date.now()
+      ) {
+        throw new UnauthorizedException(
+          'Sesi tidak valid atau sudah kedaluwarsa',
+        );
+      }
+    }
+
+    const activeRole =
+      user.userRoles[0]?.role.roleCode ?? payload.role ?? 'citizen';
+
     request.user = {
       id: payload.sub,
-      role: payload.role,
+      role: activeRole,
       sessionId: payload.session_id,
     };
+
     return true;
   }
 }

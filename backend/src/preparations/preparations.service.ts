@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -8,7 +9,6 @@ import { randomBytes } from 'node:crypto';
 import { PreparationStatus } from '../generated/prisma/client';
 import {
   PREPARATIONS_REPOSITORY,
-  type CreatePreparationRepositoryInput,
   type IPreparationsRepository,
   type ListPreparationsRepositoryInput,
   type PreparationWithRelations,
@@ -16,6 +16,7 @@ import {
 } from './interfaces/preparations.repository.interface';
 import {
   type IPreparationsService,
+  type CreatePreparationServiceInput,
   type ListPreparationsResult,
   type PreparationAnswerView,
   type PreparationDetailView,
@@ -49,10 +50,11 @@ export class PreparationsService implements IPreparationsService {
   }
 
   async createPreparation(
-    input: CreatePreparationRepositoryInput,
+    input: CreatePreparationServiceInput,
   ): Promise<PreparationDetailView> {
     const guide = await this.repository.findLatestPublishedGuide(
       input.serviceId,
+      input.guideVersion,
     );
 
     if (!guide) {
@@ -61,14 +63,22 @@ export class PreparationsService implements IPreparationsService {
       );
     }
 
+    if (input.regionId && guide.service.regionId !== input.regionId) {
+      throw new BadRequestException(
+        'Layanan tidak tersedia di wilayah yang dipilih.',
+      );
+    }
+
     const year = new Date().getFullYear();
     const randomHex = randomBytes(4).toString('hex').toUpperCase();
-    const internalReference = `PREP-${year}-${randomHex}`;
+    const internalReference = 'PREP-' + year + '-' + randomHex;
 
     const record = await this.repository.create({
-      ...input,
+      userId: input.userId,
+      serviceId: input.serviceId,
       guideVersionId: guide.id,
       internalReference,
+      answers: input.answers,
     });
 
     return this.mapToDetailView(record);
@@ -120,6 +130,7 @@ export class PreparationsService implements IPreparationsService {
 
     const updated = await this.repository.updateAnswers({
       id: input.id,
+      expectedDataVersion: input.expectedDataVersion,
       nextDataVersion,
       answers: input.answers,
       nextStatus,
@@ -140,34 +151,6 @@ export class PreparationsService implements IPreparationsService {
 
     const archived = await this.repository.archive(id, userId);
     return this.mapToDetailView(archived);
-  }
-
-  async restorePreparation(
-    id: string,
-    userId: string,
-  ): Promise<PreparationDetailView> {
-    const record = await this.repository.findById(id, userId);
-
-    if (!record) {
-      throw new NotFoundException('Persiapan tidak ditemukan.');
-    }
-
-    const restored = await this.repository.restore(id, userId);
-    return this.mapToDetailView(restored);
-  }
-
-  async deletePreparation(
-    id: string,
-    userId: string,
-  ): Promise<{ message: string }> {
-    const record = await this.repository.findById(id, userId);
-
-    if (!record) {
-      throw new NotFoundException('Persiapan tidak ditemukan.');
-    }
-
-    await this.repository.delete(id, userId);
-    return { message: 'Draf persiapan berhasil dihapus.' };
   }
 
   async getPreparationRequirements(
@@ -489,5 +472,40 @@ export class PreparationsService implements IPreparationsService {
       return true;
     }
     return false;
+  }
+
+  async restorePreparation(
+    id: string,
+    userId: string,
+  ): Promise<PreparationDetailView> {
+    const record = await this.repository.findById(id, userId);
+    if (!record) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+    const restored = await this.repository.restore(id, userId);
+    return this.mapToDetailView(restored);
+  }
+
+  async deletePreparation(
+    id: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const record = await this.repository.findById(id, userId);
+    if (!record) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+
+    const subCount = await this.repository.countSubmissions(id);
+    if (subCount > 0) {
+      throw new ConflictException(
+        'Draf persiapan yang telah disubmit ke tinjauan pendamping tidak dapat dihapus.',
+      );
+    }
+
+    await this.repository.delete(id, userId);
+    return {
+      success: true,
+      message: 'Draf persiapan berhasil dihapus.',
+    };
   }
 }

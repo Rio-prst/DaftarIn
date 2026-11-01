@@ -49,14 +49,6 @@ export interface IDocumentsService {
     displayName?: string,
   ): Promise<DocumentItemView>;
 
-  reuseDocument(
-    preparationId: string,
-    userId: string,
-    sourceDocumentId: string,
-    documentType: string,
-    userConsent: boolean,
-  ): Promise<DocumentItemView>;
-
   listDocuments(
     preparationId: string,
     userId: string,

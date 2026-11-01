@@ -101,18 +101,7 @@ function hashToken(token: string): string {
 }
 
 describe('AuthService', () => {
-  let repository: {
-    findUserByEmail: jest.Mock;
-    findUserById: jest.Mock;
-    createCitizenUser: jest.Mock;
-    touchLastLogin: jest.Mock;
-    createRefreshSession: jest.Mock;
-    findRefreshSessionByTokenHash: jest.Mock;
-    rotateRefreshSession: jest.Mock;
-    revokeRefreshSession: jest.Mock;
-    revokeRefreshSessionByTokenHash: jest.Mock;
-    revokeAllUserSessions: jest.Mock;
-  };
+  let repository: any;
   let signAsync: jest.Mock;
   let configGet: jest.Mock;
   let service: AuthService;
@@ -131,6 +120,11 @@ describe('AuthService', () => {
       revokeRefreshSession: jest.fn(),
       revokeRefreshSessionByTokenHash: jest.fn(),
       revokeAllUserSessions: jest.fn(),
+      createAccountToken: jest.fn(),
+      findAccountToken: jest.fn(),
+      markAccountTokenUsed: jest.fn(),
+      updateUserPassword: jest.fn(),
+      verifyUserEmail: jest.fn(),
     };
 
     signAsync = jest.fn().mockResolvedValue('access-token');
@@ -182,8 +176,6 @@ describe('AuthService', () => {
         email_verified: false,
         roles: ['citizen'],
         status: 'active',
-        phone: '',
-        created_at: '2026-01-01T00:00:00.000Z',
       });
     });
 
@@ -342,12 +334,12 @@ describe('AuthService', () => {
       expect(repository.rotateRefreshSession).not.toHaveBeenCalled();
     });
 
-    it('revokes all sessions when a rotated token is replayed', async () => {
+    it('revokes all sessions when a rotated token is reused', async () => {
       const user = makeUser();
       repository.findRefreshSessionByTokenHash.mockResolvedValue(
         makeRefreshSession(user, {
           revokedAt: new Date(),
-          replacedBySessionId: 'rotated-session',
+          replacedBySessionId: 'session-2',
         }),
       );
 
@@ -359,16 +351,19 @@ describe('AuthService', () => {
       expect(repository.rotateRefreshSession).not.toHaveBeenCalled();
     });
 
-    it('rejects an intentionally revoked token without terminating other sessions', async () => {
+    it('does not revoke other sessions when a normally logged-out token is refreshed', async () => {
+      const user = makeUser();
       repository.findRefreshSessionByTokenHash.mockResolvedValue(
-        makeRefreshSession(makeUser(), {
+        makeRefreshSession(user, {
           revokedAt: new Date(),
           replacedBySessionId: null,
         }),
       );
-      await expect(service.refresh('signed-out-token')).rejects.toBeInstanceOf(
+
+      await expect(service.refresh('logged-out-token')).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+
       expect(repository.revokeAllUserSessions).not.toHaveBeenCalled();
       expect(repository.rotateRefreshSession).not.toHaveBeenCalled();
     });
@@ -436,8 +431,6 @@ describe('AuthService', () => {
         email_verified: false,
         roles: ['citizen'],
         status: 'active',
-        phone: '',
-        created_at: '2026-01-01T00:00:00.000Z',
       });
     });
 

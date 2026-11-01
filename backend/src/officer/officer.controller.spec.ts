@@ -24,6 +24,11 @@ describe('OfficerController', () => {
       listAssignments: jest.fn(),
       getApplicationDetail: jest.fn(),
       createEvent: jest.fn(),
+      getApplicationDocuments: jest.fn(),
+      getApplicationDocumentContentUrl: jest.fn(),
+      saveEvaluationDraft: jest.fn(),
+      submitDecision: jest.fn(),
+      createEscalation: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -138,6 +143,84 @@ describe('OfficerController', () => {
       );
 
       expect(response.data).toEqual(mockResult);
+    });
+  });
+
+  describe('getDocuments', () => {
+    it('returns application documents', async () => {
+      const mockDocs = [
+        {
+          id: 'doc-1',
+          document_type: 'ktp',
+          display_name: 'ktp.pdf',
+          version_number: 1,
+          mime_type: 'application/pdf',
+          size_bytes: 1024,
+          uploaded_at: '2026-10-28T08:00:00Z',
+        },
+      ];
+      mockService.getApplicationDocuments.mockResolvedValue(mockDocs);
+
+      const response = await controller.getDocuments('app-1', mockUser);
+
+      expect(response.data).toEqual(mockDocs);
+      expect(mockService.getApplicationDocuments).toHaveBeenCalledWith(
+        'app-1',
+        mockUser.id,
+      );
+    });
+  });
+
+  describe('getDocumentContent', () => {
+    it('returns JSON url when redirect is false', async () => {
+      mockService.getApplicationDocumentContentUrl.mockResolvedValue(
+        'https://signed.url',
+      );
+
+      const jsonMock = jest.fn();
+      const statusMock = jest.fn().mockReturnValue({ json: jsonMock });
+      const resMock = {
+        status: statusMock,
+        redirect: jest.fn(),
+      } as any;
+
+      await controller.getDocumentContent(
+        'app-1',
+        'doc-1',
+        'false',
+        mockUser,
+        resMock,
+      );
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            url: 'https://signed.url',
+            expires_in_seconds: 300,
+          },
+        }),
+      );
+    });
+
+    it('redirects to signed URL when redirect is not false', async () => {
+      mockService.getApplicationDocumentContentUrl.mockResolvedValue(
+        'https://signed.url',
+      );
+
+      const resMock = {
+        redirect: jest.fn(),
+      } as any;
+
+      await controller.getDocumentContent(
+        'app-1',
+        'doc-1',
+        undefined,
+        mockUser,
+        resMock,
+      );
+
+      expect(resMock.redirect).toHaveBeenCalledWith(302, 'https://signed.url');
     });
   });
 });

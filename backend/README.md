@@ -2,7 +2,7 @@
 
 Backend API untuk **DaftarIn**, aplikasi persiapan dan pemantauan pengajuan layanan publik. Backend ini menangani katalog layanan, persiapan warga, pemeriksaan dokumen, status pengajuan, notifikasi, dan audit.
 
-Status snapshot: modul auth/akun, chatbot relay, katalog, persiapan, dokumen, pengajuan, notifikasi, petugas, bantuan dan admin telah tersedia pada source. Integrasi alur bisnis frontend ke API masih parsial; keberhasilan build bukan bukti seluruh alur sudah terhubung ke server. Lihat [status snapshot](../frontend/docs/STATUS-SNAPSHOT-PUSH.txt) dan [laporan handoff](../frontend/docs/LAPORAN-HANDOFF-SEBELUM-PUSH.txt). Jangan menjalankan migration atau seed pada database bersama tanpa persetujuan penerapan.
+Status saat ini: fondasi NestJS, auth, health endpoint, dan katalog baca publik sudah diimplementasikan. Modul persiapan, dokumen, dan pemeriksaan belum diimplementasikan.
 
 ## Stack
 
@@ -87,14 +87,15 @@ Backend berjalan di `http://localhost:3000`. Base path API yang direncanakan ada
 
 ## Prisma
 
-Schema Prisma dan migrasi belum dibuat. Setelah `prisma/schema.prisma` dan `prisma7.config.ts` tersedia:
+Schema Prisma dan migrasi sudah tersedia:
 
 ```bash
 pnpm prisma:generate
 pnpm prisma:migrate
+pnpm prisma:seed
 ```
 
-Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat = "cjs"`. Lihat [`docs/architecture.md`](docs/architecture.md) bagian 11 sebelum mengubah konfigurasi database.
+Seed mengisi data katalog dummy untuk pengembangan. Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat = "cjs"`. Lihat [`docs/architecture.md`](docs/architecture.md) bagian 11 sebelum mengubah konfigurasi database.
 
 ## Test
 
@@ -102,20 +103,21 @@ Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat
 # unit test
 pnpm test
 
-# e2e test
-pnpm test:e2e
+# integration test repository
+pnpm test:integration
 
 # coverage
 pnpm test:cov
 ```
 
-Test integrasi repository akan memakai database test terpisah melalui `DATABASE_URL_TEST` dan script `test:integration` setelah setup Prisma selesai.
+Integration test repository memakai koneksi database melalui `DATABASE_URL_TEST`.
 
 ## Struktur proyek
 
 ```text
 backend/
 ├── src/                 # bootstrap Nest dan modul fitur
+├── prisma/              # schema, migrations, dan seed
 ├── test/                # konfigurasi e2e
 ├── docs/                # PRD, ERD, aturan bisnis, arsitektur
 ├── docker-compose.yml   # Redis untuk BullMQ
@@ -142,3 +144,7 @@ Rencana batas modul, pola repository, auth, queue, storage, dan strategi testing
 - Dokumen pribadi tidak boleh diakses lewat URL publik.
 - Pemeriksaan dokumen berjalan asinkron melalui BullMQ; hasil AI bukan keputusan resmi.
 - Status persiapan dan status pengajuan adalah dua hal yang terpisah.
+
+## Combined frontend branch
+
+This merge retains the latest main companion-review lifecycle, immutable submissions, family/help modules and evaluations. Local account preferences, session settings, administrative account-access endpoints and the configured chatbot relay are retained. Frontend business API integration is still partial. Account-access endpoints are isolated under src/admin/access; catalog and assignment routes use the main AdminModule. No shared database migration was applied during conflict resolution.

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -9,7 +10,11 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'node:crypto';
-import { AccountStatus, Prisma } from '../generated/prisma/client';
+import {
+  AccountStatus,
+  AccountTokenType,
+  Prisma,
+} from '../generated/prisma/client';
 import { SessionAlreadyRotatedError } from './errors/session-already-rotated.error';
 import {
   AUTH_REPOSITORY,
@@ -112,8 +117,6 @@ export class AuthService implements IAuthService {
     }
 
     if (currentSession.revokedAt) {
-      // A rotated token being replayed is different from a session the user
-      // intentionally signed out. The latter must not terminate other sessions.
       if (currentSession.replacedBySessionId) {
         await this.authRepository.revokeAllUserSessions(currentSession.userId);
       }
@@ -230,18 +233,11 @@ export class AuthService implements IAuthService {
       email_verified: user.emailVerifiedAt !== null,
       roles: user.userRoles.map((userRole) => userRole.role.roleCode),
       status: user.accountStatus.toLowerCase(),
-      phone: user.phone || '',
-      created_at: user.createdAt.toISOString(),
     };
   }
 
   private primaryRole(user: AuthUser): string {
-    const roles = user.userRoles.map((item) => item.role.roleCode);
-    const role = ['admin', 'officer', 'citizen'].find((value) =>
-      roles.includes(value),
-    );
-    if (!role) throw new ForbiddenException('Akun belum memiliki akses aktif.');
-    return role;
+    return user.userRoles[0]?.role.roleCode ?? 'citizen';
   }
 
   private assertActive(user: AuthUser): void {
@@ -290,6 +286,91 @@ export class AuthService implements IAuthService {
 
   private invalidSession(): UnauthorizedException {
     return new UnauthorizedException('Sesi tidak valid atau sudah kedaluwarsa');
+  }
+
+  async forgotPassword(
+    emailInput: string,
+  ): Promise<{ message: string; debug_token?: string }> {
+    const email = emailInput.trim().toLowerCase();
+    const user = await this.authRepository.findUserByEmail(email);
+
+    if (!user) {
+      return {
+        message:
+          'Jika email terdaftar, instruksi pemulihan kata sandi telah dikirimkan.',
+      };
+    }
+
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.authRepository.createAccountToken({
+      userId: user.id,
+      tokenHash,
+      type: AccountTokenType.PASSWORD_RESET,
+      expiresAt,
+    });
+
+    const isDevelopment =
+      this.configService.get<string>('NODE_ENV') !== 'production';
+
+    return {
+      message:
+        'Jika email terdaftar, instruksi pemulihan kata sandi telah dikirimkan.',
+      ...(isDevelopment ? { debug_token: rawToken } : {}),
+    };
+  }
+
+  async resetPassword(
+    rawToken: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const tokenHash = this.hashToken(rawToken.trim());
+    const tokenRecord = await this.authRepository.findAccountToken(
+      tokenHash,
+      AccountTokenType.PASSWORD_RESET,
+    );
+
+    if (!tokenRecord) {
+      throw new BadRequestException(
+        'Token reset kata sandi tidak valid atau telah kedaluwarsa.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+    await this.authRepository.updateUserPassword(
+      tokenRecord.userId,
+      passwordHash,
+    );
+    await this.authRepository.markAccountTokenUsed(tokenRecord.id);
+
+    await this.authRepository.revokeAllUserSessions(tokenRecord.userId);
+
+    return {
+      message: 'Kata sandi berhasil diperbarui. Silakan login kembali.',
+    };
+  }
+
+  async verifyEmail(rawToken: string): Promise<{ message: string }> {
+    const tokenHash = this.hashToken(rawToken.trim());
+    const tokenRecord = await this.authRepository.findAccountToken(
+      tokenHash,
+      AccountTokenType.EMAIL_VERIFICATION,
+    );
+
+    if (!tokenRecord) {
+      throw new BadRequestException(
+        'Token verifikasi email tidak valid atau telah kedaluwarsa.',
+      );
+    }
+
+    await this.authRepository.verifyUserEmail(tokenRecord.userId);
+    await this.authRepository.markAccountTokenUsed(tokenRecord.id);
+
+    return {
+      message: 'Email berhasil diverifikasi. Akun Anda kini aktif.',
+    };
   }
 }
 
