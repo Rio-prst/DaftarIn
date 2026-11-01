@@ -78,8 +78,8 @@ export function getAiConfig(): AiConfig {
   const geminiModel = (env.VITE_GEMINI_MODEL || 'gemini-1.5-flash').trim();
 
   const openaiApiKey = (env.VITE_OPENAI_API_KEY || '').trim();
-  const openaiBaseUrl = (env.VITE_OPENAI_BASE_URL || 'https://api.openai.com/v1').trim();
-  const openaiModel = (env.VITE_OPENAI_MODEL || 'gpt-4o-mini').trim();
+  const openaiBaseUrl = (env.VITE_OPENAI_BASE_URL || "https://atmorouter.dev/v1").trim();
+  const openaiModel = (env.VITE_OPENAI_MODEL || "cb/deepseek-v4.1-flash").trim();
 
   let provider: 'gemini' | 'openai' | 'none' = 'none';
 
