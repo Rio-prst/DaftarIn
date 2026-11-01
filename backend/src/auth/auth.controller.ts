@@ -62,7 +62,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'production' ? 5 : 60, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -79,6 +79,7 @@ export class AuthController {
     return new Response({
       data: {
         user: result.user,
+        access_token: result.tokens.accessToken,
       },
     });
   }
@@ -100,6 +101,7 @@ export class AuthController {
     return new Response({
       data: {
         user: result.user,
+        access_token: result.tokens.accessToken,
       },
     });
   }
@@ -187,7 +189,7 @@ export class AuthController {
     return {
       httpOnly: true,
       secure,
-      sameSite: 'lax',
+      sameSite: secure ? 'none' : 'lax',
       path: '/',
       ...(domain && domain !== 'localhost' ? { domain } : {}),
     };

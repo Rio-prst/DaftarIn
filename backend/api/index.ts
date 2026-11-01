@@ -18,6 +18,10 @@ server.get('/', (_req, res) => {
   res.redirect('/api/docs');
 });
 
+server.get('/api', (_req, res) => {
+  res.redirect('/api/docs');
+});
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   const corsOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:3001')
@@ -51,6 +55,10 @@ export default async function handler(
 ): Promise<void> {
   if (!isReady) {
     await bootstrap();
+  }
+  const matchedPath = (req.headers['x-matched-path'] ?? req.headers['x-forwarded-uri']) as string | undefined;
+  if (matchedPath) {
+    req.url = matchedPath;
   }
   server(req, res);
 }

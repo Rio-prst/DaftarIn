@@ -42,6 +42,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    if (!(exception instanceof HttpException)) { console.error('[UNHANDLED EXCEPTION]:', exception); }
     const normalized = this.normalize(exception);
 
     response.status(status).json({

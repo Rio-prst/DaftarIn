@@ -25,21 +25,24 @@ export class NotificationsService implements INotificationsService {
     const isRead =
       query.is_read !== undefined ? query.is_read === 'true' : undefined;
 
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(query.page_size) || 20));
+
     const { items, total } = await this.repository.list({
       userId,
       isRead,
       type: query.type,
-      page: query.page,
-      pageSize: query.page_size,
+      page,
+      pageSize,
     });
 
     return {
       data: items.map((item) => this.mapToView(item)),
       meta: {
-        page: query.page,
-        page_size: query.page_size,
+        page,
+        page_size: pageSize,
         total_items: total,
-        total_pages: Math.ceil(total / query.page_size),
+        total_pages: Math.ceil(total / pageSize),
       },
     };
   }

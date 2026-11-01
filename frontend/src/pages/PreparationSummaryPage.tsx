@@ -169,21 +169,21 @@ export function PreparationSummaryPage() {
 
   const sendingRef = useRef(false);
   const [sending, setSending] = useState(false);
-  const handleSendToOfficer = () => {
+  const handleSendToOfficer = async () => {
     if (sendingRef.current) return;
     sendingRef.current = true;
     setSending(true);
     setError("");
     try {
       if (isRevisingApp && linkedApp) {
-        resubmitApplication(
+        await resubmitApplication(
           linkedApp.id,
           citizenReviewNote,
           activePreparation.id,
         );
         navigate("/pelacakan/" + encodeURIComponent(linkedApp.id));
       } else {
-        const created = submitForOfficerReview(
+        const created = await submitForOfficerReview(
           activePreparation.id,
           citizenReviewNote,
         );

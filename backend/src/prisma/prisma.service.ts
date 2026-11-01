@@ -9,16 +9,27 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(configService: ConfigService) {
-    const databaseUrl = configService.getOrThrow<string>('DATABASE_URL');
+    const databaseUrl =
+      configService.get<string>('DATABASE_URL') ||
+      process.env.DATABASE_URL ||
+      '';
     const adapter = new PrismaPg({ connectionString: databaseUrl });
     super({ adapter });
   }
 
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (error) {
+      console.warn('Prisma connection warning during onModuleInit:', error);
+    }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    try {
+      await this.$disconnect();
+    } catch {
+      // ignore disconnect errors during shutdown
+    }
   }
 }

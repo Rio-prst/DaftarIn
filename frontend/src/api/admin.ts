@@ -49,4 +49,16 @@ export const adminApi = {
       method: "PATCH",
       body: input,
     }),
+  assignReviewOfficer: (applicationId: string, officerId: string, reason: string) =>
+    request<{ assignment_id: string }>(
+      "/admin/assignments",
+      {
+        method: "POST",
+        body: {
+          application_id: applicationId,
+          officer_user_id: officerId,
+          reason,
+        },
+      },
+    ),
 };

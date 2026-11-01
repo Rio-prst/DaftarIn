@@ -103,7 +103,7 @@ export function HelpPage() {
         <>
           <form
             className="auth-form plain-panel mt-5"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               setError("");
               try {
@@ -113,7 +113,7 @@ export function HelpPage() {
                   !applications.some((item) => item.id === aid)
                 )
                   throw new Error("Permintaan tidak ditugaskan kepadamu.");
-                const row = create({ topic, body, applicationId: aid });
+                const row = await create({ topic, body, applicationId: aid });
                 if (user.role === "petugas" && aid)
                   escalateReview(aid, row.id, body);
                 setSelected(row.id);
@@ -210,10 +210,10 @@ export function HelpPage() {
                 {selected === row.id && (
                   <form
                     className="auth-form"
-                    onSubmit={(event) => {
+                    onSubmit={async (event) => {
                       event.preventDefault();
                       try {
-                        reply(row.id, answer, user.role === "admin");
+                        await reply(row.id, answer, user.role === "admin");
                         if (user.role === "admin" && row.applicationId)
                           resolveReviewEscalation(row.applicationId, answer);
                         setSelected("");

@@ -19,9 +19,9 @@ export function AdminReviewAssignments() {
   const pending = reviewQueue.filter(item => !['SELESAI','HASIL_DITERIMA_WARGA','DITARIK'].includes(item.current_status));
   const filtered=pending.filter(item=>(!filterOfficer||item.assigned_officer_id===filterOfficer)&&(!attention||!officers.some(officer=>officer.id===item.assigned_officer_id))&&[item.applicant_name,item.service_name,item.internal_reference].join(' ').toLowerCase().includes(query.toLowerCase()));
   const pages=Math.max(1,Math.ceil(filtered.length/10)),requested=Number(params.get('page')||1),page=Math.max(1,Math.min(pages,Number.isSafeInteger(requested)?requested:1));
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    try { assignReviewOfficer(selected, officerId, reason); setSelected(''); setReason(''); setError(''); }
+    try { await assignReviewOfficer(selected, officerId, reason); setSelected(''); setReason(''); setError(''); }
     catch(cause) { setError(cause instanceof Error ? cause.message : 'Penugasan belum disimpan.'); }
   };
   return <section className="plain-panel">

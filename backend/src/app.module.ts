@@ -1,6 +1,7 @@
 import { AccountModule } from './account/account.module';
 import { AdminModule as AccessAdminModule } from './admin/access/admin.module';
 import { Module } from '@nestjs/common';
+import * as path from 'node:path';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -31,6 +32,7 @@ import { StorageModule } from './storage/storage.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [path.resolve(__dirname, '../.env'), path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), 'backend/.env')],
     }),
     ThrottlerModule.forRoot([
       {

@@ -19,7 +19,10 @@ export class StorageService implements IStorageService {
   private readonly localBaseDir: string;
 
   constructor(private readonly configService: ConfigService) {
-    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    let supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    if (!supabaseUrl && typeof this.configService.getOrThrow === 'function') {
+      try { supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL'); } catch {}
+    }
     const supabaseServiceKey = this.configService.get<string>(
       'SUPABASE_SERVICE_ROLE_KEY',
     );
