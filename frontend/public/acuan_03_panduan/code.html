@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Panduan Akta Kelahiran — JejakMasWowo Civic Transparency Portal</title>
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-container": "#3fa0ad",
+            "tertiary-container": "#003137",
+            "surface-container-highest": "#d0e4fd",
+            "on-tertiary": "#ffffff",
+            "outline": "#74777e",
+            "surface-container-lowest": "#ffffff",
+            "tertiary": "#001b1e",
+            "inverse-surface": "#1f3245",
+            "primary": "#001733",
+            "on-secondary": "#ffffff",
+            "on-background": "#081d2f",
+            "primary-container": "#142c4b",
+            "secondary": "#005bbe",
+            "surface-container": "#e3efff",
+            "secondary-fixed": "#d7e2ff",
+            "on-secondary-fixed": "#001a40",
+            "on-error-container": "#93000a",
+            "surface-container-low": "#edf4ff",
+            "error": "#ba1a1a",
+            "on-surface-variant": "#44474e",
+            "tertiary-fixed-dim": "#79d4e2",
+            "secondary-container": "#5494ff",
+            "error-container": "#ffdad6",
+            "surface-tint": "#495f81",
+            "primary-fixed": "#d5e3ff",
+            "background": "#f7f9ff",
+            "on-primary-fixed": "#011c3a",
+            "secondary-fixed-dim": "#acc7ff",
+            "outline-variant": "#c4c6ce",
+            "inverse-primary": "#b1c8ee",
+            "on-tertiary-fixed": "#001f24",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#e8f1ff",
+            "tertiary-fixed": "#95f1ff",
+            "on-tertiary-fixed-variant": "#004f57",
+            "on-primary": "#ffffff",
+            "surface-variant": "#d0e4fd",
+            "surface-dim": "#c8dcf5",
+            "surface-container-high": "#d9eaff",
+            "primary-fixed-dim": "#b1c8ee",
+            "on-primary-container": "#7e94b8",
+            "on-secondary-container": "#002d64",
+            "surface-bright": "#f7f9ff",
+            "on-surface": "#081d2f",
+            "surface": "#f7f9ff",
+            "on-secondary-fixed-variant": "#004491",
+            "on-primary-fixed-variant": "#314868"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter-sm": "1rem",
+            "margin": "2rem",
+            "margin-sm": "1rem",
+            "space-lg": "1.5rem",
+            "margin-lg": "3rem"
+          },
+          "fontFamily": {
+            "display-mobile": ["Plus Jakarta Sans"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "body-md": ["Inter"],
+            "display": ["Plus Jakarta Sans"],
+            "label-sm": ["Inter"],
+            "caption": ["Inter"],
+            "headline-sm": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "display-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "caption": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "500" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.005em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .civic-card-shadow {
+      box-shadow: 0px 1px 3px rgba(20, 44, 75, 0.04), 0px 4px 8px rgba(20, 44, 75, 0.02);
+    }
+    .civic-elevated-shadow {
+      box-shadow: 0px 8px 24px rgba(20, 44, 75, 0.08), 0px 2px 6px rgba(20, 44, 75, 0.04);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md text-body-md selection:bg-secondary-fixed selection:text-on-secondary-fixed" style="min-width: 1280px; max-width: 1280px; margin: 0 auto; overflow-x: hidden;">
+<!-- TOP ALERT BANNER -->
+<!-- SHARED COMPONENT: TopNavBar (Web Header) -->
+<header class="bg-surface-container-lowest dark:bg-primary border-b border-outline-variant dark:border-primary-container shadow-sm sticky top-0 z-40 transition-colors">
+<div class="w-full px-6 mx-auto flex items-center justify-between h-[72px] max-w-[1152px]">
+<!-- Brand Logo Wordmark -->
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-2.5 text-primary dark:text-inverse-primary group" href="#">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-surface-container-lowest flex items-center justify-center font-display text-headline-sm shadow-sm group-hover:bg-secondary transition-colors">
+<span class="material-symbols-outlined text-secondary-fixed" data-icon="fact_check">fact_check</span>
+</div>
+<div class="flex flex-col">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary tracking-tight">JejakMasWowo</span>
+<span class="text-caption font-caption text-on-surface-variant dark:text-on-primary-container tracking-wider uppercase">Panduan dan persiapan layanan warga</span>
+</div>
+</a>
+<!-- Desktop Navigation Items -->
+<nav aria-label="Menu Utama" class="hidden md:flex items-center gap-6"><a class="text-secondary dark:text-secondary-fixed border-b-2 border-secondary font-semibold pb-1 flex items-center gap-1.5 font-label-md text-label-md" href="#"><span>Cari Layanan</span></a><a class="text-on-surface-variant dark:text-primary-fixed-dim hover:text-primary dark:hover:text-surface-container-lowest pb-1 font-medium transition-colors font-label-md text-label-md" href="#">Cara Kerja</a><a class="text-on-surface-variant dark:text-primary-fixed-dim hover:text-primary dark:hover:text-surface-container-lowest pb-1 font-medium transition-colors font-label-md text-label-md" href="#">Bantuan</a></nav>
+</div>
+<!-- Action Cluster -->
+<div class="flex items-center gap-3"><div class="hidden sm:flex items-center gap-1 text-on-surface-variant dark:text-primary-fixed-dim mr-2"><button aria-label="Pilih Bahasa" class="p-2 rounded-lg hover:bg-surface-container-low dark:hover:bg-primary-container transition-colors duration-150" type="button"><span class="material-symbols-outlined text-xl" data-icon="language">language</span></button><a class="inline-flex items-center gap-1.5 px-3 py-1.5 text-label-md font-label-md font-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors" href="#"><span class="material-symbols-outlined text-lg" data-icon="help_outline">help_outline</span><span>Butuh bantuan?</span></a></div><button class="px-4 py-2 text-label-md font-label-md font-medium text-primary-container border border-outline-variant rounded-lg hover:bg-surface-container-low transition-all duration-200 active:scale-95" type="button">Masuk</button><button class="px-4 py-2 text-label-md font-label-md font-medium text-on-secondary bg-secondary hover:bg-secondary/90 rounded-lg shadow-sm transition-all duration-200 active:scale-95" type="button">Daftar</button></div>
+</div>
+</header>
+<!-- MAIN CANVAS -->
+<main class="flex-grow w-full max-w-[1152px] mx-auto px-6 py-8">
+<!-- BREADCRUMB & HEADER SECTION -->
+<section aria-labelledby="page-title" class="mb-8">
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" class="mb-4">
+<ol class="flex items-center space-x-2 text-label-sm font-label-sm text-on-surface-variant">
+<li>
+<a class="hover:text-secondary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-base" data-icon="home">home</span>
+<span>Beranda</span>
+</a>
+</li>
+<li class="flex items-center space-x-1">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="chevron_right">chevron_right</span>
+<a class="hover:text-secondary transition-colors" href="#">Layanan</a>
+</li>
+<li aria-current="page" class="flex items-center space-x-1 text-primary font-semibold">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="chevron_right">chevron_right</span>
+<span>Akta Kelahiran</span>
+</li>
+</ol>
+</nav>
+<!-- Badge / Pill -->
+<div class="flex flex-wrap items-center gap-3 mb-3">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-secondary text-label-sm font-label-sm border border-secondary-fixed">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+          Contoh layanan · Kota Contoh · Simulasi
+        </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant text-caption font-caption border border-outline-variant/60">
+<span class="material-symbols-outlined text-xs text-outline" data-icon="verified_user">verified_user</span>
+          Persiapan Pra-Permohonan
+        </span>
+</div>
+<!-- Main Headline & Description -->
+<div class="max-w-4xl">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight mb-3" id="page-title">
+          Panduan Akta Kelahiran
+        </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+          Panduan persiapan mandiri dokumen pelaporan kelahiran anak sebelum diajukan ke instansi terkait atau kanal kependudukan resmi. Membantu warga memeriksa kelengkapan draf agar proses pengajuan tidak tertolak akibat berkas tercecer.
+        </p>
+</div>
+</section>
+<!-- METADATA 4 CARDS GRID -->
+<section aria-label="Metadata Singkat Layanan" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/60 civic-card-shadow">
+<div class="flex items-center gap-2 text-on-surface-variant text-caption font-caption mb-1">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="account_balance">account_balance</span>
+<span>Instansi Terkait</span>
+</div>
+<p class="font-title-md text-title-md font-semibold text-primary">Disdukcapil (contoh layanan)</p>
+<span class="text-caption font-caption text-on-surface-variant block mt-1">Dinas Kependudukan &amp; Pencatatan Sipil</span>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/60 civic-card-shadow">
+<div class="flex items-center gap-2 text-on-surface-variant text-caption font-caption mb-1">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="payments">payments</span>
+<span>Biaya Resmi</span>
+</div>
+<p class="font-title-md text-title-md font-semibold text-primary">Belum diverifikasi — contoh simulasi</p>
+<span class="text-caption font-caption text-on-surface-variant block mt-1">Pelayanan reguler umumnya gratis</span>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/60 civic-card-shadow">
+<div class="flex items-center gap-2 text-on-surface-variant text-caption font-caption mb-1">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="schedule">schedule</span>
+<span>Standar Waktu Resmi</span>
+</div>
+<p class="font-title-md text-title-md font-semibold text-primary">Belum diverifikasi — contoh simulasi</p>
+<span class="text-caption font-caption text-on-surface-variant block mt-1">Bergantung pada antrean loket kota</span>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/60 civic-card-shadow">
+<div class="flex items-center gap-2 text-on-surface-variant text-caption font-caption mb-1">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="language">language</span>
+<span>Kanal Pengajuan</span>
+</div>
+<p class="font-title-md text-title-md font-semibold text-primary">Contoh kanal simulasi, perlu konfirmasi lokal</p>
+<span class="text-caption font-caption text-on-surface-variant block mt-1">Aplikasi daerah / Loket Kecamatan</span>
+</div>
+</section>
+<!-- MAIN TWO-COLUMN SPLIT (65% / 35%) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT COLUMN (65% -> 8 of 12 cols) -->
+<div class="lg:col-span-8 space-y-8">
+<!-- CONTENT NAVIGATION TABS -->
+<div class="border-b border-outline-variant/80 flex items-center space-x-6 overflow-x-auto pb-px" role="tablist">
+<button aria-selected="false" class="pb-3 text-label-md font-label-md font-medium text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" role="tab" type="button">
+            Ringkasan
+          </button>
+<button aria-selected="true" class="pb-3 text-label-md font-label-md font-semibold text-secondary border-b-2 border-secondary whitespace-nowrap flex items-center gap-1.5" role="tab" type="button">
+<span class="material-symbols-outlined text-base" data-icon="inventory">inventory</span>
+<span>Persyaratan (Aktif/Terbuka)</span>
+</button>
+<button aria-selected="false" class="pb-3 text-label-md font-label-md font-medium text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" role="tab" type="button">
+            Prosedur
+          </button>
+<button aria-selected="false" class="pb-3 text-label-md font-label-md font-medium text-on-surface-variant hover:text-primary transition-colors whitespace-nowrap" role="tab" type="button">
+            Dasar &amp; Rujukan
+          </button>
+</div>
+<!-- CONDITIONAL NOTIFICATION CALLOUT -->
+<div class="bg-surface-container-low border border-secondary-fixed p-5 rounded-xl flex items-start gap-4">
+<div class="p-2 rounded-lg bg-surface-container text-secondary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-xl" data-icon="info">info</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md font-semibold text-primary mb-1">
+              Persyaratan dapat berbeda sesuai kondisi pemohon
+            </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Kondisi spesifik seperti anak lahir dari perkawinan campuran (WNI-WNA), anak yang lahir di luar fasilitas pelayanan kesehatan resmi, atau data Kartu Keluarga (KK) orang tua yang belum sinkron memerlukan lampiran Surat Pernyataan Tanggung Jawab Mutlak (SPTJM) tambahan.
+            </p>
+</div>
+</div>
+<!-- DETAILED DOCUMENT CHECKLIST SECTION -->
+<section aria-labelledby="dokumen-inti" class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-6 md:p-8 civic-card-shadow">
+<div class="flex items-center justify-between pb-5 border-b border-outline-variant/40 mb-6">
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight" id="dokumen-inti">
+                Daftar Persyaratan Dokumen Inti
+              </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Perhatikan format asli dan titik kritis yang sering menyebabkan berkas tertunda pada tahap verifikasi kependudukan.
+              </p>
+</div>
+<span class="px-2.5 py-1 text-label-sm font-label-sm bg-surface-container text-secondary rounded-full font-semibold shrink-0">Contoh dokumen — persyaratan belum diverifikasi</span>
+</div>
+<!-- Document List Detail -->
+<div class="space-y-6">
+<!-- Dokumen 1 -->
+<article class="p-5 rounded-lg border border-outline-variant/60 bg-surface hover:border-secondary transition-all">
+<div class="flex items-start justify-between gap-4 mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-label-sm shrink-0">
+                    1
+                  </div>
+<h3 class="font-title-md text-title-md font-bold text-primary">
+                    Surat Keterangan Lahir (Faskes)
+                  </h3>
+</div>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-high text-primary font-medium">Asli / Fisik</span>
+</div>
+<div class="pl-11 space-y-2">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Dikeluarkan oleh Rumah Sakit, Puskesmas, Klinik Bersalin, atau Bidan Praktik Mandiri tempat persalinan berlangsung.
+                </p>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg border border-outline-variant/40 text-body-sm font-body-sm space-y-1">
+<div class="flex items-start gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5" data-icon="check_circle">check_circle</span>
+<span>Format &amp; Keabsahan: Wajib mencantumkan stempel basah/legal faskes, tanda tangan penolong persalinan, dan waktu kelahiran (jam &amp; tanggal).</span>
+</div>
+<div class="flex items-start gap-2 text-error font-medium">
+<span class="material-symbols-outlined text-error text-sm shrink-0 mt-0.5" data-icon="warning">warning</span>
+<span>Hal Sering Salah: Perbedaan penulisan ejaan satu huruf antara nama ibu di surat lahir dengan KTP/KK dapat menghentikan validasi otomatis.</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dokumen 2 -->
+<article class="p-5 rounded-lg border border-outline-variant/60 bg-surface hover:border-secondary transition-all">
+<div class="flex items-start justify-between gap-4 mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-label-sm shrink-0">
+                    2
+                  </div>
+<h3 class="font-title-md text-title-md font-bold text-primary">
+                    Buku Nikah / Kutipan Akta Perkawinan Orang Tua
+                  </h3>
+</div>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-high text-primary font-medium">Legalisasi Asli</span>
+</div>
+<div class="pl-11 space-y-2">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Dokumen pembuktian hubungan hukum pernikahan kedua orang tua dari Kantor Urusan Agama (KUA) atau Dinas Dukcapil.
+                </p>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg border border-outline-variant/40 text-body-sm font-body-sm space-y-1">
+<div class="flex items-start gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5" data-icon="check_circle">check_circle</span>
+<span>Format &amp; Keabsahan: Menampilkan nomor register akta perkawinan yang valid serta tanggal akad/pencatatan.</span>
+</div>
+<div class="flex items-start gap-2 text-error font-medium">
+<span class="material-symbols-outlined text-error text-sm shrink-0 mt-0.5" data-icon="warning">warning</span>
+<span>Hal Sering Salah: Status kawin di KTP/KK kedua orang tua belum tercatat 'Kawin Tercatat' saat melahirkan anak pertama.</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dokumen 3 -->
+<article class="p-5 rounded-lg border border-outline-variant/60 bg-surface hover:border-secondary transition-all">
+<div class="flex items-start justify-between gap-4 mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-label-sm shrink-0">
+                    3
+                  </div>
+<h3 class="font-title-md text-title-md font-bold text-primary">
+                    Kartu Keluarga (KK) Orang Tua
+                  </h3>
+</div>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-high text-primary font-medium">Paling Mutakhir</span>
+</div>
+<div class="pl-11 space-y-2">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Basis data induk tempat bayi akan didaftarkan sebagai anggota keluarga baru dan diterbitkan Nomor Induk Kependudukan (NIK).
+                </p>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg border border-outline-variant/40 text-body-sm font-body-sm space-y-1">
+<div class="flex items-start gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5" data-icon="check_circle">check_circle</span>
+<span>Format &amp; Keabsahan: KK berbarcode TTE (Tanda Tangan Elektronik) aktif atau cetakan resmi dengan susunan alamat yang sinkron.</span>
+</div>
+<div class="flex items-start gap-2 text-error font-medium">
+<span class="material-symbols-outlined text-error text-sm shrink-0 mt-0.5" data-icon="warning">warning</span>
+<span>Hal Sering Salah: Pasangan suami-istri masih berada di dua KK terpisah (ikut KK orang tua lama), sehingga bayi belum bisa dimasukkan langsung.</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Dokumen 4 -->
+<article class="p-5 rounded-lg border border-outline-variant/60 bg-surface hover:border-secondary transition-all">
+<div class="flex items-start justify-between gap-4 mb-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-label-sm shrink-0">
+                    4
+                  </div>
+<h3 class="font-title-md text-title-md font-bold text-primary">
+                    KTP-el Kedua Orang Tua &amp; Dua Orang Saksi
+                  </h3>
+</div>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-high text-primary font-medium">Salinan Identitas</span>
+</div>
+<div class="pl-11 space-y-2">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Kartu Tanda Penduduk elektronik ayah, ibu, dan dua orang saksi kelahiran (dapat keluarga/kerabat yang menyaksikan atau mengetahui peristiwa).
+                </p>
+<div class="bg-surface-container-lowest p-3.5 rounded-lg border border-outline-variant/40 text-body-sm font-body-sm space-y-1"><div class="flex items-start gap-2 text-primary font-medium"><span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5" data-icon="check_circle">check_circle</span><span>Format &amp; Keabsahan: File pemindaian jelas, dapat terbaca jelas pada saat pemeriksaan berkas.</span></div><div class="flex items-start gap-2 text-on-surface-variant font-medium"><span class="material-symbols-outlined text-secondary text-sm shrink-0 mt-0.5" data-icon="info">info</span><span>Catatan Draf: Pastikan nama dan data saksi terisi lengkap pada draf sebelum konfirmasi ke petugas resmi.</span></div></div>
+</div>
+</article>
+</div>
+</section>
+<!-- ALUR PROSEDUR PENGAJUAN (STEP TRACKER) -->
+<section aria-labelledby="alur-prosedur" class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-6 md:p-8 civic-card-shadow">
+<div class="mb-6">
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight" id="alur-prosedur">
+              Alur &amp; Prosedur Pengajuan Ringkas
+            </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+              Empat tahapan terarah dari pengecekan mandiri hingga pengesahan resmi oleh dinas kependudukan.
+            </p>
+</div>
+<!-- Linear Steps Container -->
+<div class="relative pl-6 space-y-8 before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-outline-variant/60">
+<!-- Step 1 -->
+<div class="relative flex items-start gap-4">
+<div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold text-label-sm ring-4 ring-secondary-fixed">
+                1
+              </div>
+<div class="bg-surface p-4 rounded-lg border border-outline-variant/50 w-full">
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-title-md text-title-md font-semibold text-primary">Persiapan &amp; Validasi Draf Mandiri</h3>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-high text-secondary font-medium">Di JejakMasWowo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Gunakan daftar periksa atau asisten pra-pemeriksaan di portal ini untuk menyamakan ejaan nama anak, NIK orang tua, dan dokumen saksi agar bebas dari salah tik.
+                </p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative flex items-start gap-4">
+<div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-surface-container-lowest border-2 border-outline-variant text-on-surface-variant flex items-center justify-center font-bold text-label-sm">
+                2
+              </div>
+<div class="bg-surface p-4 rounded-lg border border-outline-variant/50 w-full">
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-title-md text-title-md font-semibold text-primary">Pengisian Berkas di Kanal Resmi Kependudukan Daerah</h3>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-medium">Kanal Pemerintah</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Buka website resmi Disdukcapil kota/kabupaten Anda atau kunjungi loket layanan kelurahan/kecamatan setempat. Unggah berkas yang telah dipersiapkan.
+                </p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative flex items-start gap-4">
+<div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-surface-container-lowest border-2 border-outline-variant text-on-surface-variant flex items-center justify-center font-bold text-label-sm">
+                3
+              </div>
+<div class="bg-surface p-4 rounded-lg border border-outline-variant/50 w-full">
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-title-md text-title-md font-semibold text-primary">Verifikasi &amp; Pengesahan oleh Petugas Resmi Disdukcapil</h3>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-medium">Petugas Resmi</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Operator sipil memeriksa kesesuaian berkas secara yuridis. Jika ada ketidaksesuaian berkas, pemohon akan menerima notifikasi revisi berkas.
+                </p>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="relative flex items-start gap-4">
+<div class="absolute -left-6 top-0 w-6 h-6 rounded-full bg-surface-container-lowest border-2 border-outline-variant text-on-surface-variant flex items-center justify-center font-bold text-label-sm">
+                4
+              </div>
+<div class="bg-surface p-4 rounded-lg border border-outline-variant/50 w-full">
+<div class="flex items-center justify-between mb-1">
+<h3 class="font-title-md text-title-md font-semibold text-primary">Penerbitan Akta &amp; Pembaruan Kartu Keluarga</h3>
+<span class="text-caption font-caption px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-medium">Penerbitan Dokumen</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Akta Kelahiran diterbitkan dalam format digital PDF ber-TTE resmi dan dikirimkan ke email atau dicetak, disertai Kartu Keluarga baru yang telah memuat NIK bayi.
+                </p>
+</div>
+</div>
+</div>
+</section>
+<!-- SEKSI CATATAN KEJUJURAN & BATASAN SISTEM -->
+<section aria-label="Catatan Etika Sistem" class="bg-surface-container-low/70 border border-outline-variant/80 rounded-xl p-6 flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary text-2xl shrink-0 mt-1" data-icon="policy">policy</span>
+<div class="space-y-1">
+<h3 class="font-title-md text-title-md font-bold text-primary">
+              Batasan Sistem &amp; Catatan Integritas Portal
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Platform JejakMasWowo murni berfungsi sebagai sarana literasi tata kelola berkas sipil independen dan alat persiapan data awal pemohon. 
+              <strong>Instrumen ini tidak menggantikan fungsi loket legal pemerintah, tidak memungut biaya kuasa administratif, dan tidak menerbitkan dokumen kenegaraan.</strong> 
+              Seluruh pengesahan hukum mutlak berada di bawah otoritas Dinas Kependudukan dan Pencatatan Sipil Republik Indonesia.
+            </p>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN (35% -> 4 of 12 cols - Sticky Card) -->
+<aside aria-label="Aksi &amp; Rujukan Berkas" class="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
+<!-- STICKY ACTION CARD -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/80 p-6 civic-elevated-shadow space-y-5">
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/40">
+<span class="text-label-sm font-label-sm font-semibold uppercase tracking-wider text-secondary">
+              Checklist Kesiapan
+            </span>
+<span class="flex items-center gap-1 text-caption font-caption text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+              Mode Publik
+            </span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight mb-2">
+              Siapkan Sebelum Mengajukan
+            </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Pastikan Anda telah mengumpulkan seluruh 4 dokumen persiapan inti sebelum mengakses loket pelayanan daerah.
+            </p>
+</div>
+<!-- Status Box -->
+<div class="bg-surface-container-low p-4 rounded-lg space-y-2 border border-secondary-fixed/50">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant font-medium">Dokumen Teridentifikasi:</span>
+<span class="font-bold text-primary">4 Dokumen Inti</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant font-medium">Estimasi Pra-Pemeriksaan:</span>
+<span class="font-bold text-secondary">Tidak tersedia</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden mt-2">
+<div class="bg-secondary h-full rounded-full w-1/4"></div>
+</div>
+<span class="text-caption font-caption text-on-surface-variant block text-right">Tahap 1 dari 4: Baca Panduan</span>
+</div>
+<!-- Buttons Action -->
+<div class="space-y-3 pt-2">
+<button class="w-full py-3 px-4 rounded-lg bg-secondary hover:bg-secondary/90 text-on-secondary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-98" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="description">description</span>
+<span>Mulai Persiapan Berkas</span>
+</button>
+<button class="w-full py-2.5 px-4 rounded-lg bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-primary-container font-label-md text-label-md font-medium flex items-center justify-center gap-2 transition-all duration-200" type="button">
+<span class="material-symbols-outlined text-lg text-on-surface-variant" data-icon="open_in_new">open_in_new</span>
+<span>Lihat Petunjuk Kanal Resmi</span>
+</button>
+</div>
+<!-- Micro Disclaimer note -->
+<div class="pt-2 text-caption font-caption text-on-surface-variant border-t border-outline-variant/40 flex items-start gap-2">
+<span class="material-symbols-outlined text-sm text-outline shrink-0 mt-0.5" data-icon="lock_open">lock_open</span>
+<p>Panduan dapat dibaca tanpa akun. Masuk diperlukan untuk menyimpan data pribadi, mengunggah dokumen, dan melihat riwayatmu.</p>
+</div>
+</div>
+<!-- REGULATION & REFERENCE CARD -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 p-5 civic-card-shadow space-y-3"><div class="flex items-center gap-2 text-primary font-semibold text-title-md font-title-md"><span class="material-symbols-outlined text-secondary text-lg" data-icon="menu_book">menu_book</span><h4>Catatan Regulasi</h4></div><div class="p-3 rounded-lg bg-surface-container border border-secondary-fixed text-body-sm font-body-sm text-primary font-medium flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-base shrink-0" data-icon="info">info</span><span>Sumber resmi belum ditautkan pada contoh simulasi</span></div><p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Rujukan hukum resmi dinas kependudukan setempat perlu dikonfirmasi langsung pada kanal atau loket daerah yang berwenang.</p><div class="pt-2 border-t border-outline-variant/40 space-y-1.5 text-caption font-caption text-on-surface-variant"><div class="flex justify-between items-center"><span class="text-outline">Ditinjau untuk demo:</span><span class="font-medium text-primary">28 Oktober 2026</span></div><div class="flex justify-between items-center"><span class="text-outline">Status Kurasi:</span><span class="text-secondary font-medium">Contoh Simulasi UI</span></div></div><div class="p-2.5 rounded bg-surface-container-low text-caption font-caption text-on-surface-variant">Data dan instruksi dirancang murni untuk literasi publik dan pengujian antarmuka portal warga.</div></div>
+</aside>
+</div>
+</main>
+<!-- FLOATING QUICK HELP TRIGGER -->
+<!-- SHARED COMPONENT: Footer (Web Footer) -->
+<footer class="bg-primary dark:bg-surface-container-lowest text-on-primary dark:text-primary mt-16 border-t border-primary-container dark:border-outline-variant">
+<div class="w-full max-w-[1152px] mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
+<!-- Brand & Copyright -->
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="text-headline-sm font-headline-sm font-bold text-on-primary dark:text-primary">
+          JejakMasWowo
+        </span>
+<p class="text-body-sm font-body-sm text-on-primary-container dark:text-on-surface-variant text-center md:text-left">© 2026 JejakMasWowo Civic Transparency Portal. Seluruh hak cipta dilindungi undang-undang.</p>
+</div>
+<!-- Navigation Links -->
+<nav aria-label="Tautan Hukum dan Bantuan" class="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2 text-label-sm font-label-sm">
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-primary dark:hover:text-primary transition-colors" href="#">
+          Kebijakan Privasi
+        </a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-primary dark:hover:text-primary transition-colors" href="#">
+          Ketentuan Layanan
+        </a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-primary dark:hover:text-primary transition-colors" href="#">
+          Keterbukaan Informasi Publik
+        </a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-primary dark:hover:text-primary transition-colors" href="#">
+          Panduan Registrasi Warga
+        </a>
+<a class="text-on-primary-container dark:text-on-surface-variant hover:text-on-primary dark:hover:text-primary transition-colors" href="#">
+          Pusat Pengaduan
+        </a>
+</nav>
+</div>
+<!-- MANDATORY INDEPENDENT DISCLAIMER FOOTER NOTE -->
+<div class="w-full border-t border-primary-container/80 dark:border-outline-variant/30 py-4 px-6 bg-primary dark:bg-surface-container-low text-center">
+<p class="max-w-5xl mx-auto text-caption font-caption text-on-primary-container dark:text-on-surface-variant leading-relaxed">
+        Pemberitahuan Resmi: Prototipe independen. Bukan portal resmi pemerintah. Data yang ditampilkan adalah contoh simulasi untuk pengujian antarmuka dan literasi tata kelola berkas warga.
+      </p>
+</div>
+</footer>
+</body></html>

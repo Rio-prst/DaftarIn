@@ -1,0 +1,70 @@
+INTEGRASI CHATBOT AI LIVE — 1 November 2026
+============================================================
+STATUS AKTUAL
+Chatbot web -> /api/chat/messages -> backend -> AtmoRouter sudah menerima
+jawaban model nyata. Ini menggantikan keterangan provider belum dikonfigurasi
+pada laporan sebelumnya. Backend layanan/transaksi dan OCR tidak ikut
+diaktifkan oleh pekerjaan ini. Tidak ada merge/push branch pada pekerjaan ini.
+
+KONFIGURASI
+Provider aktif: openai_compatible, base https://atmorouter.dev/v1.
+Model utama: ag/gemini-3.8-flash-high.
+Model cadangan: cb/deepseek-v4.1-flash.
+Kedua ID ada di endpoint /models saat diperiksa.
+Alias provider openai dinormalisasi menjadi openai_compatible.
+
+Kredensial berada hanya di backend/.env yang diabaikan Git.
+Nama konfigurasi server:
+CHAT_AI_PROVIDER, CHAT_AI_API_KEY, CHAT_AI_BASE_URL, CHAT_AI_MODEL,
+CHAT_AI_FALLBACK_MODEL.
+Nilai key TIDAK ditulis pada laporan, source, contoh env, atau frontend.
+Variabel VITE_OPENAI_API_KEY/VITE_GEMINI_API_KEY tidak dipakai.
+
+GEMINI LANGSUNG
+CHAT_GEMINI_API_KEY dan CHAT_GEMINI_MODEL disimpan privat sebagai opsi terpisah.
+Keduanya dipakai hanya jika CHAT_AI_PROVIDER=gemini.
+Provider ini belum diaktifkan atau diuji live. Tidak ada perpindahan otomatis
+dari AtmoRouter ke Google; fallback saat ini antar-model pada AtmoRouter.
+
+PERILAKU CADANGAN
+- Satu percobaan model utama, maksimal satu model cadangan yang berbeda.
+- Timeout setiap model 10 detik. Dua percobaan tetap di bawah timeout UI 25 detik.
+- Error jaringan/timeout, HTTP selain 401/403, atau jawaban tidak memenuhi JSON
+  dapat mencoba model cadangan.
+- HTTP 401/403 tidak dicoba lagi memakai key yang sama.
+- Jika kedua model gagal, FE tetap dapat memakai panduan lokal dengan label
+  yang jelas; tidak mengklaim fallback lokal sebagai jawaban AI.
+- Response backend memuat source=ai, modelUsed dan usedFallback.
+- Tidak otomatis mencoba model lain yang tidak dikonfigurasi pemilik.
+
+BATAS AKSES DAN DATA
+Chatbot tidak mempunyai tools kirim pengajuan, ubah status atau baca berkas.
+Formulir, foto KTP dan profil tidak dikirim otomatis. Query/riwayat tetap dibatasi
+dan pola nomor 16 digit disamarkan. Pengguna tetap tidak boleh mengetik data
+pribadi; pola penyamaran bukan jaminan seluruh jenis data pribadi tertangkap.
+Riwayat maksimal empat pesan, query maksimal 1.000 karakter. Rujukan dan
+tombol navigasi berasal dari corpus aplikasi, bukan rute bebas buatan model.
+Corpus belum disinkronkan otomatis ke panduan admin/wilayah/versi terbaru.
+Model dapat keliru; hasil chat bukan keputusan pemerintah atau bukti verifikasi.
+
+PENGUJIAN
+- /models provider: HTTP 200, kedua model terdaftar.
+- Panggilan utama nyata: berhasil sekitar 6,7 detik pada satu percobaan.
+- Model cadangan diuji mandiri: berhasil sekitar 4 detik pada satu percobaan.
+  Ini bukan jaminan latensi/SLA atau bukti kapasitas provider selalu tersedia.
+- Auto-fallback diuji dengan mock: 429, abort/timeout, output rusak, dua model
+  gagal dan penolakan credential. Tidak sengaja menghabiskan limit provider.
+- Jalur UI asli diuji dengan pertanyaan umum tanpa identitas warga:
+  'Apa yang bisa dibantu oleh DaftarIn?'. Label Asisten AI muncul dan jawaban
+  menjelaskan fungsi pendamping serta batas pengajuan resmi.
+- Backend: 48 unit test lulus (12 terkait chat + 36 test sebelumnya).
+- Build backend berhasil; lint modul chat lulus.
+- Pemindaian kedua nilai key pada frontend/src, frontend/dist dan frontend
+  .env* tidak menemukan kecocokan. backend/.env dipastikan diabaikan Git.
+- Screenshot bukti: outputs/ui-refresh-20261101/chat-ai-live.jpg di luar repo.
+
+YANG MASIH MENUNGGU
+Backend layanan/transaksi tim, Supabase/DB tim dan OCR/evaluator dokumen.
+Untuk chat sebelum publik: sinkronisasi corpus panduan, kuota/biaya dan
+monitoring abuse, kebijakan penyedia/retensi, evaluasi kualitas jawaban.
+Rujukan format endpoint provider: https://atmorouter.dev/

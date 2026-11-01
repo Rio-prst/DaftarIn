@@ -8,7 +8,7 @@ DaftarIn adalah website pendamping pengurusan layanan pemerintah yang membantu w
 
 | Komponen | Teknologi | Tanggung jawab |
 | --- | --- | --- |
-| Frontend | Next.js + Tailwind CSS | UI dan halaman aplikasi |
+| Frontend | React + Vite + Tailwind CSS | UI dan halaman aplikasi |
 | Backend | NestJS | API dan business logic |
 | Database | Supabase (PostgreSQL) + Prisma | User, role, layanan, pengajuan, audit log |
 | Authentication | Custom auth di NestJS | Registrasi, login, logout, session/token |
@@ -21,7 +21,7 @@ Catatan: database tetap dikelola di **Supabase** (PostgreSQL), sedangkan **Prism
 
 ```
 DaftarIn/
-├─ frontend/            # Next.js + Tailwind CSS (menyusul)
+├─ frontend/            # React + Vite + Tailwind CSS
 ├─ backend/             # NestJS API (standalone)
 │  ├─ docs/PRD.md       # Source of truth produk
 │  ├─ src/              # Kode aplikasi
@@ -80,15 +80,15 @@ pnpm start:dev
 
 Backend berjalan di `http://localhost:3000`.
 
-### 6. Jalankan frontend (setelah scaffold tersedia)
+### 6. Jalankan frontend
 
 ```bash
 cd frontend
 pnpm install
-pnpm dev
+npm run dev
 ```
 
-Frontend direncanakan berjalan di `http://localhost:3001`.
+Frontend berjalan di `http://localhost:5173`. Panduan dan batas demo tersedia di [frontend/README.md](frontend/README.md).
 
 ## Progress Saat Ini
 

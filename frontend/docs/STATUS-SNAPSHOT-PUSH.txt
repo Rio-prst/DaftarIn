@@ -1,0 +1,17 @@
+Snapshot feat1/frontend untuk handoff dan pengumpulan.
+
+FE dan BE berhasil dibuild pada pemeriksaan sebelum push.
+Panduan demo penilai dan perubahan backend parsial ikut disimpan.
+Relay chatbot, auth dan akun merupakan modul yang berbeda dari integrasi
+transaksi persiapan/pengajuan. Alur bisnis FE masih memakai penyimpanan lokal;
+snapshot ini BUKAN klaim integrasi API penuh atau kesiapan produksi.
+
+Perbaikan sebelum push:
+- Endpoint file lokal memerlukan autentikasi dan kepemilikan path pengguna.
+- Penolakan traversal path pada operasi file lokal.
+- Penulisan file lokal eksklusif untuk mencegah overwrite.
+- Folder unggahan lokal diabaikan Git.
+
+Lihat LAPORAN-HANDOFF-SEBELUM-PUSH.txt untuk pekerjaan yang belum selesai.
+Validasi build tidak membuktikan alur API end-to-end atau deployment berhasil.
+Tidak dilakukan migration, seed, atau pengubahan data database bersama.

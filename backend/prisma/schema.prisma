@@ -406,6 +406,7 @@ model User {
   officerEscalations OfficerEscalation[]
   idempotencyRecords IdempotencyRecord[]
   accountTokens AccountToken[]
+  preferences AccountPreference?
 
   @@unique([email])
   @@index([accountStatus, updatedAt])
@@ -923,4 +924,16 @@ model AccountToken {
 
   @@index([userId, type])
   @@map("account_tokens")
+}
+
+model AccountPreference {
+  id String @id @db.Uuid @default(uuid())
+  userId String @unique @db.Uuid
+  fontSize String @default("normal")
+  highContrast Boolean @default(false)
+  notifyInApp Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_preferences")
 }

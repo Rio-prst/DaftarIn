@@ -1,3 +1,7 @@
+# Status implementasi
+
+Kontrak berikut juga memuat rancangan fitur. Untuk endpoint yang benar-benar aktif per 1 November 2026, gunakan [IMPLEMENTED-API.md](IMPLEMENTED-API.md). Base API aktif adalah `/api`; modul bisnis yang masih direncanakan tidak boleh dianggap tersedia hanya karena tercantum pada dokumen ini.
+
 # API Contract — JejakMasWowo
 
 > **Dokumen kontrak BE ↔ FE**  

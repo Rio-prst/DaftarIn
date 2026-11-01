@@ -1,0 +1,120 @@
+CATATAN HISTORIS — SUDAH ADA TINDAK LANJUT
+Status aktual: LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt
+Kontrak backend terbaru (a56a80e): KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt
+Temuan di bawah menggambarkan keadaan sebelum perbaikan terbaru.
+
+CATATAN BACKEND TERBARU — 1 NOVEMBER 2026
+========================================
+Remote: origin/feat/backend
+Commit: 96a092c6dcb72d19da7c9a95098441799293e986
+Review sumber; belum diuji terhadap database/storage tim.
+Branch diambil khusus karena fetch clone hanya mencakup frontend.
+Tidak checkout/merge atau menimpa backend lokal.
+
+YANG SUDAH ADA
+1c0f6b2: katalog, wilayah, panduan, pertanyaan dan sumber.
+156f985: evaluasi kebutuhan per layanan dan draf persiapan warga.
+54f3743: unggah/versioning dokumen dan Supabase Storage privat.
+bc13039: pencatatan pengajuan, timeline, catatan warga, konfirmasi penerimaan.
+96a092c: dashboard dan notifikasi warga.
+Dokumen memeriksa pemilik dan tipe berkas; tersedia signed URL sementara.
+
+KEKURANGAN DAN PRIORITAS
+
+1. KIRIMAN, REVISI, DAN PETUGAS
+POST /api/applications membuat CITIZEN_REPORT dengan status
+CITIZEN_RECORDED_UNCONFIRMED, yaitu catatan pengajuan instansi oleh warga.
+Ini bukan pengiriman persiapan untuk tinjauan pendamping. Perlu salinan
+kiriman yang tidak ikut berubah ketika draf diedit, versi revisi, antrean,
+penugasan, mulai tinjauan, pengembalian beralasan, penyelesaian, dan riwayat
+aktor/waktu. Status pendamping harus terpisah dari status/nomor instansi.
+Rute applications saat ini citizen-only. Akses dokumen petugas perlu guard
+penugasan; notifikasi tinjauan/revisi perlu diproduksi dari perubahan status.
+
+2. PERTAHANKAN BACKEND LOKAL SAAT MERGE
+Modul akun/admin dan pengamanan sesi lokal belum ada di branch terbaru.
+Pertahankan profil, preferensi, pengaturan akun, operasi admin dan migrasi
+202611010002_account_preferences bersama pengamanan autentikasi lokal.
+Guard remote memeriksa JWT tanpa memeriksa pencabutan sesi, akun aktif dan
+hak akses terbaru dari DB. Logout harus tetap bekerja ketika JWT kedaluwarsa.
+Bedakan reuse refresh mencurigakan dari token sesi yang memang sudah logout.
+Selaraskan field persetujuan registrasi frontend dengan DTO strict remote.
+
+3. KELUARGA
+Perlu CRUD keluarga milik akun, validasi akses, pilihan subjek persiapan,
+pemisahan subjek/pelapor, dan salinan identitas ketika kirim. Perubahan profil
+tidak boleh mengubah kiriman lama. NIK bayi opsional pada profil; validasi
+permohonan tetap mengikuti layanan.
+
+4. ADAPTER FRONTEND
+Frontend memakai ID pilot numerik dan pertanyaan/slot lokal; backend memakai
+UUID layanan, wilayah dan pertanyaan. Gunakan pemetaan slug/kode stabil,
+bukan posisi array. Ambil persyaratan dari panduan server. Selaraskan envelope
+data/meta pagination, data version, versi dokumen, status dan hak akses.
+Jangan menyimpan signed URL sementara sebagai URL permanen.
+Needs/evaluate mengevaluasi satu layanan. Rekomendasi beberapa layanan dari
+peristiwa kehidupan bisa tetap aturan frontend yang merujuk metadata valid.
+
+5. KONSISTENSI DATA DAN UPLOAD
+- DTO create preparation menerima region_id, guide_version,
+  questionnaire_version dan display_name, tetapi controller belum meneruskan
+  semuanya ke service. Hormati pilihan sah atau tolak eksplisit.
+- Update memeriksa expected_data_version sebelum transaksi, lalu update
+  berdasarkan id saja. Gunakan perbandingan versi atomik dan respons 409 saat
+  konflik agar edit bersamaan tidak saling menimpa.
+- Nomor versi upload dihitung sebelum transaksi; object key memakai nomor
+  versi dan upload upsert:true. Unggahan bersamaan dapat memilih key sama dan
+  menimpa isi. Gunakan key unik/immutable atau alokasi versi atomik, tangani
+  konflik dan bersihkan object yatim setelah transaksi gagal.
+- Batasi multipart pada parser upload, bukan hanya setelah masuk memori.
+  Selaraskan kebijakan frontend 5 MB dengan backend yang kini 10 MB.
+  Validasi tipe berkas berbasis isi sudah ada dan perlu dipertahankan.
+
+6. KONFIGURASI DAN SIKLUS AKUN
+StorageService terbaru membaca SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY dan
+SUPABASE_STORAGE_BUCKET (default documents). Template lokal mengutamakan
+SUPABASE_SECRET_KEY. Selaraskan nama variabel/adapter; cukup satu key server
+terdukung. Bucket privat dan secret hanya backend. StorageModule sudah diimpor
+aplikasi sehingga konfigurasi diperlukan sebelum menjalankan branch ini.
+Auth tetap NestJS, bukan otomatis Supabase Auth. Verifikasi email dan lupa
+sandi masih memerlukan implementasi serta penyedia email. DB tim, migrasi,
+CORS/cookie HTTPS, dan Storage nyata perlu diuji pada staging.
+
+URUTAN LANJUTAN
+Gabungkan backend terbaru dengan perubahan lokal secara terkontrol; rapikan
+kontrak dan konsistensi; sambungkan draf/dokumen/keluarga; implementasikan
+kiriman-petugas-revisi; hubungkan dashboard/notifikasi; uji staging.
+Data frontend saat ini belum otomatis tersinkron ke modul baru tersebut.
+
+Backend AI/OCR/LLM ditangani teman pemilik dan bukan kekurangan/key/API yang
+diminta di sini. Tidak memakai Cloudflare R2. Laporan bukan tempat secret.
+
+PEMBARUAN FRONTEND SETELAH REVIEW BACKEND
+---------------------------------------
+Alur FE diperdalam pada 1 November 2026 (lihat laporan pendalaman alur).
+Kontrak kiriman perlu membawa acuan versi panduan dan daftar slot wajib yang
+stabil. Evaluasi per item menyimpan catatan masalah/perbaikan; revisi tidak
+mewarisi penilaian versi sebelumnya. Backend perlu endpoint penugasan admin
+beserta alasan/audit, pencabutan akses petugas lama, dan transisi tinjauan ulang.
+Konfirmasi hasil warga membutuhkan kanal dan pernyataan penerimaan eksplisit,
+bersifat idempotent/menolak duplikasi. Penugasan lokal saat ini demo; fitur
+tersebut belum tersedia pada admin API. Backend AI tetap di luar daftar ini.
+
+TAMBAHAN SETELAH PENDALAMAN RUANG PETUGAS/ADMIN — 1 NOVEMBER 2026
+-------------------------------------------------------------
+Baseline review backend tetap commit 96a092c; belum dilakukan merge baru.
+Kontrak yang perlu ditambahkan/diselaraskan sebelum integrasi:
+- Ringkasan pekerjaan per petugas dan agregasi beban/penugasan admin.
+- Riwayat evaluasi berdasarkan ID aktor, versi kiriman dan pagination/filter.
+  Setelah pemindahan tugas, hanya metadata riwayat yang boleh tersedia bagi
+  petugas lama; endpoint dokumen/formulir tetap memeriksa penugasan aktif.
+- Draf/publikasi panduan, versi historis, pertanyaan kondisi dan dokumen wajib
+  per kondisi. Tolak referensi persyaratan rusak serta pembaruan versi usang.
+- Peninjauan sumber menyimpan versi panduan, URL sumber, hasil, catatan, aktor
+  dan waktu. Publikasi baru memerlukan peninjauan baru; gunakan pemeriksaan
+  versi atomik di server agar tab lama tidak mengesahkan versi yang berubah.
+- Penonaktifan petugas harus memeriksa pekerjaan aktif di server/transaction.
+- Audit operasional terfilter dan terpaginasikan, dengan cakupan data sesuai
+  peran; localStorage bukan audit server. Penugasan memerlukan alasan/audit.
+Nama endpoint final diselaraskan dengan kontrak backend saat integrasi.
+Frontend baru tetap lokal/demo. Tidak meminta key atau implementasi AI di sini.

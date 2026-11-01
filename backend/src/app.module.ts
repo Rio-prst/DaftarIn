@@ -1,3 +1,5 @@
+import { AccountModule } from './account/account.module';
+import { AdminModule as AccessAdminModule } from './admin/access/admin.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
@@ -37,6 +39,8 @@ import { StorageModule } from './storage/storage.module';
       },
     ]),
     PrismaModule,
+    AccountModule,
+    AccessAdminModule,
     CommonModule,
     StorageModule,
     AuthModule,

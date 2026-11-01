@@ -1,0 +1,58 @@
+PERUBAHAN DAFTAR PENGAJUAN, ANTREAN, DAN SIDEBAR
+1 November 2026 — branch feat1/frontend, perubahan lokal
+====================================================
+
+1. SIDEBAR
+Menu Akun saya berada langsung di bawah navigasi utama untuk semua peran.
+Kembali ke beranda tetap menjadi tautan terpisah di bagian bawah sidebar.
+Menu petugas diseragamkan menjadi Antrean tinjauan.
+
+2. PENGAJUAN SAYA
+/pelacakan menampilkan daftar, bukan langsung rincian satu pengajuan.
+Dropdown pemilihan pengajuan dihapus.
+Filter: Semua, Aktif, Selesai. Ada pencarian, urutan pembaruan terbaru/terlama,
+serta pagination 10 item per halaman. Secara default pembaruan terbaru di atas.
+Setiap baris menampilkan layanan, pemohon, nomor referensi, waktu pembaruan,
+status tinjauan, serta status pengajuan instansi yang terpisah.
+Selesai pada filter mencakup tinjauan pendamping yang selesai; tidak otomatis
+menyatakan dokumen pemerintah telah diterbitkan. Batas ini dijelaskan pada UI.
+
+3. RINCIAN PENGAJUAN
+Item daftar membuka /pelacakan/:id sebagai halaman tersendiri.
+Tautan lama /pelacakan?id=... dan ?application=... tetap diarahkan ke rincian.
+Tombol kembali mengembalikan filter, pencarian, urutan dan halaman daftar.
+Reload serta tautan langsung didukung. ID yang tidak ada tidak membuka
+pengajuan lain sebagai pengganti. Form catatan, perbaikan, pratinjau berkas,
+pencatatan tanda terima dan konfirmasi hasil tetap tersedia sesuai kondisi.
+
+4. ANTREAN PETUGAS
+/petugas juga menampilkan daftar, tanpa panel rincian otomatis di samping.
+Filter: Semua, Perlu ditinjau, Sedang ditinjau, Menunggu warga, Selesai.
+Pencarian, urutan terbaru/terlama dan pagination mengikuti pola warga.
+Item membuka /petugas/:id. Pemeriksaan, penilaian, permintaan perbaikan,
+dan penyelesaian tetap menggunakan komponen rincian dan pengaman lama.
+Hanya permintaan yang tersedia pada penugasan petugas yang dapat dibuka.
+Tombol kembali mempertahankan keadaan daftar sebelumnya.
+
+5. NAVIGASI DAN WAKTU
+Tautan dari dashboard, draf, halaman kirim dan pencatatan instansi memakai
+alamat rincian baru. Login mendukung melanjutkan ke rincian yang sebelumnya
+dibuka. Parsing waktu mendukung ISO, nama bulan Indonesia, dan tanggal
+numerik Indonesia agar pembaruan terbaru benar-benar terurut.
+
+6. VERIFIKASI
+- 16 skenario daftar/rincian lulus: posisi profil, filter, pencarian,
+  riwayat, pagination, urutan, kembali, reload, tautan lama, akses peran,
+  melanjutkan setelah login, serta perubahan status petugas.
+- 16 skenario alur warga sebelumnya diuji ulang dan lulus setelah perubahan
+  alamat rincian, termasuk unggahan, kirim, revisi dan salinan kiriman.
+- Tidak ada error JavaScript tercatat dalam kedua harness.
+- Daftar diperiksa pada 320, 390, dan 1440 piksel tanpa overflow dokumen.
+- Build frontend lulus. Lint exit 0 dengan peringatan React yang masih ada.
+  Peringatan bundel utama di atas 500 kB tetap ada.
+
+BATAS
+Data persiapan, pengajuan dan antrean masih memakai penyimpanan browser.
+Perubahan ini tidak mengaktifkan integrasi instansi atau penyimpanan R2.
+Belum commit/push. Tidak mengubah kredensial atau database tim.
+Bukti uji lokal: outputs/request-lists-20261101 dan outputs/citizen-flow-20261101.

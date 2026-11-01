@@ -144,3 +144,7 @@ Rencana batas modul, pola repository, auth, queue, storage, dan strategi testing
 - Dokumen pribadi tidak boleh diakses lewat URL publik.
 - Pemeriksaan dokumen berjalan asinkron melalui BullMQ; hasil AI bukan keputusan resmi.
 - Status persiapan dan status pengajuan adalah dua hal yang terpisah.
+
+## Combined frontend branch
+
+This merge retains the latest main companion-review lifecycle, immutable submissions, family/help modules and evaluations. Local account preferences, session settings, administrative account-access endpoints and the configured chatbot relay are retained. Frontend business API integration is still partial. Account-access endpoints are isolated under src/admin/access; catalog and assignment routes use the main AdminModule. No shared database migration was applied during conflict resolution.

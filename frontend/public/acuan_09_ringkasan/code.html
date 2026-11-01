@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WEB v2 — Ringkasan</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #F5F7FB; color: #172B45; margin: 0; }
+    h1, h2, h3, .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .material-symbols-outlined { font-size: 20px; line-height: 1; vertical-align: middle; }
+    .jmw-progress { display: flex; align-items: flex-start; width: 100%; height: 96px; box-sizing: border-box; padding: 16px 24px; border: 1px solid #DDE5EF; border-radius: 12px; background: #fff; margin: 24px 0; }
+    .jmw-step { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+    .jmw-step:after { content: ""; position: absolute; top: 15px; left: calc(50% + 24px); right: calc(-50% + 24px); height: 2px; background: #DDE5EF; }
+    .jmw-step:last-child:after { display: none; }
+    .jmw-step.is-complete:after { background: #087F68; }
+    .jmw-step-dot { width: 32px; height: 32px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #DDE5EF; border-radius: 50%; background: #fff; color: #52657A; font: 600 14px/20px 'Inter', sans-serif; z-index: 1; }
+    .jmw-step-label { font: 500 14px/20px 'Inter', sans-serif; color: #52657A; white-space: nowrap; }
+    .is-complete .jmw-step-dot { background: #087F68; border-color: #087F68; color: #fff; }
+    .is-complete .jmw-step-label { color: #172B45; }
+    .is-current .jmw-step-dot { background: #1769D2; border-color: #1769D2; color: #fff; box-shadow: 0 0 0 3px #E7F0FF; }
+    .is-current .jmw-step-label { font-weight: 700; color: #172B45; }
+  </style>
+</head>
+<body class="bg-[#F5F7FB]" style="width: 1280px; height: 1000px; overflow: hidden; display: flex; margin: 0; background-color: #F5F7FB;">
+<!-- Left Sidebar (fixed width 240px) -->
+<aside class="w-[240px] h-[1000px] shrink-0 bg-[#142C4B] text-white flex flex-col z-30">
+<!-- Brand Block height 72px -->
+<div class="h-[72px] px-5 flex items-center gap-3 border-b border-[#233F66]">
+<div class="w-8 h-8 rounded bg-[#1769D2] flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-white">fact_check</span>
+</div>
+<div>
+<div class="font-heading font-bold text-base tracking-tight leading-none text-white">JejakMasWowo</div>
+<div class="text-[12px] text-[#A6BCD7] mt-1 leading-none">Layanan warga</div>
+</div>
+</div>
+<!-- Navigation Rows (height 44px, 8px gap, 16px horizontal margin) -->
+<nav class="flex-1 py-4 px-4 space-y-2">
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">search</span>
+<span>Cari Layanan</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-semibold bg-[#1769D2] text-white shadow-sm" href="#">
+<span class="material-symbols-outlined text-white">assignment</span>
+<span>Persiapan Saya</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">send</span>
+<span>Pengajuan Saya</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">notifications</span>
+<span>Notifikasi</span>
+</a>
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">manage_accounts</span>
+<span>Profil &amp; Privasi</span>
+</a>
+</nav>
+<!-- Sidebar Bottom: Keluar & Prototipe · Simulasi -->
+<div class="p-4 border-t border-[#233F66]">
+<a class="h-[44px] px-3 rounded-lg flex items-center gap-3 text-sm font-medium text-[#C3D4EA] hover:bg-[#1E3E66] transition" href="#">
+<span class="material-symbols-outlined text-[#C3D4EA]">logout</span>
+<span>Keluar</span>
+</a>
+<div class="px-3 pt-3 text-[12px] text-[#7E98B9]">Prototipe · Simulasi</div>
+</div>
+</aside>
+<!-- Main Region (starts x240) -->
+<div class="w-[1040px] h-[1000px] flex flex-col min-w-0">
+<!-- Topbar (height 72px, white, border-bottom) -->
+<header class="h-[72px] shrink-0 bg-white border-b border-[#DDE5EF] px-8 flex items-center justify-between z-20">
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-sm text-[#52657A]">
+<span>Persiapan</span>
+<span class="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+<span>Akta Kelahiran</span>
+<span class="material-symbols-outlined text-base text-[#8DA0B6]">chevron_right</span>
+<span class="font-medium text-[#172B45]">Ringkasan</span>
+</div>
+<!-- Right Controls: Location, Bantuan inline, Bell, Avatar -->
+<div class="flex items-center gap-3">
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F7FB] border border-[#DDE5EF] rounded-full text-xs font-medium text-[#52657A]">
+<span class="material-symbols-outlined text-[#52657A] text-[16px]">location_on</span>
+<span>Kota Contoh · Simulasi</span>
+</div>
+<button class="h-9 px-3 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-1.5 transition" type="button">
+<span class="material-symbols-outlined text-[#52657A] text-[18px]">help_outline</span>
+<span>Bantuan</span>
+</button>
+<button class="w-9 h-9 rounded-lg border border-[#DDE5EF] bg-white text-[#52657A] flex items-center justify-center hover:bg-[#F5F7FB] transition" type="button">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<div class="flex items-center gap-2 pl-2 border-l border-[#DDE5EF]">
+<div class="w-8 h-8 rounded-full bg-[#142C4B] text-white flex items-center justify-center font-semibold text-xs">AC</div>
+<span class="text-sm font-semibold text-[#172B45]">Ayu Contoh</span>
+</div>
+</div>
+</header>
+<!-- Page Content (inner margin 32px, bottom padding 96px for action bar) -->
+<main class="w-full" style="flex: 1; min-height: 0; overflow-y: auto; padding: 32px; box-sizing: border-box;">
+<!-- Page-heading block -->
+<div><h1 class="text-[28px] leading-[36px] font-bold text-[#172B45]">Tinjau kesiapan berkas</h1>
+<p class="text-[16px] leading-[24px] text-[#52657A] mt-2">Akta Kelahiran (contoh) · Kota Contoh · Persiapan JMW-DEMO-001</p></div>
+<!-- Preparation Stepper (Step 5 active) -->
+<div class="jmw-progress">
+<!-- 1. Kebutuhan (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Kebutuhan</div>
+</div>
+<!-- 2. Data (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Data</div>
+</div>
+<!-- 3. Dokumen (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Dokumen</div>
+</div>
+<!-- 4. Pemeriksaan (completed) -->
+<div class="jmw-step is-complete">
+<div class="jmw-step-dot">
+<span class="material-symbols-outlined text-white text-[18px]">check</span>
+</div>
+<div class="jmw-step-label">Pemeriksaan</div>
+</div>
+<!-- 5. Ringkasan (current) -->
+<div class="jmw-step is-current">
+<div class="jmw-step-dot">5</div>
+<div class="jmw-step-label">Ringkasan</div>
+</div>
+</div><div class="mb-6 flex items-center gap-3">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#ECF8F3] text-[#087F68] border border-[#C5E8D8]">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+    Berkasmu siap untuk langkah berikutnya
+  </span>
+<span class="text-xs text-[#52657A]">Belum diajukan ke instansi</span>
+</div>
+<!-- Grid: Left Grouped Data/Docs (col-span-7) + Right Next Official Channel Step (col-span-5) -->
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- Left: Compact Grouped Data & Documents (col-span-7) -->
+<div class="col-span-7 space-y-6">
+<!-- Card: Data Persiapan Terangkum -->
+<div class="bg-white border border-[#DDE5EF] rounded-[12px] p-6 space-y-4">
+<div class="flex items-center justify-between pb-3 border-b border-[#DDE5EF]">
+<h2 class="font-heading text-base font-semibold text-[#172B45]">Ringkasan Data Persiapan Mandiri</h2>
+<span class="text-xs font-mono font-semibold text-[#1769D2] bg-[#E7F0FF] px-2 py-0.5 rounded">ID: JMW-DEMO-001</span>
+</div>
+<div class="grid grid-cols-2 gap-y-3 gap-x-4 text-xs">
+<div>
+<span class="text-[#52657A] block">Layanan Pilihan:</span>
+<span class="font-semibold text-sm text-[#172B45]">Akta Kelahiran (contoh)</span>
+</div>
+<div>
+<span class="text-[#52657A] block">Nama Pemohon:</span>
+<span class="font-semibold text-sm text-[#172B45]">Ayu Contoh</span>
+</div>
+<div>
+<span class="text-[#52657A] block">Subjek Pengurusan:</span>
+<span class="font-medium text-[#172B45]">Anak / Anggota Keluarga</span>
+</div>
+<div>
+<span class="text-[#52657A] block">Wilayah Loket:</span>
+<span class="font-medium text-[#172B45]">Kota Contoh (Simulasi)</span>
+</div>
+</div>
+</div>
+<!-- Card: Dokumen yang Telah Diperiksa -->
+<div class="bg-white border border-[#DDE5EF] rounded-[12px] p-6 space-y-4">
+<h2 class="font-heading text-base font-semibold text-[#172B45]">Dokumen Siap Ajukan (3 Berkas)</h2>
+<div class="space-y-3">
+<div class="p-3.5 border border-[#DDE5EF] rounded-lg flex items-center justify-between bg-white">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#087F68] text-[22px]">task</span>
+<div>
+<div class="text-sm font-semibold text-[#172B45]">Surat Keterangan Lahir (Faskes)</div>
+<div class="text-xs text-[#52657A]">surat-kelahiran-contoh.jpg · Ejaan nama telah disesuaikan</div>
+</div>
+</div>
+<span class="text-xs font-medium text-[#087F68] bg-[#ECF8F3] px-2 py-1 rounded">Siap</span>
+</div>
+<div class="p-3.5 border border-[#DDE5EF] rounded-lg flex items-center justify-between bg-white">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#087F68] text-[22px]">task</span>
+<div>
+<div class="text-sm font-semibold text-[#172B45]">Kartu Keluarga (KK) Orang Tua</div>
+<div class="text-xs text-[#52657A]">kartu-keluarga-contoh.pdf · Terbaca jelas 4 sudut</div>
+</div>
+</div>
+<span class="text-xs font-medium text-[#087F68] bg-[#ECF8F3] px-2 py-1 rounded">Siap</span>
+</div>
+<div class="p-3.5 border border-[#DDE5EF] rounded-lg flex items-center justify-between bg-white">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#087F68] text-[22px]">task</span>
+<div>
+<div class="text-sm font-semibold text-[#172B45]">Buku Nikah / Dokumen Pendukung</div>
+<div class="text-xs text-[#52657A]">buku-nikah-contoh.pdf · Salinan legalisir lampiran</div>
+</div>
+</div>
+<span class="text-xs font-medium text-[#087F68] bg-[#ECF8F3] px-2 py-1 rounded">Siap</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Official Channel Next Step (col-span-5) -->
+<div class="col-span-5 space-y-5">
+<!-- Next Step Official Instruction Card -->
+<div class="bg-white border border-[#DDE5EF] rounded-[12px] p-6 space-y-4">
+<h3 class="font-heading text-base font-semibold text-[#172B45] pb-2 border-b border-[#DDE5EF]">
+              Langkah Selanjutnya: Ajukan ke Kanal Resmi
+            </h3>
+<p class="text-xs text-[#52657A] leading-[18px]">
+              Draf berkas mandirimu telah rapi. Silakan serahkan atau unggah ke kanal resmi instansi terkait sesuai arahan berikut:
+            </p>
+<ol class="space-y-3 text-xs text-[#172B45]">
+<li class="flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-[#1769D2] text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
+<span><strong>Buka kanal resmi atau kunjungi loket:</strong> Akses situs Disdukcapil Kota Contoh atau datang langsung ke kantor pelayanan setempat.</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-[#1769D2] text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
+<span><strong>Serahkan berkas fisik atau unggah:</strong> Gunakan susunan berkas yang telah diperiksa agar terhindar dari bolak-balik karena salah eja.</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="w-5 h-5 rounded-full bg-[#1769D2] text-white flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">3</span>
+<span><strong>Catat nomor tanda terima resmi:</strong> Simpan nomor registrasi pengajuan resmi untuk dipantau di JejakMasWowo.</span>
+</li>
+</ol>
+<div class="pt-2">
+<button class="w-full h-[44px] px-4 rounded-lg bg-[#1769D2] text-white text-sm font-semibold hover:bg-[#1257B0] flex items-center justify-center gap-2 shadow-sm transition" type="button">
+<span>Buka petunjuk kanal resmi</span>
+<span class="material-symbols-outlined text-white text-[18px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Pencatatan Mandiri Pengajuan Warga Card -->
+<div class="bg-white border border-[#DDE5EF] rounded-[12px] p-6 space-y-4">
+<h3 class="font-heading text-sm font-semibold text-[#172B45]">Pencatatan Mandiri Pengajuan</h3>
+<p class="text-xs text-[#52657A] leading-[18px]">
+              Setelah menerima bukti tanda terima dari loket atau situs resmi, catat nomor registrasi di sini untuk memantau progres secara teratur:
+            </p>
+<div class="space-y-3">
+<div>
+<label class="block text-xs font-semibold text-[#172B45] mb-1">Nomor Pengajuan Resmi Instansi</label>
+<input class="w-full h-10 px-3 bg-white border border-[#DDE5EF] rounded-lg text-xs text-[#172B45] focus:outline-none focus:border-[#1769D2]" placeholder="misal: REG-2026-DISDUK-0921" type="text"/>
+</div>
+<button class="w-full h-10 px-4 rounded-lg border border-[#DDE5EF] bg-white text-xs font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center justify-center gap-1.5 transition" type="button">
+<span class="material-symbols-outlined text-[#52657A] text-[18px]">bookmark_add</span>
+<span>Simpan Catatan Pengajuan</span>
+</button>
+</div>
+<div class="pt-2 border-t border-[#DDE5EF] text-[11px] text-[#52657A] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[#1769D2] text-[16px]">shield</span>
+<span>Catatan warga — belum terkonfirmasi instansi</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (height 64px, white, border-top, fixed bottom aligned to x240+) -->
+<div class="h-[64px] shrink-0 bg-white border-t border-[#DDE5EF] px-8 flex items-center justify-between z-20">
+<button class="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] flex items-center gap-2 transition" type="button">
+<span class="material-symbols-outlined text-[#52657A]">arrow_back</span>
+<span>Kembali ke Pemeriksaan</span>
+</button>
+<div class="flex items-center gap-3">
+<button class="h-[44px] px-4 rounded-lg border border-[#DDE5EF] bg-white text-sm font-semibold text-[#172B45] hover:bg-[#F5F7FB] transition" type="button">
+          Simpan draf
+        </button>
+<button class="h-[44px] px-4 rounded-lg bg-[#1769D2] text-white text-sm font-semibold hover:bg-[#1257B0] flex items-center gap-2 shadow-sm transition" type="button">
+<span>Buka petunjuk kanal resmi</span>
+<span class="material-symbols-outlined text-white">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</body>
+</html>
