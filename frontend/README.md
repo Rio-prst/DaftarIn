@@ -3,7 +3,7 @@
 Tanggal dokumentasi pengumpulan: **1 November 2026**.
 
 
-React + TypeScript + Vite + Tailwind CSS untuk pendamping persiapan dokumen kependudukan. **Integrasi API belum penuh; gunakan mode demo lokal untuk mencoba alur secara mandiri.**
+React + TypeScript + Vite + Tailwind CSS untuk pendamping persiapan dokumen kependudukan. **Percobaan lokal sementara: mode demo tanpa API dan tanpa chatbot.** API aplikasi sudah terhubung menurut pembaruan pengembang; chatbot AI belum tersambung.
 
 ## Deployment dan status
 
@@ -11,7 +11,7 @@ Frontend: https://daftarin-dusky.vercel.app
 
 Backend: https://daftar-api-eta.vercel.app/api
 
-Backend online terakhir mengembalikan HTTP 500 `FUNCTION_INVOCATION_FAILED`; runtime logs belum tersedia untuk memastikan penyebab. Login API, chatbot, dan fitur yang bergantung pada backend belum dapat dijamin berfungsi. Untuk review mandiri gunakan mode demo lokal, bukan mode API.
+API aplikasi sudah terhubung menurut pembaruan pengembang. Chatbot AI sementara belum tersedia karena koneksi layanan chatbot belum tersambung. Untuk percobaan lokal penilai gunakan mode demo di bawah; tidak perlu key AI atau backend aktif. Status produksi tidak diuji ulang pada pembaruan dokumentasi ini.
 
 ## Prasyarat demo
 
@@ -54,11 +54,9 @@ Mulai dari warga -> pilih layanan -> kebutuhan -> data -> dokumen contoh -> tinj
 
 Demo menyimpan akun/data bisnis di browser melalui localStorage dan IndexedDB. Refresh tidak dimaksudkan menghapus data, tetapi pembersihan perangkat/browser dapat menghapusnya. Jangan menggunakan dokumen pribadi asli. Chatbot membutuhkan backend/provider aktif dan terpisah dari formulir demo.
 
-## Demo dengan chatbot AI lokal
+## Batas demo lokal
 
-Formulir demo dapat dipakai bersama chatbot nyata tanpa mengubah mode menjadi API. Jalankan backend di port 3000 dengan env privat `CHAT_AI_*` yang valid, lalu FE di port 5173 dengan `VITE_AUTH_MODE=demo` dan `VITE_API_URL=/api`. Jangan arahkan FE lokal ke backend Vercel yang masih error.
-
-Lihat [setup lengkap dua terminal, konfigurasi provider, dan pemeriksaan sumber jawaban](../README.md#demo-lokal-lengkap-dengan-chatbot-ai). Chatbot lokal telah memberi respons `source: ai` pada pemeriksaan tambahan lokal. Formulir bisnis tetap demo browser dan akun contoh tetap akun lokal; ini tidak membuktikan integrasi API bisnis penuh.
+Percobaan ini tidak menggunakan API atau chatbot. Seluruh alur bisnis contoh berjalan di browser dengan akun fiktif. Tidak perlu menjalankan backend atau menyiapkan key provider AI. Chatbot AI sementara belum tersambung dan tidak termasuk fitur yang harus dicoba penilai.
 
 ## Mode API
 
@@ -72,7 +70,7 @@ Backend lokal harus aktif di http://127.0.0.1:3000; Vite menyediakan proxy `/api
 
 Login mode API memakai akun server, bukan akun browser lokal. Akun contoh harus disiapkan pada database server; menampilkan tombol contoh tidak membuat akun tersebut. Pembuatan akun cloud belum berhasil pada percobaan terakhir karena kendala sertifikat TLS.
 
-**Sebagian alur FE masih perlu disambungkan/diverifikasi terhadap API. Jangan menganggap data persiapan atau pengajuan tersimpan di server hanya karena login sudah memakai API.**
+**Sebagian alur FE masih perlu disambungkan/diverifikasi terhadap API. Jangan menganggap data mode demo tersimpan di server.**
 
 ## Vercel frontend
 

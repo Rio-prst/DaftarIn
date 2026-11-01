@@ -13,7 +13,7 @@ Alamat API: https://daftar-api-eta.vercel.app/api
 
 Frontend: https://daftarin-dusky.vercel.app
 
-**Backend Vercel belum berhasil berjalan pada pemeriksaan terakhir**: health dan chat/status sama-sama menghasilkan 500 `FUNCTION_INVOCATION_FAILED`. Menunggu runtime logs pemilik project; belum ada penyebab startup yang terkonfirmasi. Build lokal yang berhasil bukan bukti deployment hidup. Untuk penilaian fitur tanpa backend gunakan mode demo frontend pada README utama.
+Menurut pembaruan pengembang, API aplikasi sudah terhubung. Chatbot AI sementara belum tersambung; status ini menggantikan catatan gangguan sebelumnya dan bukan hasil uji ulang deployment menyeluruh. Untuk percobaan lokal penilai gunakan mode demo frontend tanpa API dan tanpa chatbot. Backend dan key AI tidak wajib disiapkan oleh penilai.
 
 ## Instalasi dan menjalankan
 
@@ -67,11 +67,9 @@ Redis/BullMQ bukan prasyarat demo frontend atau relay chatbot. `redis://localhos
 
 Untuk HTTPS publik, gunakan konfigurasi cookie/CORS yang sesuai domain deployment, jangan `COOKIE_DOMAIN=localhost`. Secret tidak boleh masuk frontend atau README. Verifikasi koneksi dan sertifikat TLS database; jangan menonaktifkan verifikasi TLS untuk menutupi error.
 
-## Menyalakan chatbot untuk demo lokal
+## Status chatbot
 
-Ikuti [setup lokal lengkap pada README utama](../README.md#demo-lokal-lengkap-dengan-chatbot-ai). Jalankan backend port 3000, isi key/model pada `CHAT_AI_*` backend, lalu gunakan frontend `VITE_AUTH_MODE=demo` dan `VITE_API_URL=/api`. Relay chatbot tidak membutuhkan Redis/BullMQ dan terpisah dari provider pemeriksaan dokumen.
-
-Status lokal terakhir: `/api/chat/status` HTTP 200 dan percobaan `/api/chat/messages` HTTP 201 dengan `source: ai`. Deployment Vercel terakhir masih gagal dengan HTTP 500; keberhasilan lokal tidak menjamin hosting sudah berhasil.
+Chatbot AI sementara belum tersedia karena koneksi layanan chatbot belum tersambung. Konfigurasi `CHAT_AI_*` adalah referensi pengembang dan tidak menjadi syarat percobaan lokal. Demo penilai memakai frontend mandiri tanpa API atau chatbot; lihat [README utama](../README.md).
 
 ## Akun contoh server
 

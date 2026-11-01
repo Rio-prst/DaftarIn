@@ -5,16 +5,16 @@ Tanggal dokumentasi pengumpulan: **1 November 2026**.
 
 DaftarIn adalah website pendamping persiapan dokumen kependudukan: warga membaca persyaratan, melengkapi data dan berkas, serta menindaklanjuti catatan petugas sebelum memakai kanal resmi instansi. Chatbot membantu penjelasan dan navigasi; penerbitan dokumen tetap menjadi kewenangan instansi.
 
-> **Status: prototipe demo; integrasi API belum penuh.** Ketersediaan endpoint backend tidak berarti semua tombol frontend sudah memakai server. Untuk penilaian alur secara mandiri, gunakan mode demo lokal di bawah.
+> **Status:** API aplikasi sudah terhubung menurut pembaruan pengembang; chatbot AI sementara belum tersambung. Untuk percobaan lokal penilai, gunakan **mode demo tanpa API dan tanpa chatbot**. Ini bukan klaim seluruh alur produksi telah diverifikasi.
 
 ## Tautan deployment untuk penilai
 
 - **Frontend:** https://daftarin-dusky.vercel.app
 - **Backend API:** https://daftar-api-eta.vercel.app/api
 
-Tautan disertakan di sini sebagai pelengkap informasi pengumpulan. **Backend deployment Vercel belum berhasil berjalan pada pemeriksaan terakhir**: endpoint health dan chatbot mengembalikan HTTP 500 `FUNCTION_INVOCATION_FAILED`. Penyebab startup belum dapat dipastikan karena runtime logs hosting belum tersedia. Fitur online yang memerlukan backend, termasuk login API dan chatbot, belum dapat dijamin bekerja. Tidak ada klaim integrasi API penuh atau deployment end-to-end berhasil.
+Tautan disertakan sebagai pelengkap informasi pengumpulan. API aplikasi sudah terhubung menurut pembaruan pengembang. **Chatbot AI sementara belum tersedia karena koneksi layanan chatbot belum tersambung.** Penilai tidak perlu menyiapkan atau menerima key AI. Status terbaru ini menggantikan catatan gangguan backend sebelumnya; deployment belum diuji ulang secara menyeluruh pada pembaruan dokumentasi ini.
 
-**Untuk mencoba alur tanpa bergantung pada kendala hosting, gunakan demo lokal di bawah.** Akun dan data demo berada di browser; mode ini tidak mengirim pengajuan ke pemerintah.
+**Percobaan lokal sementara menggunakan mode demo tanpa API dan tanpa chatbot.** Akun, formulir, berkas contoh, serta tinjauan demo berjalan di browser dan tidak mengirim pengajuan ke pemerintah.
 
 ## Instalasi alat untuk clone dan demo
 
@@ -97,75 +97,13 @@ Buka **Panduan demo** di halaman publik atau top bar ruang kerja. Tombol pengisi
 
 Data bisnis mode demo disimpan di localStorage/IndexedDB browser. Data tidak otomatis tersedia di perangkat lain. Jangan memilih **Keluar dan bersihkan perangkat** sebelum demo selesai karena tindakan itu dapat menghapus data lokal.
 
-## Demo lokal lengkap dengan chatbot AI
+## Batas percobaan lokal sementara
 
-Mode formulir tetap **demo**, sedangkan chatbot memanggil backend lokal. Kegagalan deployment Vercel tidak menghalangi chatbot lokal jika server dan provider lokal dikonfigurasi.
-
-### 1. Terminal backend
-
-Dari root repo:
-
-```sh
-cd backend
-pnpm install
-```
-
-Salin `backend/.env.example` ke **backend/.env** dan isi konfigurasi privat yang valid. Gunakan koneksi database milik lingkungan pengembangan; jangan menyalin placeholder sebagai nilai asli dan jangan menonaktifkan verifikasi TLS jika koneksi ditolak.
-
-Konfigurasi chatbot yang dibaca relay lokal:
-
-```env
-NODE_ENV=development
-PORT=3000
-COOKIE_SECURE=false
-CORS_ORIGIN=http://127.0.0.1:5173,http://127.0.0.1:5174
-
-CHAT_AI_PROVIDER=openai_compatible
-CHAT_AI_BASE_URL=https://atmorouter.dev/v1
-CHAT_AI_API_KEY=ISI_KEY_PRIVAT_ATMOROUTER
-CHAT_AI_MODEL=ISI_MODEL_YANG_TERSEDIA_DI_PROVIDER
-CHAT_AI_FALLBACK_MODEL=ISI_MODEL_CADANGAN_YANG_TERSEDIA
-```
-
-Lengkapi juga variabel backend pada `.env.example` seperti `DATABASE_URL`, `DIRECT_URL`, `JWT_ACCESS_SECRET` dan konfigurasi Supabase Storage yang diperlukan lingkunganmu. Nilai tersebut tidak boleh dimasukkan ke env frontend. Untuk lokal, biarkan `COOKIE_DOMAIN` tidak dipasang agar tidak mencampur domain `localhost` dan `127.0.0.1`.
-
-```sh
-pnpm prisma:generate
-pnpm start:dev
-```
-
-`prisma:generate` hanya membuat client, bukan membuat tabel/akun. Bila memakai database baru, minta pengelola menyiapkan schema yang sesuai. Jangan reset/migrate/seed database bersama sembarangan. Redis/BullMQ tidak diperlukan untuk relay chatbot ini; `AI_PROVIDER=disabled` dan `OCR_PROVIDER=disabled` tidak mematikan chatbot karena konfigurasi chat menggunakan `CHAT_AI_*`.
-
-### 2. Terminal frontend
-
-Buat **frontend/.env.local**:
-
-```env
-VITE_AUTH_MODE=demo
-VITE_API_URL=/api
-VITE_DEMO_HELPERS=true
-```
-
-Kemudian dari root repo pada terminal kedua:
-
-```sh
-cd frontend
-pnpm install
-pnpm dev -- --host 127.0.0.1 --port 5173
-```
-
-Buka **http://127.0.0.1:5173**. Vite meneruskan `/api` ke backend **http://127.0.0.1:3000**. Jangan memakai URL backend Vercel pada env demo lokal ini. Jika port frontend berubah, pastikan origin aktual diizinkan oleh backend. Restart proses yang bersangkutan setelah mengubah env.
-
-### 3. Periksa chatbot dan coba demo
-
-- Buka **http://127.0.0.1:3000/api/chat/status**. `configured: true` berarti konfigurasi provider terbaca, belum membuktikan key/model berhasil dipanggil.
-- Buka tombol **Tanya asisten** di frontend, kirim pertanyaan umum tanpa data pribadi, dan periksa label sumber jawaban.
-- Jawaban berlabel **AI** berasal dari provider. **Panduan lokal** berarti layanan AI tidak berhasil dihubungi; jangan menganggap fallback sebagai keberhasilan integrasi AI.
-- Pada pemeriksaan tambahan terhadap server lokal yang sedang aktif, status mendapat HTTP 200 dan satu pertanyaan contoh mendapat HTTP 201 dengan `source: ai`. Ini bukti pada lingkungan tersebut, bukan jaminan konfigurasi clone baru atau deployment online sama.
-- Lanjutkan urutan demo warga -> petugas -> admin di atas memakai akun contoh lokal. Formulir dan data bisnis demo tetap tersimpan di browser; hanya pertanyaan chatbot yang dikirim ke backend/provider.
-- Chatbot muncul untuk pengunjung/warga, bukan petugas/admin. Gunakan akun warga atau keluar biasa untuk mencobanya.
-
-Jika chatbot belum bekerja: pastikan kedua terminal masih hidup, `VITE_API_URL=/api`, origin sesuai, key/model provider tersedia, lalu lihat log backend tanpa membagikan isi env. Tanpa backend aktif, formulir demo masih dapat dicoba tetapi respons AI tidak tersedia.
+- Gunakan `VITE_AUTH_MODE=demo`. Tidak perlu backend aktif, database, Redis, atau key AI.
+- Chatbot tidak termasuk alur percobaan lokal ini. Respons AI sementara belum tersambung; jangan memakai jawaban panduan lokal sebagai bukti chatbot AI aktif.
+- Data dan akun contoh tersimpan pada browser. Tidak tersinkron ke database cloud atau perangkat lain.
+- Coba layanan -> persiapan -> kirim -> petugas meninjau -> warga memperbaiki -> tinjauan selesai menggunakan peran contoh pada browser yang sama.
+- Pengaturan API/backend di bawah adalah referensi opsional untuk pengembang, bukan prasyarat penilaian demo lokal.
 
 ## Mode API — integrasi parsial
 
@@ -181,7 +119,7 @@ Jalankan backend di port 3000 secara terpisah. Vite meneruskan `/api` ke `http:/
 
 Untuk backend publik, ganti `VITE_API_URL` dengan URL HTTPS backend berakhiran `/api`, tanpa garis miring terakhir. CORS dan cookie backend harus sesuai origin frontend.
 
-**Mode API tidak boleh dianggap membuktikan seluruh alur sudah server-backed.** Auth/akun memiliki jalur API; integrasi persiapan, dokumen, tinjauan, serta menu lain masih perlu verifikasi per fitur. Tampilan berhasil pada demo lokal bukan bukti data masuk database cloud. Akun contoh cloud belum berhasil disiapkan pada percobaan terakhir karena kendala verifikasi sertifikat TLS.
+Bagian ini hanya untuk pengembang yang ingin menghubungkan server. Penilai lokal tidak perlu mengaktifkannya. Tombol contoh tidak otomatis membuat akun server; akun dan schema harus disiapkan oleh pengelola. Verifikasi semua alur server tetap diperlukan sebelum menganggap integrasi produksi selesai.
 
 ## Pemisahan environment
 
@@ -201,14 +139,14 @@ Seluruh `VITE_*` bersifat publik. Jangan menaruh password database, key AI, Supa
 
 ## Progres saat ini
 
-Snapshot pengumpulan 1 November 2026: **backend pada deployment Vercel belum berhasil menyala**. Ini berbeda dari keberhasilan kompilasi kode lokal. Integrasi API belum lengkap dan penyebab error hosting masih menunggu runtime logs. Gunakan mode demo lokal untuk mencoba alur secara mandiri.
+Snapshot pengumpulan 1 November 2026, dengan klarifikasi status terbaru: API aplikasi sudah terhubung menurut pembaruan pengembang. **Chatbot AI sementara belum tersambung.** Jalur percobaan lokal penilai menggunakan demo browser tanpa API atau chatbot; verifikasi menyeluruh produksi belum dinyatakan selesai.
 
 - Halaman landing, katalog, autentikasi, persiapan bertahap, serta ruang warga/petugas/admin telah dikerjakan.
 - Demo alur warga -> tinjauan -> koreksi -> tindak lanjut tersedia dengan data contoh lokal.
 - Backend memiliki modul auth/akun, katalog, persiapan/dokumen, kiriman/revisi, petugas, keluarga, bantuan, notifikasi, admin, dan audit; penyambungan frontend belum menyeluruh.
-- Chatbot memiliki relay backend; respons AI bergantung pada konfigurasi dan ketersediaan provider.
+- Chatbot AI sementara belum tersedia karena koneksi layanan chatbot belum tersambung. Tidak diperlukan untuk demo lokal.
 - Belum ada klaim integrasi langsung SIAK/Dukcapil, penerbitan dokumen pemerintah, atau pemeriksaan OCR/LLM yang selesai end-to-end.
-- Deployment publik, akun cloud, dan alur API menyeluruh masih memerlukan verifikasi. Project belum dinyatakan siap produksi.
+- API aplikasi sudah terhubung menurut pembaruan pengembang; keberhasilan semua alur produksi belum diverifikasi pada pembaruan dokumentasi ini.
 
 ## Struktur dan dokumentasi
 
