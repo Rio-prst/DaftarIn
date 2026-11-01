@@ -5,7 +5,17 @@
 
 export interface RagChunk {
   id: string;
-  category: 'biaya' | 'ejaan_nama' | 'kk' | 'ktp' | 'akta' | 'pindah' | 'foto_berkas' | 'legalitas' | 'jam_layanan';
+  category:
+    | 'biaya'
+    | 'ejaan_nama'
+    | 'kk'
+    | 'ktp'
+    | 'akta'
+    | 'pindah'
+    | 'foto_berkas'
+    | 'legalitas'
+    | 'jam_layanan'
+    | 'kematian';
   topic: string;
   legalBasis: string;
   keywords: string[];
@@ -37,10 +47,10 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'biaya',
     topic: 'Biaya Pengurusan & Larangan Pungutan Liar (Pungli)',
     legalBasis: 'Pasal 79A UU No. 24 Tahun 2013 tentang Perubahan atas UU No. 23 Tahun 2006 tentang Administrasi Kependudukan',
-    keywords: ['biaya', 'tarif', 'bayar', 'gratis', 'uang', 'pungli', 'dana', 'retribusi', 'denda', 'rp 0', 'pembayaran'],
-    summaryAnswer: 'Seluruh pengurusan dokumen kependudukan (KTP-el, Kartu Keluarga, Akta Kelahiran, Surat Pindah) di Indonesia adalah 100% GRATIS (Rp 0). Pejabat atau petugas loket dilarang memungut biaya apapun.',
+    keywords: ['biaya', 'tarif', 'bayar', 'gratis', 'uang', 'pungli', 'dana', 'retribusi', 'denda', 'rp 0', 'pembayaran', 'ongkos'],
+    summaryAnswer: 'Seluruh pengurusan dokumen kependudukan (KTP-el, Kartu Keluarga, Akta Kelahiran, Surat Pindah) di Indonesia adalah 100% GRATIS (Rp 0). Pejabat atau petugas loket dilarang keras memungut biaya atau menerima uang pelicin dalam bentuk apapun.',
     actionChecklist: [
-      'Jangan menyerahkan uang kepada siapapun baik di kelurahan maupun loket Disdukcapil.',
+      'Jangan menyerahkan uang kepada siapapun baik di tingkat RT/RW, kelurahan, maupun loket Disdukcapil.',
       'Jika menemukan pungutan liar, laporkan melalui portal pengaduan resmi SP4N LAPOR! (lapor.go.id) atau Halo Dukcapil (1500537).'
     ],
     suggestedAction: {
@@ -53,12 +63,12 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'ejaan_nama',
     topic: 'Perbedaan Huruf/Ejaan Nama pada KTP, KK, Ijazah, dan Akta',
     legalBasis: 'Permendagri No. 73 Tahun 2022 tentang Pencatatan Nama pada Dokumen Kependudukan (Pasal 4 & 5)',
-    keywords: ['ejaan', 'nama', 'beda', 'huruf', 'salah', 'ijazah', 'akta', 'perbaikan nama', 'ganti nama', 'selisih', 'koreksi'],
-    summaryAnswer: 'Rujukan utama keabsahan nama adalah Akta Kelahiran. Perbedaan penulisan nama antara KTP/KK dengan Ijazah dapat dibetulkan langsung di Disdukcapil tanpa perlu penetapan pengadilan negeri, selama perbaikan nama tidak mengubah identitas mendasar.',
+    keywords: ['ejaan', 'nama', 'beda', 'huruf', 'salah', 'ijazah', 'akta', 'perbaikan nama', 'ganti nama', 'selisih', 'koreksi', 'beda nama'],
+    summaryAnswer: 'Rujukan utama keabsahan nama adalah Akta Kelahiran. Perbedaan penulisan nama antara KTP/KK dengan Ijazah dapat dibetulkan langsung di Disdukcapil tanpa perlu penetapan pengadilan negeri, selama perbaikan nama hanya meluruskan kesalahan tulis administratif dan tidak mengubah identitas mendasar.',
     actionChecklist: [
-      'Bawa fisik Akta Kelahiran asli dan Ijazah sekolah terakhir.',
+      'Bawa fisik Akta Kelahiran asli dan Ijazah sekolah terakhir ke loket Disdukcapil.',
       'Bawa Kartu Keluarga (KK) asli untuk disinkronkan datanya.',
-      'Petugas verifikasi Disdukcapil akan menerbitkan KK dan KTP-el baru dengan nama yang sudah diselaraskan.'
+      'Petugas Disdukcapil akan mencocokkan data dan menerbitkan KK serta KTP-el baru dengan nama yang selaras tanpa sidang pengadilan.'
     ],
     suggestedAction: {
       label: 'Periksa Data Pemohon di Tahap 2',
@@ -68,14 +78,14 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
   {
     id: 'aturan-nama-baru-permendagri73',
     category: 'ejaan_nama',
-    topic: 'Aturan Pemberian Nama Anak Baru Lahir',
-    legalBasis: 'Permendagri No. 73 Tahun 2022 Pasal 4 ayat (2)',
-    keywords: ['nama anak', 'syarat nama', 'panjang nama', 'singkatan nama', 'aturan nama', 'karakter nama'],
-    summaryAnswer: 'Pencatatan nama baru pada dokumen kependudukan wajib memenuhi ketentuan:\n1. Menggunakan minimal 2 (dua) kata.\n2. Maksimal 60 karakter termasuk spasi.\n3. Mudah dibaca, tidak bermakna negatif, dan tidak bertentangan dengan norma agama/kesusilaan.\n4. Tidak boleh menggunakan singkatan (kecuali tidak diartikan lain), angka, atau tanda baca.',
+    topic: 'Aturan Penulisan Nama Baru dan Nama Bayi Lahir',
+    legalBasis: 'Permendagri No. 73 Tahun 2022 Pasal 4 ayat (2) & Pasal 5',
+    keywords: ['nama anak', 'syarat nama', 'panjang nama', 'singkatan nama', 'aturan nama', 'karakter nama', 'nama bayi'],
+    summaryAnswer: 'Pencatatan nama baru pada dokumen kependudukan wajib memenuhi ketentuan:\n1. Menggunakan minimal 2 (dua) kata.\n2. Maksimal 60 karakter termasuk spasi.\n3. Mudah dibaca, tidak bermakna negatif, dan tidak bertentangan dengan norma kesusilaan.\n4. Dilarang menggunakan singkatan (kecuali nama keluarga yang lazim), angka, atau tanda baca.',
     actionChecklist: [
-      'Pastikan nama anak minimal dua suku kata.',
-      'Hindari penulisan gelar kehormatan pada akta kelahiran (hanya nama diri).',
-      'Siapkan Surat Keterangan Lahir dari dokter/bidan RS.'
+      'Pastikan nama anak terdiri dari minimal dua suku kata.',
+      'Hindari penulisan gelar bangsawan/keagamaan pada akta kelahiran (hanya nama diri asli).',
+      'Siapkan Surat Keterangan Lahir dari dokter/bidan penolong persalinan.'
     ],
     suggestedAction: {
       label: 'Lihat Syarat Akta Kelahiran',
@@ -87,12 +97,12 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'kk',
     topic: 'Penerbitan Kartu Keluarga (KK) Baru Pasangan Menikah',
     legalBasis: 'Perpres No. 96 Tahun 2018 tentang Persyaratan dan Tata Cara Pendaftaran Penduduk dan Pencatatan Sipil (Pasal 11)',
-    keywords: ['nikah', 'menikah', 'pengantin', 'buku nikah', 'kk baru', 'pisah kk', 'pecah kk', 'keluarga baru'],
-    summaryAnswer: 'Pasangan yang baru menikah berhak menerbitkan Kartu Keluarga (KK) mandiri yang terpisah dari orang tua.',
+    keywords: ['nikah', 'menikah', 'pengantin', 'buku nikah', 'kk baru', 'pisah kk', 'pecah kk', 'keluarga baru', 'suami istri'],
+    summaryAnswer: 'Pasangan yang baru melangsungkan pernikahan berhak menerbitkan Kartu Keluarga (KK) mandiri yang terpisah dari KK orang tua masing-masing.',
     actionChecklist: [
-      'Buku Nikah / Akta Perkawinan asli dan fotokopi.',
-      'Kartu Keluarga (KK) asli masing-masing orang tua suami dan istri.',
-      'KTP-el suami dan istri untuk pembaruan status kawin dan alamat.'
+      'Buku Nikah / Akta Perkawinan asli dan fotokopi legalisir KUA/Catatan Sipil.',
+      'Kartu Keluarga (KK) asli masing-masing keluarga orang tua suami dan istri.',
+      'KTP-el asli suami dan istri untuk pembaruan status kawin dan alamat domisili.'
     ],
     suggestedAction: {
       label: 'Persiapkan Berkas KK Baru',
@@ -104,13 +114,13 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'kk',
     topic: 'Penambahan Anggota Keluarga Baru (Anak Lahir) ke Dalam KK',
     legalBasis: 'Perpres No. 96 Tahun 2018 Pasal 12 & Permendagri No. 108 Tahun 2019',
-    keywords: ['tambah anak', 'anak lahir', 'masuk kk', 'tambah anggota', 'anggota baru', 'bayi'],
-    summaryAnswer: 'Penambahan anak ke KK dilakukan bersamaan dengan penerbitan Akta Kelahiran dan Kartu Identitas Anak (KIA) secara terpadu.',
+    keywords: ['tambah anak', 'anak lahir', 'masuk kk', 'tambah anggota', 'anggota baru', 'bayi', 'masuk keluarga'],
+    summaryAnswer: 'Penambahan anak ke KK dilakukan bersamaan dengan penerbitan Akta Kelahiran dan Kartu Identitas Anak (KIA) secara paket 3-in-1.',
     actionChecklist: [
-      'Surat Keterangan Kelahiran dari Rumah Sakit, Klinik, atau Bidan penolong.',
-      'Buku Nikah / Akta Perkawinan orang tua.',
+      'Surat Keterangan Kelahiran asli dari Rumah Sakit, Klinik, atau Bidan penolong.',
+      'Buku Nikah / Kutipan Akta Perkawinan orang tua.',
       'Kartu Keluarga (KK) asli orang tua.',
-      'KTP-el kedua orang tua.'
+      'KTP-el kedua orang tua dan formulir permohonan.'
     ],
     suggestedAction: {
       label: 'Lihat Panduan KK & Akta',
@@ -122,12 +132,12 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'ktp',
     topic: 'Penggantian KTP-el Rusak atau Hilang',
     legalBasis: 'Permendagri No. 8 Tahun 2016 tentang Pedoman Penerbitan KTP-el (Pasal 8)',
-    keywords: ['ktp rusak', 'ktp hilang', 'patah', 'chip rusak', 'buram', 'hilang dompet', 'surat polisi', 'ganti ktp'],
-    summaryAnswer: 'Jika KTP-el rusak (patah, terkelupas, chip tidak terbaca): Bawa fisik KTP yang rusak ke kantor Disdukcapil/Kecamatan untuk langsung diganti baru tanpa perlu surat polisi.\nJika KTP-el hilang: Minta Surat Tanda Penerimaan Laporan Kehilangan (STPLK) dari Polsek setempat, lalu bawa bersama fotokopi KK.',
+    keywords: ['ktp rusak', 'ktp hilang', 'patah', 'chip rusak', 'buram', 'hilang dompet', 'surat polisi', 'ganti ktp', 'kehilangan ktp'],
+    summaryAnswer: 'Jika KTP-el rusak (patah, terkelupas, chip tidak terbaca): Bawa fisik KTP yang rusak ke kantor Disdukcapil/Kecamatan untuk langsung dicetak ulang tanpa perlu surat polisi.\nJika KTP-el hilang: Minta Surat Tanda Penerimaan Laporan Kehilangan (STPLK) dari Polsek setempat, lalu bawa bersama fotokopi KK.',
     actionChecklist: [
-      'Untuk KTP Rusak: Bawa fisik KTP rusak + Fotokopi KK.',
-      'Untuk KTP Hilang: Bawa Surat Kehilangan Polsek + Fotokopi KK.',
-      'Tidak perlu perekaman sidik jari/foto ulang kecuali ada perubahan data fisik mendasar.'
+      'Untuk KTP Rusak: Bawa fisik KTP lama yang rusak + Fotokopi KK.',
+      'Untuk KTP Hilang: Bawa Surat Kehilangan dari Polsek terdekat + Fotokopi KK.',
+      'Tidak perlu perekaman sidik jari atau foto ulang selama biometrik iris dan wajah masih aktif di database SIAK.'
     ],
     suggestedAction: {
       label: 'Cek Panduan KTP-el',
@@ -139,12 +149,12 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'pindah',
     topic: 'Pindah Domisili Penduduk (SKPWNI) Tanpa Surat Pengantar RT/RW',
     legalBasis: 'Perpres No. 96 Tahun 2018 Pasal 25 & Permendagri No. 108 Tahun 2019',
-    keywords: ['pindah', 'domisili', 'skpwni', 'antar kota', 'antar provinsi', 'rt rw', 'kelurahan', 'surat pindah', 'surat pengantar'],
-    summaryAnswer: 'Pindah domisili kini TIDAK LAGI MEMERLUKAN surat pengantar RT/RW. Penduduk cukup membawa Kartu Keluarga (KK) ke kantor Disdukcapil daerah asal untuk diterbitkan SKPWNI.',
+    keywords: ['pindah', 'domisili', 'skpwni', 'antar kota', 'antar provinsi', 'rt rw', 'kelurahan', 'surat pindah', 'surat pengantar', 'alamat baru'],
+    summaryAnswer: 'Pindah domisili kini TIDAK LAGI MEMERLUKAN surat pengantar RT/RW maupun SKCK. Penduduk cukup membawa Kartu Keluarga (KK) ke kantor Disdukcapil daerah asal untuk langsung diterbitkan SKPWNI secara digital.',
     actionChecklist: [
       'Kartu Keluarga (KK) asli daerah asal.',
       'KTP-el pemohon dan anggota keluarga yang ikut pindah.',
-      'Alamat tujuan pindah lengkap (RT, RW, Desa/Kelurahan, Kecamatan, Kab/Kota).'
+      'Alamat lengkap tujuan pindah (RT, RW, Desa/Kelurahan, Kecamatan, Kabupaten/Kota, dan Kode Pos).'
     ],
     suggestedAction: {
       label: 'Panduan Pindah Domisili',
@@ -156,11 +166,11 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'foto_berkas',
     topic: 'Ketentuan Fisik Dokumen Kependudukan Ber-barcode (TTE) & Legalisir',
     legalBasis: 'Permendagri No. 109 Tahun 2019 tentang Formulir dan Buku Dokumen Adminduk',
-    keywords: ['barcode', 'tte', 'qr code', 'legalisir', 'kertas hvs', 'a4', 'tanda tangan elektronik', 'cap basah', 'foto berkas'],
-    summaryAnswer: 'Semua dokumen adminduk terbitan terbaru (sejak 2019) menggunakan kertas putih HVS A4 80 gram dengan Tanda Tangan Elektronik (TTE) berupa Barcode QR Code. Dokumen ini SAH secara hukum dan TIDAK PERLU DILEGALISIR LAGI oleh Disdukcapil.',
+    keywords: ['barcode', 'tte', 'qr code', 'legalisir', 'kertas hvs', 'a4', 'tanda tangan elektronik', 'cap basah', 'foto berkas', 'cetak mandiri'],
+    summaryAnswer: 'Semua dokumen adminduk terbitan terbaru (sejak 2019) dicetak menggunakan kertas putih HVS A4 80 gram dengan Tanda Tangan Elektronik (TTE) berupa Barcode QR Code. Dokumen ini SAH secara hukum dan TIDAK PERLU DILEGALISIR LAGI dengan stempel basah oleh Disdukcapil.',
     actionChecklist: [
-      'Pastikan saat memfoto dokumen, barcode QR Code tidak tertutup, tidak terpotong, dan tidak silau.',
-      'Verifikasi keaslian dokumen dapat dipindai menggunakan aplikasi pemindai QR Code di smartphone (terhubung ke situs resmi Dukcapil Kemendagri).'
+      'Pastikan saat memfoto dokumen, barcode QR Code tidak terpotong, tidak blur, dan bebas pantulan cahaya/flash.',
+      'Keaslian dokumen dapat diverifikasi instan dengan memindai QR Code via smartphone menuju server resmi Kemendagri.'
     ],
     suggestedAction: {
       label: 'Unggah Berkas ke DaftarIn',
@@ -172,15 +182,51 @@ export const ADMINDUK_KNOWLEDGE_CORPUS: RagChunk[] = [
     category: 'jam_layanan',
     topic: 'Standar Waktu Penyelesaian Dokumen & Jam Operasional Loket',
     legalBasis: 'Permendagri No. 19 Tahun 2018 tentang Peningkatan Kualitas Layanan Adminduk',
-    keywords: ['jam', 'waktu', 'buka', 'tutup', 'kantor', 'loket', 'hari kerja', 'berapa hari', 'durasi', 'jadwal'],
-    summaryAnswer: 'Standar Pelayanan Minimal (SPM) penerbitan dokumen digital adalah 1 hingga 3 hari kerja setelah berkas dinyatakan lengkap oleh petugas verifikasi. Jam pelayanan loket fisik di kelurahan dan Disdukcapil umumnya buka Senin–Jumat pukul 08.00–15.00 WIB.',
+    keywords: ['jam', 'waktu', 'buka', 'tutup', 'kantor', 'loket', 'hari kerja', 'berapa hari', 'durasi', 'jadwal', 'operasional'],
+    summaryAnswer: 'Standar Pelayanan Minimal (SPM) penerbitan dokumen kependudukan digital adalah 1 hingga maksimal 3 hari kerja setelah seluruh berkas dinyatakan lengkap oleh petugas verifikasi. Loket fisik kelurahan/Disdukcapil umumnya buka Senin–Jumat pukul 08.00–15.00 WIB.',
     actionChecklist: [
-      'Gunakan DaftarIn untuk pra-verifikasi berkas Anda 24 jam sebelum datang ke kantor kelurahan.',
-      'Bawa struk bukti persiapan berkas untuk mempercepat giliran pemeriksaan loket.'
+      'Gunakan DaftarIn untuk pra-verifikasi berkas Anda 24 jam sebelum datang ke kantor pelayanan.',
+      'Tunjukkan nomor persiapan berkas digital Anda ke petugas untuk jalur percepatan verifikasi loket.'
     ],
     suggestedAction: {
       label: 'Cek Status Pelacakan',
       route: '/pelacakan'
+    }
+  },
+  {
+    id: 'akta-kelahiran-sptjm-permendagri108',
+    category: 'akta',
+    topic: 'Penerbitan Akta Kelahiran Anak & Akta Kelahiran Terlambat',
+    legalBasis: 'Permendagri No. 108 Tahun 2019 tentang Petunjuk Pelaksanaan Perpres No. 96 Tahun 2018',
+    keywords: ['akta kelahiran', 'akta lahir', 'sptjm', 'akta terlambat', 'buku nikah hilang', 'surat lahir hilang', 'bikin akta'],
+    summaryAnswer: 'Penerbitan akta kelahiran yang terlambat bertahun-tahun TIDAK DIKENAKAN DENDA. Jika surat keterangan lahir hilang atau buku nikah orang tua tidak ada, warga dapat menggunakan Surat Pernyataan Tanggung Jawab Mutlak (SPTJM) Kebenaran Data Kelahiran atau Pasutri bermaterai Rp 10.000.',
+    actionChecklist: [
+      'Surat Keterangan Kelahiran asli dari penolong persalinan (atau form SPTJM jika tidak ada).',
+      'Buku Nikah / Akta Perkawinan orang tua (atau SPTJM Pasangan Suami Istri jika tidak tercatat).',
+      'Kartu Keluarga (KK) dan KTP-el kedua orang tua.',
+      'KTP-el 2 (dua) orang saksi kelahiran (hanya data NIK).'
+    ],
+    suggestedAction: {
+      label: 'Lihat Panduan Akta Kelahiran',
+      route: '/layanan/3'
+    }
+  },
+  {
+    id: 'akta-kematian-penonaktifan-nik',
+    category: 'kematian',
+    topic: 'Penerbitan Akta Kematian & Penonaktifan NIK Almarhum',
+    legalBasis: 'UU No. 24 Tahun 2013 Pasal 44 & Permendagri No. 108 Tahun 2019',
+    keywords: ['kematian', 'akta kematian', 'meninggal', 'wafat', 'surat kematian', 'hapus nik', 'tutup kk'],
+    summaryAnswer: 'Pelaporan kematian penting untuk penonaktifan NIK almarhum di database nasional agar data kependudukan valid (mencegah penyalahgunaan bansos/pemilu) dan memperbarui Kartu Keluarga bagi ahli waris yang ditinggalkan.',
+    actionChecklist: [
+      'Surat Kematian asli dari Rumah Sakit / Puskesmas atau Surat Pengantar Kematian dari Kelurahan.',
+      'Kartu Keluarga (KK) asli yang memuat nama almarhum.',
+      'KTP-el asli almarhum/almarhumah untuk ditarik dan dinonaktifkan.',
+      'KTP-el pemohon/ahli waris pelapor.'
+    ],
+    suggestedAction: {
+      label: 'Lihat Panduan Layanan Kependudukan',
+      route: '/layanan'
     }
   }
 ];
@@ -202,7 +248,7 @@ export function retrieveAdmindukKnowledge(userQuery: string, activeServiceId?: n
     .split(/[\s,?.!-]+/)
     .filter(t => t.length > 2 && !STOPWORDS.has(t));
 
-  let ranked = ADMINDUK_KNOWLEDGE_CORPUS.map(chunk => {
+  const ranked = ADMINDUK_KNOWLEDGE_CORPUS.map(chunk => {
     let score = 0;
 
     // 1. Title / Topic Match
@@ -257,4 +303,24 @@ export function retrieveAdmindukKnowledge(userQuery: string, activeServiceId?: n
     actionSteps,
     quickAction: best.suggestedAction
   };
+}
+
+/**
+ * Format chunk hasil retrieval RAG menjadi konteks sistem untuk LLM
+ */
+export function formatRagContextForPrompt(ragResult: RagResult): string {
+  if (!ragResult.matchedChunks || ragResult.matchedChunks.length === 0) {
+    return 'Tidak ada konteks spesifik dari korpus regulasi.';
+  }
+
+  return ragResult.matchedChunks
+    .map((chunk, idx) => {
+      return `[DOKUMEN REGULASI ${idx + 1}]
+Topik: ${chunk.topic}
+Dasar Hukum: ${chunk.legalBasis}
+Ringkasan Aturan: ${chunk.summaryAnswer}
+Langkah Tindakan Warga:
+${chunk.actionChecklist.map((step) => ` - ${step}`).join('\n')}`;
+    })
+    .join('\n\n');
 }

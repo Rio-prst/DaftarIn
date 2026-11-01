@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { retrieveAdmindukKnowledge, type RagResult } from "../utils/admindukRag";
+import {
+  askAdmindukRag,
+  getAiConfig,
+  isAiConfigured,
+} from "../utils/aiService";
 
 interface Message {
   id: string;
@@ -13,6 +17,7 @@ interface Message {
     label: string;
     route: string;
   };
+  source?: "ai_gemini" | "ai_openai" | "local_rag";
   time: string;
 }
 
@@ -28,9 +33,16 @@ export const ChatbotModal: React.FC<{
   const [seniorFontMode, setSeniorFontMode] = useState<boolean>(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
-  const currentService = services.find((s) => s.id === activePreparation?.serviceId);
+  const currentService = services.find(
+    (s) => s.id === activePreparation?.serviceId,
+  );
+  const aiConfig = getAiConfig();
+  const aiReady = isAiConfigured();
 
-  const greetingName = user?.name && user.name !== "Pengunjung" ? `Bapak/Ibu ${user.name.split(" ")[0]}` : "Bapak/Ibu";
+  const greetingName =
+    user?.name && user.name !== "Pengunjung"
+      ? `Bapak/Ibu ${user.name.split(" ")[0]}`
+      : "Bapak/Ibu";
 
   const initialGreeting = currentService
     ? `Halo ${greetingName}! Saya Asisten Regulasi Kependudukan DaftarIn. Saya melihat Anda sedang menyiapkan pengurusan ${currentService.name}. Silakan tanyakan hal seputar syarat berkas fisik, perbedaan ejaan nama, atau biaya resmi.`
@@ -45,6 +57,7 @@ export const ChatbotModal: React.FC<{
         "UU No. 24 Tahun 2013 Pasal 79A (Pelayanan Adminduk Bebas Biaya Rp 0)",
         "Permendagri No. 109 Tahun 2019 (Dokumen Kependudukan Ber-barcode TTE Sah)",
       ],
+      source: "local_rag",
       time: "Baru saja",
     },
   ]);
@@ -123,7 +136,7 @@ export const ChatbotModal: React.FC<{
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSendPrompt = (text: string) => {
+  const handleSendPrompt = async (text: string) => {
     if (!text.trim() || isTyping) return;
     const userQuery = text.trim();
     setInput("");
@@ -133,38 +146,66 @@ export const ChatbotModal: React.FC<{
       minute: "2-digit",
     });
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        sender: "user",
-        text: userQuery,
-        time: now,
-      },
-    ]);
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      sender: "user",
+      text: userQuery,
+      time: now,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Jalankan Mesin RAG Semantik Kependudukan
-    setTimeout(() => {
-      const ragResult: RagResult = retrieveAdmindukKnowledge(userQuery, activePreparation?.serviceId);
+    try {
+      const ragResult = await askAdmindukRag({
+        query: userQuery,
+        activeServiceId: activePreparation?.serviceId,
+        activeServiceName: currentService?.name,
+        conditionLabel: activePreparation?.conditionKey,
+        formData: activePreparation?.formData,
+        previousMessages: messages.map((m) => ({
+          sender: m.sender,
+          text: m.text,
+        })),
+      });
 
       setMessages((prev) => [
         ...prev,
         {
           id: `bot-${Date.now()}`,
           sender: "bot",
-          text: ragResult.synthesizedAnswer,
+          text: ragResult.text,
           legalCitations: ragResult.legalCitations,
           actionSteps: ragResult.actionSteps,
           quickAction: ragResult.quickAction,
+          source: ragResult.source,
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
         },
       ]);
+    } catch (err) {
+      console.error("[ChatbotModal] Error getting response:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          sender: "bot",
+          text: "Mohon maaf, terjadi kendala saat memproses jawaban. Silakan ajukan pertanyaan kembali atau pilih pertanyaan cepat di bawah.",
+          legalCitations: [
+            "UU No. 24 Tahun 2013 tentang Administrasi Kependudukan",
+          ],
+          source: "local_rag",
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 400);
+    }
   };
 
   const handleActionClick = (route: string) => {
@@ -177,6 +218,7 @@ export const ChatbotModal: React.FC<{
     "Ejaan nama di KTP dan Akta berbeda?",
     "Syarat memperbarui Kartu Keluarga",
     "KTP rusak atau hilang bagaimana?",
+    "Pindah domisili apakah butuh RT/RW?",
   ];
 
   return (
@@ -204,9 +246,22 @@ export const ChatbotModal: React.FC<{
                 >
                   Asisten Regulasi Warga
                 </h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  RAG Kemendagri
-                </span>
+                {aiReady ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                    title={`Model AI: ${aiConfig.provider.toUpperCase()} (${aiConfig.provider === "gemini" ? aiConfig.geminiModel : aiConfig.openaiModel})`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    AI RAG ({aiConfig.provider.toUpperCase()})
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30"
+                    title="Menggunakan pencarian semantik regulasi lokal. Masukkan API Key di .env untuk mengaktifkan AI generatif."
+                  >
+                    RAG Regulasi Lokal
+                  </span>
+                )}
               </div>
               <p className="text-[13px] text-[#C2D8F2] mt-0.5 font-medium">
                 Pencarian Semantik Regulasi UU &amp; Standar Disdukcapil RI
@@ -236,7 +291,9 @@ export const ChatbotModal: React.FC<{
               onClick={onClose}
               className="w-9 h-9 rounded-xl hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-white/90 hover:text-white transition-colors"
             >
-              <span className="material-symbols-outlined text-[22px]">close</span>
+              <span className="material-symbols-outlined text-[22px]">
+                close
+              </span>
             </button>
           </div>
         </div>
@@ -272,7 +329,11 @@ export const ChatbotModal: React.FC<{
                           ? "bg-amber-100 text-amber-700 animate-pulse"
                           : "text-slate-400 hover:text-[#1769D2] hover:bg-slate-100"
                       }`}
-                      title={speakingMsgId === m.id ? "Hentikan suara" : "Dengarkan pesan suara"}
+                      title={
+                        speakingMsgId === m.id
+                          ? "Hentikan suara"
+                          : "Dengarkan pesan suara"
+                      }
                     >
                       <span className="material-symbols-outlined text-[18px]">
                         {speakingMsgId === m.id ? "volume_off" : "volume_up"}
@@ -290,7 +351,9 @@ export const ChatbotModal: React.FC<{
                     <ul className="space-y-1.5 text-[13px] sm:text-[14px] text-slate-700">
                       {m.actionSteps.map((step, idx) => (
                         <li key={idx} className="flex items-start gap-1.5">
-                          <span className="text-emerald-600 font-bold shrink-0 mt-0.5">✓</span>
+                          <span className="text-emerald-600 font-bold shrink-0 mt-0.5">
+                            ✓
+                          </span>
                           <span>{step}</span>
                         </li>
                       ))}
@@ -309,7 +372,9 @@ export const ChatbotModal: React.FC<{
                     </span>
                     <ul className="list-disc list-inside space-y-0.5">
                       {m.legalCitations.map((s, idx) => (
-                        <li key={idx} className="italic text-slate-700">{s}</li>
+                        <li key={idx} className="italic text-slate-700">
+                          {s}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -324,29 +389,47 @@ export const ChatbotModal: React.FC<{
                       className="w-full py-2.5 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1769D2] font-semibold text-[13px] sm:text-[14px] flex items-center justify-center gap-1.5 border border-blue-200 transition-all active:scale-98 shadow-2xs"
                     >
                       <span>{m.quickAction.label}</span>
-                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      <span className="material-symbols-outlined text-[16px]">
+                        arrow_forward
+                      </span>
                     </button>
                   </div>
                 )}
               </div>
-              <span className="text-[12px] text-slate-500 mt-1 px-1 font-medium">
-                {m.time}
-              </span>
+              <div className="flex items-center gap-2 mt-1 px-1">
+                <span className="text-[12px] text-slate-500 font-medium">
+                  {m.time}
+                </span>
+                {m.sender === "bot" && m.source && (
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                    •{" "}
+                    {m.source === "ai_gemini"
+                      ? "Gemini AI"
+                      : m.source === "ai_openai"
+                        ? "OpenAI"
+                        : "Korpus Lokal"}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
 
           {isTyping && (
-            <div className="flex items-center gap-2 text-slate-600 bg-white border border-slate-200 rounded-xl px-4 py-2.5 w-fit text-[14px]">
+            <div className="flex items-center gap-2 text-slate-600 bg-white border border-slate-200 rounded-xl px-4 py-2.5 w-fit text-[14px] shadow-2xs animate-pulse">
               <span className="material-symbols-outlined text-[18px] animate-spin text-[#1769D2]">
                 sync
               </span>
-              <span>Menelusuri database regulasi resmi RI…</span>
+              <span>
+                {aiReady
+                  ? "Menghubungkan RAG Regulasi & AI Kependudukan…"
+                  : "Menelusuri korpus regulasi resmi RI…"}
+              </span>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggestion Chips (TIDAK ADA SCROLLBAR WINDOWS JELEK LAGI) */}
+        {/* Quick Suggestion Chips */}
         <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 overflow-x-auto flex gap-2 no-scrollbar">
           {quickPrompts.map((q, idx) => (
             <button
@@ -382,7 +465,9 @@ export const ChatbotModal: React.FC<{
               className="h-[48px] px-5 rounded-xl bg-[#1769D2] hover:bg-[#1255AC] active:scale-95 text-white font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
               aria-label="Kirim pertanyaan"
             >
-              <span className="material-symbols-outlined text-[20px]">send</span>
+              <span className="material-symbols-outlined text-[20px]">
+                send
+              </span>
               <span className="hidden sm:inline text-[15px]">Tanya</span>
             </button>
           </form>

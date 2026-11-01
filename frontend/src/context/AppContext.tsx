@@ -7,7 +7,8 @@ import React, {
   useRef,
 } from "react";
 import { isDocumentContentAvailable } from "../components/DocumentPreviewModal";
-import { subscribeFileStorage } from "../utils/fileStorage";
+import { getStoredFileBlob, subscribeFileStorage } from "../utils/fileStorage";
+import { inspectDocumentWithAi, isAiConfigured } from "../utils/aiService";
 import {
   computeDataSignature,
   computeDocSignature,
@@ -2955,14 +2956,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           );
 
           timers.current.push(
-            setTimeout(() => {
+            setTimeout(async () => {
               if (inFlightRunsRef.current[prepId] !== runId) {
                 return;
               }
-              delete inFlightRunsRef.current[prepId];
-              setScanningPrepIds((prev) =>
-                prev.filter((item) => item !== prepId),
-              );
 
               const evaluation = evaluatePreparationDraft({
                 preparationId: prepId,
@@ -2974,6 +2971,58 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                 adminRules: capturedRules,
                 dataVersion: capturedDataVersion,
               });
+
+              // Pemeriksaan AI Vision pada berkas dokumen asli unggahan warga
+              if (isAiConfigured()) {
+                const userUploadedDocs = capturedDocs.filter(
+                  (d) => d.status === "TERUNGGAH" && d.qualityPreset === "user_file",
+                );
+                if (userUploadedDocs.length > 0) {
+                  if (!evaluation.evaluatedScopes.includes("analisis_isi_dokumen")) {
+                    evaluation.evaluatedScopes.push("analisis_isi_dokumen");
+                  }
+
+                  for (const doc of userUploadedDocs) {
+                    try {
+                      const blob = await getStoredFileBlob(doc.previewKey);
+                      const aiFinding = await inspectDocumentWithAi({
+                        slotId: doc.id,
+                        slotName: doc.name,
+                        conditionLabel: getSelectedConditionOption(
+                          capturedService,
+                          capturedConditionKey,
+                        ).label,
+                        fileName: doc.fileName,
+                        fileType: doc.fileType,
+                        blob,
+                        formData: capturedFormData,
+                        serviceId: capturedService.id,
+                        dataVersion: capturedDataVersion,
+                        documentVersion: doc.version || 1,
+                        ruleVersion: `v${capturedService.version || 1}`,
+                      });
+
+                      const existingIdx = evaluation.findings.findIndex(
+                        (f) =>
+                          f.docTarget === doc.id &&
+                          f.scope === "analisis_isi_dokumen",
+                      );
+                      if (existingIdx !== -1) {
+                        evaluation.findings[existingIdx] = aiFinding;
+                      } else {
+                        evaluation.findings.push(aiFinding);
+                      }
+                    } catch (aiErr) {
+                      console.warn(`[AI Vision] Gagal memeriksa ${doc.fileName}:`, aiErr);
+                    }
+                  }
+                }
+              }
+
+              delete inFlightRunsRef.current[prepId];
+              setScanningPrepIds((prev) =>
+                prev.filter((item) => item !== prepId),
+              );
 
               const now = formatNow();
               const snapshot: InspectionSnapshot = {
