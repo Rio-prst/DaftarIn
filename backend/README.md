@@ -2,7 +2,7 @@
 
 Backend API untuk **DaftarIn**, aplikasi persiapan dan pemantauan pengajuan layanan publik. Backend ini menangani katalog layanan, persiapan warga, pemeriksaan dokumen, status pengajuan, notifikasi, dan audit.
 
-Status saat ini: fondasi NestJS dan dependensi sudah disiapkan. Schema Prisma, konfigurasi environment, dan modul fitur belum diimplementasikan.
+Status saat ini: fondasi NestJS, auth, health endpoint, dan katalog baca publik sudah diimplementasikan. Modul persiapan, dokumen, dan pemeriksaan belum diimplementasikan.
 
 ## Stack
 
@@ -87,14 +87,15 @@ Backend berjalan di `http://localhost:3000`. Base path API yang direncanakan ada
 
 ## Prisma
 
-Schema Prisma dan migrasi belum dibuat. Setelah `prisma/schema.prisma` dan `prisma7.config.ts` tersedia:
+Schema Prisma dan migrasi sudah tersedia:
 
 ```bash
 pnpm prisma:generate
 pnpm prisma:migrate
+pnpm prisma:seed
 ```
 
-Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat = "cjs"`. Lihat [`docs/architecture.md`](docs/architecture.md) bagian 11 sebelum mengubah konfigurasi database.
+Seed mengisi data katalog dummy untuk pengembangan. Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat = "cjs"`. Lihat [`docs/architecture.md`](docs/architecture.md) bagian 11 sebelum mengubah konfigurasi database.
 
 ## Test
 
@@ -102,20 +103,21 @@ Prisma 7 memakai generated client di `src/generated/prisma` dengan `moduleFormat
 # unit test
 pnpm test
 
-# e2e test
-pnpm test:e2e
+# integration test repository
+pnpm test:integration
 
 # coverage
 pnpm test:cov
 ```
 
-Test integrasi repository akan memakai database test terpisah melalui `DATABASE_URL_TEST` dan script `test:integration` setelah setup Prisma selesai.
+Integration test repository memakai koneksi database melalui `DATABASE_URL_TEST`.
 
 ## Struktur proyek
 
 ```text
 backend/
 ├── src/                 # bootstrap Nest dan modul fitur
+├── prisma/              # schema, migrations, dan seed
 ├── test/                # konfigurasi e2e
 ├── docs/                # PRD, ERD, aturan bisnis, arsitektur
 ├── docker-compose.yml   # Redis untuk BullMQ

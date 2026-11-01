@@ -704,12 +704,14 @@ Response `201`:
       "roles": ["citizen"],
       "status": "active"
     },
-    "verification_required": true
+    "verification_required": false
   }
 }
 ```
 
 Validasi: email valid, password memenuhi kebijakan keamanan, email unik. Password tidak pernah dikembalikan. Jangan menerima `role`, `is_admin`, atau `is_officer` dari request.
+
+Catatan baseline: verifikasi email ditunda. Registrasi membuat akun `active` dengan `email_verified: false` dan `verification_required: false`. Saat verifikasi email diaktifkan, kontrak ini berubah menjadi `verification_required: true`.
 
 ### 6.2 `POST /auth/login`
 
@@ -847,6 +849,7 @@ Response `200`:
       "region": { "id": "uuid", "name": "Kota Contoh" },
       "category": { "id": "uuid", "name": "Kategori" },
       "publication_status": "published",
+      "current_guide_version": 3,
       "source_health": "available",
       "reviewed_at": "2026-10-20T00:00:00Z"
     }
@@ -856,6 +859,8 @@ Response `200`:
 ```
 
 Jangan mengembalikan layanan dari wilayah lain seolah berlaku di wilayah yang dipilih. Jika hasil kosong, kembalikan array kosong dengan metadata valid, bukan error.
+
+Catatan implementasi MVP: `category.id` dan `category.name` sama-sama memakai nilai `Service.category` karena tabel kategori belum tersedia. Filter `category_id` memakai nilai tersebut secara case-insensitive. `source_health` diturunkan dari status sumber resmi pada guide version aktif, dengan prioritas `conflicting`, `unavailable`, `needs_review`, `unknown`, lalu `available`.
 
 ### 7.3 `GET /services/{serviceId}`
 
@@ -970,7 +975,7 @@ Perubahan jawaban harus menghasilkan kebutuhan terbaru dan menunjukkan perubahan
 
 ### 7.7 `GET /services/{serviceId}/sources`
 
-Response `200`: daftar sumber beserta `title`, `publisher`, `url`, `published_at`, `accessed_at`, `source_status`, dan informasi bagian panduan yang didukungnya.
+Response `200`: daftar sumber beserta `title`, `publisher`, `url`, `published_at`, `accessed_at`, `source_status`, dan informasi bagian panduan yang didukungnya. Implementasi MVP memakai field `supports` berisi `guide_section_id`, `title`, dan `claim_or_field`.
 
 ---
 
