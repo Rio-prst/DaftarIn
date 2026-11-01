@@ -30,7 +30,9 @@ export class StorageController {
     @Res() res: ExpressResponse,
   ) {
     if (!key) {
-      return res.status(HttpStatus.BAD_REQUEST).send('Parameter key wajib diisi.');
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .send('Parameter key wajib diisi.');
     }
     if (!key.startsWith(`users/${user.id}/`)) {
       throw new ForbiddenException('Anda tidak memiliki akses ke berkas ini.');
@@ -52,6 +54,8 @@ export class StorageController {
       return res.status(HttpStatus.OK).send(buffer);
     }
 
-    return res.status(HttpStatus.NOT_FOUND).send('Penyimpanan lokal tidak aktif.');
+    return res
+      .status(HttpStatus.NOT_FOUND)
+      .send('Penyimpanan lokal tidak aktif.');
   }
 }

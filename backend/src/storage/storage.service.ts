@@ -165,7 +165,8 @@ export class StorageService implements IStorageService {
   }
 
   getLocalFile(storageKey: string): { buffer: Buffer; filePath: string } {
-    if (this.client) throw new NotFoundException('Penyimpanan lokal tidak aktif.');
+    if (this.client)
+      throw new NotFoundException('Penyimpanan lokal tidak aktif.');
     const filePath = this.resolveLocalPath(storageKey);
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException('Berkas tidak ditemukan.');
@@ -176,7 +177,11 @@ export class StorageService implements IStorageService {
     };
   }
   private resolveLocalPath(storageKey: string): string {
-    if (!storageKey || storageKey.includes('\\') || storageKey.split('/').some(part => part === '..' || part === '.')) {
+    if (
+      !storageKey ||
+      storageKey.includes('\\') ||
+      storageKey.split('/').some((part) => part === '..' || part === '.')
+    ) {
       throw new NotFoundException('Akses berkas tidak sah.');
     }
     const filePath = path.resolve(this.localBaseDir, storageKey);

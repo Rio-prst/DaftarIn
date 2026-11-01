@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
+import { setupSwagger } from './setup-swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
@@ -13,7 +14,7 @@ async function bootstrap(): Promise<void> {
     .filter(Boolean);
 
   app.setGlobalPrefix('api');
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
   app.use((request: Request, response: Response, next: NextFunction) => {
     const requestId = request.header('x-request-id') ?? randomUUID();
@@ -41,6 +42,8 @@ async function bootstrap(): Promise<void> {
     origin: corsOrigins,
     credentials: true,
   });
+
+  setupSwagger(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }

@@ -7,7 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "account:create-admin": "node scripts/create-admin.cjs --create-admin",
-    "build": "nest build",
+    "build": "prisma generate && nest build",
+    "vercel-build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
