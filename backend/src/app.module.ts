@@ -10,9 +10,11 @@ import { CatalogModule } from './catalog/catalog.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { DocumentsModule } from './documents/documents.module';
 import { NeedsModule } from './needs/needs.module';
 import { PreparationsModule } from './preparations/preparations.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -26,10 +28,12 @@ import { PrismaModule } from './prisma/prisma.module';
       },
     ]),
     PrismaModule,
+    StorageModule,
     AuthModule,
     CatalogModule,
     NeedsModule,
     PreparationsModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [
