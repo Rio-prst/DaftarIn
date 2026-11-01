@@ -344,10 +344,27 @@ model User {
   auditEvents AuditEvent[]
   userCorrections UserCorrection[]
   assignedUserRoles UserRole[] @relation("UserRoleAssignedBy")
+  refreshSessions RefreshSession[]
 
   @@unique([email])
   @@index([accountStatus, updatedAt])
   @@map("users")
+}
+
+model RefreshSession {
+  id String @id @db.Uuid @default(uuid())
+  userId String @db.Uuid
+  tokenHash String @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  replacedBySessionId String? @db.Uuid
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("refresh_sessions")
 }
 
 model Role {

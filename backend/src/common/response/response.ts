@@ -4,20 +4,10 @@ export type ResponseMeta = {
 };
 
 export class Response<T = unknown> {
-  readonly status: string;
-  readonly data?: T;
+  readonly data: T;
   readonly meta?: ResponseMeta;
 
-  constructor({
-    status,
-    data,
-    meta,
-  }: {
-    status: string;
-    data?: T;
-    meta?: ResponseMeta;
-  }) {
-    this.status = status;
+  constructor({ data, meta }: { data: T; meta?: ResponseMeta }) {
     this.data = data;
     this.meta = meta;
   }

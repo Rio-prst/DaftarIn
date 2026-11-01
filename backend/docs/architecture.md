@@ -153,8 +153,8 @@ src/<module>/
 │   ├── update-<entity>.dto.ts
 │   └── delete-<entity>.dto.ts
 ├── interfaces/
-│   ├── repository.interface.ts      # kontrak repository + Symbol token
-│   └── service.interface.ts         # kontrak service
+│   ├── auth.repository.interface.ts # kontrak repository + Symbol token
+│   └── auth.service.interface.ts    # kontrak service
 ├── <entity>.repository.ts
 ├── <domain>.service.ts
 ├── <domain>.controller.ts
@@ -244,6 +244,8 @@ Pemilik data:
 6. Access token dikirim sebagai cookie `httpOnly`; refresh token juga cookie `httpOnly`.
 7. Refresh merotasi token: sesi lama dicabut, sesi baru dibuat. Reuse token lama ditolak.
 8. Logout mencabut sesi refresh dan menghapus cookie.
+
+Catatan baseline: verifikasi email ditunda. Registrasi membuat `User.accountStatus = ACTIVE`, `emailVerifiedAt = null`, dan response `verification_required: false`. Kolom `emailVerifiedAt`, enum `PENDING_VERIFICATION`, dan tabel `RefreshSession` tetap dipertahankan agar verifikasi email dapat ditambahkan nanti tanpa mengubah alur auth inti.
 
 JWT hanya memuat `sub`, `role`, `session_id`, dan waktu. Jangan menaruh email, nama, dokumen, atau data sensitif di JWT.
 
@@ -461,7 +463,7 @@ generator client {
 ### 12.3 Otorisasi
 
 - `JwtAuthGuard` dipasang global; endpoint publik diberi `@Public()`.
-- `RolesGuard` memeriksa role dari token dan data role aktif.
+- `RolesGuard` memeriksa role dari access token; role aktif divalidasi saat sesi dibuat/dirotasi.
 - Service memeriksa kepemilikan untuk setiap GET/PATCH/DELETE resource privat.
 - Petugas hanya dapat membuka pengajuan dengan `OfficerAssignment` aktif.
 - Admin tidak otomatis boleh membaca isi dokumen pribadi; akses admin ke konten harus eksplisit dan diaudit.
@@ -635,7 +637,7 @@ pnpm test:e2e
 pnpm build
 ```
 
-Script `test:integration` perlu ditambahkan ke `package.json` saat setup Prisma/test selesai.
+Script `test:integration` tersedia di `package.json` dan menjalankan file `*integration-spec.ts` terhadap database test.
 
 ---
 
@@ -703,7 +705,7 @@ Sebuah modul dianggap selesai jika:
 
 - `API-Contract.md` masih memakai ilustrasi bearer; implementasi memakai cookie.
 - PRD masih memuat nama lama produk di sebagian teks; nama teknis yang dipakai adalah DaftarIn.
-- ERD belum memuat tabel idempotensi dan `RefreshSession`.
+- ERD belum memuat tabel idempotensi.
 - Nama file `Bussines-Rules.md` dipertahankan agar tautan dokumen tidak rusak.
 
 ---

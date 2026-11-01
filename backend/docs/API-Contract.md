@@ -704,12 +704,14 @@ Response `201`:
       "roles": ["citizen"],
       "status": "active"
     },
-    "verification_required": true
+    "verification_required": false
   }
 }
 ```
 
 Validasi: email valid, password memenuhi kebijakan keamanan, email unik. Password tidak pernah dikembalikan. Jangan menerima `role`, `is_admin`, atau `is_officer` dari request.
+
+Catatan baseline: verifikasi email ditunda. Registrasi membuat akun `active` dengan `email_verified: false` dan `verification_required: false`. Saat verifikasi email diaktifkan, kontrak ini berubah menjadi `verification_required: true`.
 
 ### 6.2 `POST /auth/login`
 
