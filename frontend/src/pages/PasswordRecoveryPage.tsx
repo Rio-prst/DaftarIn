@@ -5,7 +5,7 @@ import { mockAuth } from "../auth/mockAuth";
 import { AuthLayout } from "../components/AuthLayout";
 import { PasswordField } from "../components/PasswordField";
 export function PasswordRecoveryPage() {
-  const { logout } = useAuth();
+  const { logout, mode } = useAuth();
   const [params] = useSearchParams();
   const token = params.get("token");
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ export function PasswordRecoveryPage() {
       setBusy(true);
       try {
         await mockAuth.resetPassword(token, password);
-        logout();
+        await logout();
         setDone(true);
       } catch (cause) {
         setError(
@@ -47,6 +47,21 @@ export function PasswordRecoveryPage() {
       setSent(true);
     }
   };
+  if (mode === "api")
+    return (
+      <AuthLayout
+        title="Pemulihan akun"
+        intro="Pemulihan kata sandi belum tersedia pada API saat ini."
+      >
+        <p className="plain-panel">
+          Hubungi pengelola jika kamu tidak dapat masuk. Aplikasi belum mengirim
+          email atau membuat tautan pemulihan untuk akun server.
+        </p>
+        <Link to="/masuk" className="text-link">
+          Kembali masuk →
+        </Link>
+      </AuthLayout>
+    );
   return (
     <AuthLayout
       title={

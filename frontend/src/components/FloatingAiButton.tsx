@@ -1,42 +1,77 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
+import { useEffect, useRef, type CSSProperties } from "react";
+import { useLocation } from "react-router-dom";
+import { useApp } from "../context/AppContext";
 
-export const FloatingAiButton: React.FC = () => {
+export function FloatingAiButton() {
   const { openChat, isChatOpen } = useApp();
+  const { pathname } = useLocation();
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  if (isChatOpen) return null;
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+    button.style.setProperty("--chat-footer-height", "0px");
+    if (!pathname.startsWith("/persiapan/")) return;
+
+    let footer: Element | null = null;
+    const resize = new ResizeObserver(() => {
+      button.style.setProperty(
+        "--chat-footer-height",
+        (footer?.getBoundingClientRect().height || 0) + "px",
+      );
+    });
+    const attach = () => {
+      const next = document.querySelector(".preparation-actions");
+      if (next === footer) return;
+      resize.disconnect();
+      footer = next;
+      if (footer) resize.observe(footer);
+      button.style.setProperty(
+        "--chat-footer-height",
+        (footer?.getBoundingClientRect().height || 0) + "px",
+      );
+    };
+    attach();
+    // A lazy route can mount its sticky actions after this component's effect.
+    const mutation = new MutationObserver(attach);
+    mutation.observe(document.getElementById("root") || document.body, {
+      childList: true,
+      subtree: true,
+    });
+    return () => {
+      mutation.disconnect();
+      resize.disconnect();
+    };
+  }, [pathname]);
 
   return (
-    <aside aria-label="Bantuan Cepat">
+    <aside aria-label="Asisten panduan">
       <button
+        ref={buttonRef}
         onClick={openChat}
-        className="fixed bottom-6 right-6 z-40 group flex items-center gap-3 bg-[#1769D2] hover:bg-[#1255AC] text-white pl-4 pr-5 py-3 rounded-full shadow-xl hover:shadow-2xl border-2 border-white/80 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
-        title="Tanya Asisten AI DaftarIn seputar persyaratan dokumen dan regulasi kependudukan"
         type="button"
-        aria-label="Buka Asisten AI DaftarIn"
+        aria-label="Tanya asisten"
+        aria-haspopup="dialog"
+        aria-controls="service-chat-dialog"
+        aria-expanded={isChatOpen}
+        className={"floating-chat" + (isChatOpen ? " is-open" : "")}
+        style={{ "--chat-footer-height": "0px" } as CSSProperties}
       >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
-        </span>
-
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-[20px] text-white">
-            support_agent
-          </span>
-        </div>
-
-        <div className="text-left font-sans">
-          <span className="block text-[13px] font-bold leading-tight tracking-wide">
-            Tanya AI
-          </span>
-          <span className="hidden sm:block text-[10px] text-blue-100 font-medium leading-none mt-0.5">
-            Bantuan 24 Jam
-          </span>
-        </div>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M20 11.5a8 8 0 0 1-8 8H5l-4 3 1.6-6A8 8 0 1 1 20 11.5Z"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+            transform="translate(1 -1)"
+          />
+          <circle cx="8" cy="10.5" r="1" fill="currentColor" />
+          <circle cx="12" cy="10.5" r="1" fill="currentColor" />
+          <circle cx="16" cy="10.5" r="1" fill="currentColor" />
+        </svg>
+        <span className="floating-chat-label">Tanya asisten</span>
       </button>
     </aside>
   );
-};
-
+}
 export default FloatingAiButton;

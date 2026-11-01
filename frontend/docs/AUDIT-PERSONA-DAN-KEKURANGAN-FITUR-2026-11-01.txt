@@ -1,0 +1,155 @@
+CATATAN HISTORIS — SUDAH ADA TINDAK LANJUT
+Status aktual: LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt
+Kontrak backend terbaru (a56a80e): KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt
+Temuan di bawah menggambarkan keadaan sebelum perbaikan terbaru.
+
+AUDIT PERSONA DAN KEKURANGAN FITUR — 1 NOVEMBER 2026
+==================================================
+Repo: DaftarIn-feat1-frontend, branch feat1/frontend.
+Lingkup: menilai kecukupan fitur dan hambatan penggunaan; tidak mengubah fitur.
+Metode: walkthrough browser terpisah, inspeksi kode, simulasi kebutuhan persona,
+pengukuran teks/layout dan skenario unggahan gagal. Bukan wawancara pengguna,
+uji NVDA/TalkBack sungguhan, atau sertifikasi kepatuhan WCAG.
+89 skenario sebelumnya mencakup perjalanan fungsional. Skenario persona ini
+menambahkan kombinasi kebutuhan aksesibilitas serta kondisi kegagalan.
+
+KESIMPULAN
+Fitur inti warga-petugas-admin sudah memadai untuk cakupan lomba. Kemampuan
+menyelesaikan urusan belum merata: akses awal, bantuan dokumen, pemberitahuan,
+pemulihan kesalahan, perwakilan dan pengecualian operasional masih perlu
+pendalaman. Jumlah menu bukan ukuran kecukupan. Hindari memperluas jenis
+layanan sebelum hambatan utama di bawah diselesaikan.
+
+PERSONA 1 — RATNA, 67, MEMERLUKAN TEKS BESAR DAN TIDAK MEMILIKI EMAIL
+Yang membantu: panduan publik, tahap bernomor, pengaturan kontras dan teks.
+Hambatan terkonfirmasi:
+- Pengaturan tampilan global berada di Akun; tidak tersedia pada pendaftaran
+  sebagai kontrol publik. Perbesar teks pada dialog bantuan hanya untuk chat.
+- Pendaftaran demo tetap mewajibkan email, NIK, telepon, foto KTP dan sandi.
+- Teks besar menaikkan akar dari 16 ke 18 px; label terukur 14 ke 15,75 px dan
+  input 16 ke 18 px, tetapi teks tombol utama tetap 14 px.
+- Pada teks besar+kontras tinggi, layar 320 px melebar ke kanan di tahap Data
+  dan Dokumen. Langkah 4 mencapai posisi kanan sekitar 349,5 px. Kombinasi
+  normal yang lolos sebelumnya tidak mencakup kondisi ini.
+Usulan utama: akses tampilan sebelum login; pembesaran menyeluruh/reflow yang
+benar; pendaftaran bertahap dan jalur dibantu/perwakilan. Cara autentikasi tanpa
+email perlu keputusan backend, bukan sekadar menghapus verifikasi identitas.
+
+PERSONA 2 — RAKA, 20, MENGUNGGAH FOTO DARI PONSEL
+Yang membantu: unggah PDF/JPG/PNG, pratinjau dan mengganti versi berkas.
+Hambatan terkonfirmasi: foto sintetis 6 MB ditolak karena batas 5 MB. Pesan
+menyuruh mengompres sendiri; belum ada alat kompres/putar/penyiapan foto di alur.
+Ekstensi yang diterima hanya PDF/JPG/JPEG/PNG; belum ada penanganan HEIC/WebP.
+Tidak berarti semua unggahan iPhone gagal: beberapa browser mengubah format.
+Usulan utama: bantuan foto yang menjaga keterbacaan dan menampilkan pratinjau,
+petunjuk empat sudut/halaman, kompresi yang aman, serta alternatif untuk format
+lain. Jangan menjadikan menaikkan batas ukuran satu-satunya penyelesaian.
+
+PERSONA 3 — BAYU, 31, KONEKSI TIDAK STABIL DAN MELANJUTKAN DI PERANGKAT LAIN
+Yang membantu: draf lokal dan alur melanjutkan persiapan.
+Keterbatasan: bisnis masih lokal; belum ditemukan alur offline/online eksplisit,
+indikator sinkronisasi server, antrean retry atau pemulihan unggahan jaringan.
+Usulan utama saat integrasi: bedakan tersimpan di perangkat, tersimpan di server,
+menunggu kirim, gagal kirim dan berhasil diterima. Retry harus mencegah kiriman
+ganda. Offline penuh bukan syarat lomba; pemulihan kegagalan dasar diperlukan.
+
+PERSONA 4 — SARI, 43, MENGURUS ANAK DAN ORANG TUA
+Yang membantu: profil keluarga, pilihan subjek, pelapor terpisah dan snapshot.
+Kekurangan: profil keluarga belum menjadi mekanisme perwakilan yang eksplisit
+untuk orang dewasa, pendamping berbeda KK atau pemberian/pencabutan persetujuan.
+Usulan utama jika perwakilan dewasa masuk cakupan: identitas pengurus dan subjek,
+izin/persyaratan perwakilan sesuai layanan, batas tindakan dan catatan akses.
+Jangan memakai akun bersama atau menganggap hubungan keluarga cukup otomatis.
+Tambahan opsional: rangkaian urusan kelahiran dan pemakaian ulang berkas milik
+akun dengan konfirmasi. Sekarang rekomendasi beberapa layanan masih terpisah.
+
+PERSONA 5 — NINA, 29, MENGANDALKAN KEYBOARD/PEMBACA LAYAR
+Yang membantu: label input, fokus saat validasi, dialog bantuan, kontras tinggi.
+Temuan: pada isian yang salah fokus berpindah ke Nomor KK dan error tampil,
+namun input aktif tidak diberi aria-invalid atau hubungan aria-describedby ke
+pesan error. Penilaian pembaca layar sungguhan masih perlu dilakukan.
+Usulan utama: error per isian yang terhubung, ringkasan kesalahan, fokus konsisten,
+dan pengumuman perubahan simpan/kirim tanpa mengandalkan warna atau toast saja.
+Teks-ke-suara sudah ada pada bantuan; tidak perlu menambah fitur suara besar
+sebelum teks, navigasi dan pembaca layar tertangani.
+
+PERSONA 6 — DEDI, 38, KESULITAN MEMAHAMI ISTILAH DAN TIDAK PUNYA SATU BERKAS
+Yang membantu: pilihan kebutuhan dan penjelasan langkah berikutnya.
+Kekurangan: belum ada jalur penyelesaian yang kuat ketika dokumen wajib belum
+dimiliki, syarat tidak dipahami, atau petunjuk chatbot belum menyelesaikan masalah.
+Bantuan masih panduan lokal; tidak ada tautan telepon/email bantuan manusia pada
+dialog. Footer Bantuan juga membuka dialog yang sama.
+Usulan utama: bantuan ringkas di setiap persyaratan, cara memperoleh berkas yang
+belum dimiliki, dan permintaan bantuan manusia yang membawa nomor urusan.
+Warga tidak boleh meloloskan dokumen wajib dengan centang mandiri. Persiapan,
+tinjauan pendamping dan pengajuan resmi perlu dibedakan dengan bahasa sederhana.
+
+PERSONA 7 — PENGGUNA NAMA SINGKAT DAN PERANGKAT BERSAMA
+Temuan terkonfirmasi: nama contoh dua huruf 'Li' ditolak karena minimal 3 karakter
+pada pendaftaran; validasi serupa ada pada data pemohon/profil keluarga.
+Usulan utama: validasi nama yang tidak menolak nama singkat secara sembarang.
+Perangkat bersama: logout tersedia, namun draf/berkas tetap tersimpan lokal;
+penghapusan diarahkan lewat pengaturan browser. Belum ada tindakan dalam aplikasi
+untuk membersihkan salinan lokal dengan penjelasan dampaknya.
+Usulan: pengaturan perangkat bersama, penyamaran identitas sesuai konteks, dan
+pilihan membersihkan data lokal tanpa menyatakan akun/server ikut terhapus.
+
+PERSONA 8 — WARGA YANG JARANG MEMBUKA APLIKASI ATAU SALAH MEMILIH LAYANAN
+Yang membantu: dashboard tindakan, daftar status dan riwayat.
+Temuan: notify_in_app dipakai pada model/pengaturan preferensi, belum ditemukan
+konsumennya pada pemberitahuan peristiwa bisnis frontend. Belum ada pusat/penanda
+perubahan belum dibaca. Pengguna perlu aktif memeriksa dashboard.
+Daftar persiapan belum menyediakan hapus/arsip draf; pengajuan belum memiliki
+alur penarikan dengan alasan. Bedakan hapus draf belum dikirim dari penarikan
+permintaan yang telah diterima; riwayat tinjauan tidak boleh ikut dihapus.
+Usulan utama: notifikasi dalam aplikasi dan penanda belum dibaca; pengingat luar
+aplikasi menyusul sesuai kanal yang tersedia. Tambahkan pengelolaan draf aman,
+lalu tentukan aturan penarikan permintaan agar warga bisa membetulkan salah pilih.
+
+PERSONA 9 — BUDI, PETUGAS YANG MENEMUI SYARAT AMBIGU
+Yang membantu: antrean, penilaian per item, revisi, riwayat dan perpindahan tugas.
+Kekurangan: belum ada eskalasi eksplisit ke admin ketika panduan/syarat meragukan
+atau persoalan di luar kewenangan. Meminta warga mengunggah ulang tidak selalu
+menyelesaikan kebingungan aturan.
+Usulan lanjutan: tandai membutuhkan klarifikasi admin, alasan dan tindak lanjut;
+bedakan hambatan internal dari tindakan yang benar-benar harus dilakukan warga.
+Tidak perlu langsung menambah auto-assignment atau kalender kerja kompleks.
+
+PERSONA 10 — RINA, ADMIN YANG HARUS MENGOREKSI PANDUAN TERBIT
+Yang membantu: draf-publikasi, konfigurasi kondisi, versi lama, sumber dan audit.
+Kekurangan: belum ada jeda panduan/layanan ketika acuan sedang diperbaiki maupun
+pemulihan isi versi lama sebagai draf koreksi. Riwayat tersedia untuk dibaca.
+Usulan lanjutan: status sedang dikoreksi dengan arahan alternatif; pulihkan isi
+lama ke draf lalu terbitkan versi baru dengan alasan/audit. Jangan mengubah atau
+menghapus sejarah. Penugasan manual yang ada sudah cukup untuk tahap lomba.
+
+URUTAN PRIORITAS
+1. Aksesibilitas nyata: akses sebelum login, teks besar menyeluruh, reflow 320,
+   pesan error terhubung ke input, validasi nama yang adil.
+2. Bantuan menyelesaikan dokumen: penyiapan foto, berkas belum dimiliki, bantuan
+   manusia terarah. Chatbot tetap pendamping.
+3. Pemulihan dan kesinambungan: notifikasi bisnis, status simpan/kirim, retry,
+   kelola draf dan aturan penarikan. Backend diperlukan pada bagian sinkronisasi.
+4. Perwakilan dan perangkat bersama: sesuaikan cakupan pengguna yang benar-benar
+   hendak dilayani; jangan memperluas akses hanya dari label keluarga.
+5. Pengecualian petugas/admin: klarifikasi, jeda panduan dan publikasi koreksi.
+Opsional setelahnya: rangkaian beberapa layanan dan penggunaan ulang berkas.
+Tidak merekomendasikan menambah jenis layanan/chatbot besar hanya demi menu.
+Backend AI tetap menjadi pekerjaan teman pemilik, di luar daftar API audit ini.
+
+BUKTI DAN BATAS
+Observasi browser: outputs/persona-audit-20261101/results.json di workspace.
+Tangkapan layar mencakup teks besar pada 320 serta penolakan foto 6 MB.
+Tidak ditemukan error JavaScript pada skenario audit. Tidak ada fitur website
+yang diubah pada audit ini. Tidak melakukan uji dengan pengguna sungguhan,
+uji API/database tim, atau penetapan aturan hukum persyaratan pemerintah.
+
+RUJUKAN PENILAIAN AKSESIBILITAS
+W3C WAI — Developing Websites for Older People:
+https://www.w3.org/WAI/older-users/developing/
+W3C WAI — Help Users Avoid Mistakes and Know How to Correct Them:
+https://www.w3.org/WAI/WCAG2/supplemental/objectives/o4-minimize-mistakes/
+W3C WAI — Forms Tutorial:
+https://www.w3.org/WAI/tutorials/forms/
+W3C — WCAG 2.2 (resize text, reflow, focus, target size):
+https://www.w3.org/TR/WCAG22/

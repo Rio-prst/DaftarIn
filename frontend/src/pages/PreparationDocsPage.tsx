@@ -1,3 +1,5 @@
+import { ReuseDocument } from "../components/ReuseDocument";
+import { PhotoPreparationDialog } from "../components/PhotoPreparationDialog";
 import { useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PreparationLayout } from "../components/PreparationLayout";
@@ -10,7 +12,7 @@ import { useApp } from "../context/AppContext";
 import {
   documentSlots,
   getSelectedConditionOption,
-   type DocumentSlotItem,
+  type DocumentSlotItem,
 } from "../types/preparation";
 import {
   formatFileSize,
@@ -64,6 +66,8 @@ export function PreparationDocsPage() {
   );
   const slots = documentSlots(currentService, activePreparation.conditionKey);
   const requiredSlots = slots.filter((slot) => slot.required);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const camera = useRef<HTMLInputElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const uploadContextRef = useRef<UploadTargetContext | null>(null);
   const navigate = useNavigate();
@@ -88,15 +92,19 @@ export function PreparationDocsPage() {
     documents.some(
       (doc) =>
         doc.id === slot.id &&
+        doc.name === slot.name &&
         doc.status === "TERUNGGAH" &&
         isDocumentContentAvailable(doc),
     ),
   ).length;
   const canProceedToReview = readiness.steps.step3Dokumen;
 
-  const choose = (slot: DocumentSlotItem) => {
+  const choose = (slot: DocumentSlotItem, useCamera = false, pick = true) => {
     const existing = documents.find(
-      (item) => item.id === slot.id && item.status === "TERUNGGAH",
+      (item) =>
+        item.id === slot.id &&
+        item.name === slot.name &&
+        item.status === "TERUNGGAH",
     );
     const nextVersion = existing ? (existing.version || 1) + 1 : 1;
     uploadContextRef.current = {
@@ -109,14 +117,27 @@ export function PreparationDocsPage() {
       existingDocVersion: existing?.version || 1,
       nextVersion,
     };
-    input.current?.click();
+    if (pick) {
+      if (useCamera) camera.current?.click();
+      else input.current?.click();
+    }
   };
 
   const pickFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-
+    if (
+      file.type.startsWith("image/") &&
+      (file.size > 10 * 1024 * 1024 ||
+        !["image/jpeg", "image/png"].includes(file.type))
+    ) {
+      setPendingPhoto(file);
+      return;
+    }
+    await storeFile(file);
+  };
+  const storeFile = async (file: File) => {
     const ctx = uploadContextRef.current;
     if (!ctx) return;
 
@@ -169,10 +190,7 @@ export function PreparationDocsPage() {
         ctx.prepId,
       );
 
-      showToast(
-        `Berkas "${stored.fileName}" (${sizeText}, v${ctx.nextVersion}) berhasil disimpan ke persiapan ${ctx.prepRef}.`,
-        "success",
-      );
+      showToast(`Berkas "${stored.fileName}" disimpan.`, "success");
     } catch (err) {
       const errMsg =
         err instanceof Error
@@ -251,16 +269,14 @@ export function PreparationDocsPage() {
 
       <div className="section-heading flex-wrap">
         <div>
-          <p className="text-sm font-medium text-[#142c4b]">
+          <p className="text-sm font-medium text-[#17324D]">
             {uploadedRequired} dari {requiredSlots.length} dokumen wajib
             tersedia untuk kondisi <strong>{activeCondition.label}</strong>
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Validasi dasar memeriksa keberadaan isi berkas wajib, format (PDF,
-            JPG, PNG), dan ukuran (maks. {MAX_UPLOAD_FILE_LABEL}). Isi berkas
-            disimpan sebagai Blob di IndexedDB browser untuk pratinjau warga
-            &amp; petugas (penyimpanan browser ini belum menggantikan
-            penyimpanan privat pada backend).
+            Gunakan PDF, JPG, atau PNG, maksimal {MAX_UPLOAD_FILE_LABEL} per
+            berkas. Berkas masih disimpan di perangkat ini; gunakan dokumen
+            contoh.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -342,11 +358,29 @@ export function PreparationDocsPage() {
       )}
 
       <input
+        type="file"
+        ref={camera}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={pickFile}
+      />
+      {pendingPhoto && (
+        <PhotoPreparationDialog
+          file={pendingPhoto}
+          onClose={() => setPendingPhoto(null)}
+          onReady={(file) => {
+            setPendingPhoto(null);
+            void storeFile(file);
+          }}
+        />
+      )}
+      <input
         ref={input}
         type="file"
         className="hidden"
         tabIndex={-1}
-        accept=".pdf,.jpg,.jpeg,.png"
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
         aria-label="Pilih dokumen"
         onChange={pickFile}
       />
@@ -354,10 +388,15 @@ export function PreparationDocsPage() {
       <div className="document-list">
         {slots.map((slot) => {
           const doc = documents.find(
-            (item) => item.id === slot.id && item.status === "TERUNGGAH",
+            (item) =>
+              item.id === slot.id &&
+              item.name === slot.name &&
+              item.status === "TERUNGGAH",
           );
           const isUploading = uploadingSlotId === slot.id;
-          const contentAvailable = doc ? isDocumentContentAvailable(doc) : false;
+          const contentAvailable = doc
+            ? isDocumentContentAvailable(doc)
+            : false;
           const sourceBadge =
             doc?.qualityPreset === "sample_issue"
               ? "Dokumen contoh (bagian bawah terpotong)"
@@ -367,7 +406,35 @@ export function PreparationDocsPage() {
                   ? "Berkas dari perangkat Anda"
                   : null;
           return (
-            <section className="document-item" key={slot.id}>
+            <section className="document-item document-upload-card" key={slot.id}>
+              <ReuseDocument
+                onReady={(file) => {
+                  choose(slot, false, false);
+                  void storeFile(file);
+                }}
+              />
+              <div className="flex flex-wrap gap-4 mb-3">
+                <button
+                  type="button"
+                  className="text-link min-h-[44px] text-sm"
+                  onClick={() => choose(slot, true)}
+                >
+                  Ambil foto untuk {slot.name}
+                </button>
+                <Link
+                  to="/bantuan"
+                  state={{
+                    topic: "Berkas belum dimiliki",
+                    question:
+                      "Saya belum memiliki " +
+                      slot.name +
+                      ". Bagaimana cara memperolehnya?",
+                  }}
+                  className="text-link inline-flex items-center min-h-[44px] text-sm"
+                >
+                  Belum punya berkas ini?
+                </Link>
+              </div>
               <div className="flex items-start gap-3 flex-1 min-w-0">
                 <span
                   className="material-symbols-outlined text-slate-400 mt-1"
@@ -396,7 +463,7 @@ export function PreparationDocsPage() {
                       </span>
                     )}
                     {doc && !contentAvailable && (
-                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800 border border-red-200">
+                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 border border-red-200">
                         Berkas tidak tersedia · v{doc.version || 1}
                       </span>
                     )}
@@ -419,7 +486,7 @@ export function PreparationDocsPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <div className="document-upload-actions flex flex-wrap items-center gap-3">
                 {doc && (
                   <button
                     type="button"
@@ -480,7 +547,7 @@ export function PreparationDocsPage() {
             type="checkbox"
             checked={simulateFailureOnce}
             onChange={(e) => setSimulateFailureOnce(e.target.checked)}
-            className="rounded border-slate-300 text-[#142c4b]"
+            className="rounded border-slate-300 text-[#17324D]"
           />
           <span>
             <strong>Simulasi uji kegagalan penyimpanan:</strong> gagalkan
@@ -489,7 +556,7 @@ export function PreparationDocsPage() {
           </span>
         </label>
         {simulateFailureOnce && (
-          <span className="rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+          <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
             Aktif untuk 1 unggahan berikutnya
           </span>
         )}

@@ -8,10 +8,7 @@ import { TopBar } from "../components/TopBar";
 import { useApp } from "../context/AppContext";
 import { getSelectedConditionOption } from "../types/preparation";
 
-const AVAILABLE_REGIONS = [
-  "Kota Contoh",
-  "Kabupaten Lain (Belum tersedia)",
-];
+const AVAILABLE_REGIONS = ["Kota Contoh", "Kabupaten Lain (Belum tersedia)"];
 
 function CatalogContent({ isWorkspace }: { isWorkspace: boolean }) {
   const [params, setParams] = useSearchParams();
@@ -79,6 +76,12 @@ function CatalogContent({ isWorkspace }: { isWorkspace: boolean }) {
         </nav>
       )}
       <h1 className={isWorkspace ? "" : "page-title"}>Cari layanan</h1>
+      <Link
+        className="text-link inline-flex min-h-[44px] items-center mt-3"
+        to="/kebutuhan"
+      >
+        Belum tahu layanannya? Mulai dari kebutuhanmu →
+      </Link>
       <p className="text-slate-500 text-sm mt-2">
         Pilih wilayah dan layanan untuk melihat panduan persyaratan serta
         memulai persiapan berkas.
@@ -140,9 +143,7 @@ function CatalogContent({ isWorkspace }: { isWorkspace: boolean }) {
           <select
             id="service-sort"
             value={alphabetical ? "name" : "default"}
-            onChange={(event) =>
-              setAlphabetical(event.target.value === "name")
-            }
+            onChange={(event) => setAlphabetical(event.target.value === "name")}
           >
             <option value="default">Utama &amp; populer</option>
             <option value="name">Nama A–Z</option>
@@ -269,7 +270,7 @@ export function CatalogPage() {
 
   if (isCitizenWorkspace) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA] text-[#142C4B]">
+      <div className="flex min-h-screen bg-[#FAF7F2] text-[#17324D]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar breadcrumbs={["Cari layanan"]} role="warga" />

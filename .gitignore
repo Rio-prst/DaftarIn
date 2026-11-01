@@ -24,3 +24,7 @@ test-results/
 *.tsbuildinfo
 Thumbs.db
 .DS_Store
+
+# Private backend runtime data (never publish user documents or local databases)
+backend/.data/
+backend/var/

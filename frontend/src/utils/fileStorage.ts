@@ -1,5 +1,5 @@
-export const MAX_UPLOAD_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
-export const MAX_UPLOAD_FILE_LABEL = "5 MB";
+export const MAX_UPLOAD_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+export const MAX_UPLOAD_FILE_LABEL = "10 MB";
 
 const IDB_DB_NAME = "daftarin_file_storage_v1";
 const IDB_STORE_NAME = "file_blobs";
@@ -70,7 +70,9 @@ function openFileDatabase(): Promise<IDBDatabase> {
   });
 }
 
-function dataUrlToBlob(dataUrl: string): { blob: Blob; mimeType: string } | null {
+function dataUrlToBlob(
+  dataUrl: string,
+): { blob: Blob; mimeType: string } | null {
   try {
     const commaIdx = dataUrl.indexOf(",");
     if (commaIdx === -1) return null;
@@ -181,7 +183,9 @@ export function formatFileSize(bytes: number): string {
 
 export function validateUploadFile(
   file: File,
-): { valid: true; fileType: "pdf" | "image"; mimeType: string } | { valid: false; message: string } {
+):
+  | { valid: true; fileType: "pdf" | "image"; mimeType: string }
+  | { valid: false; message: string } {
   const nameLower = file.name.toLowerCase();
   const isPdfExt = nameLower.endsWith(".pdf");
   const isJpgExt = nameLower.endsWith(".jpg") || nameLower.endsWith(".jpeg");
@@ -242,7 +246,10 @@ function readFileAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (reader.result instanceof ArrayBuffer && reader.result.byteLength > 0) {
+      if (
+        reader.result instanceof ArrayBuffer &&
+        reader.result.byteLength > 0
+      ) {
         resolve(reader.result);
       } else {
         reject(
@@ -343,9 +350,9 @@ export async function readAndStoreUploadedFile(params: {
         resolve(
           Boolean(
             saved &&
-              saved.storageId === storageId &&
-              saved.blob instanceof Blob &&
-              saved.blob.size === file.size,
+            saved.storageId === storageId &&
+            saved.blob instanceof Blob &&
+            saved.blob.size === file.size,
           ),
         );
       };
@@ -408,4 +415,31 @@ export async function verifyStoredFileBlob(
 export function hasStoredFileSync(storageId?: string): boolean {
   if (!storageId) return false;
   return availableStorageIds.has(storageId);
+}
+
+export async function deleteDraftFiles(prepId: string): Promise<void> {
+  const db = await openFileDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(IDB_STORE_NAME, "readwrite"),
+        store = transaction.objectStore(IDB_STORE_NAME),
+        request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        const record = cursor.value as StoredFileRecord;
+        if (record.prepId === prepId) {
+          availableStorageIds.delete(record.storageId);
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () =>
+        reject(new Error("Berkas draf belum dapat dibersihkan."));
+    });
+    notifyStorageListeners();
+  } finally {
+    db.close();
+  }
 }

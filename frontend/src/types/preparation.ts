@@ -7,6 +7,7 @@ import type {
   ApplicationRecord,
 } from "../context/AppContext";
 import { isDocumentContentAvailable } from "../components/DocumentPreviewModal";
+import type { FamilyMember } from "../family/members";
 
 export type ApplicantTarget = "diri_sendiri" | "anggota_keluarga";
 
@@ -38,6 +39,8 @@ export interface InspectionSnapshot {
 }
 
 export interface PreparationRecord {
+  archivedAt?: string;
+  familyMember?: FamilyMember;
   id: string;
   internalReference: string;
   ownerId: string;
@@ -98,8 +101,7 @@ export const SERVICE_CONDITIONS: Record<number, ServiceConditionConfig> = {
       {
         value: "perubahan_status_kawin",
         label: "Perubahan status perkawinan",
-        description:
-          "Pencatatan status kawin atau cerai pada Kartu Keluarga.",
+        description: "Pencatatan status kawin atau cerai pada Kartu Keluarga.",
         requiredDocIndices: [0, 1, 2],
       },
       {
@@ -180,8 +182,7 @@ export const SERVICE_CONDITIONS: Record<number, ServiceConditionConfig> = {
       {
         value: "pindah_dalam_kelurahan",
         label: "Pindah alamat dalam satu kelurahan/kecamatan",
-        description:
-          "Pembaruan alamat domisili beserta KK dan KTP-el pemohon.",
+        description: "Pembaruan alamat domisili beserta KK dan KTP-el pemohon.",
         requiredDocIndices: [0, 1, 2],
       },
     ],
@@ -233,7 +234,7 @@ export function getServiceConditionConfig(
   service: ServiceDetail,
 ): ServiceConditionConfig {
   return (
-    SERVICE_CONDITIONS[service.id] || {
+    service.conditions || SERVICE_CONDITIONS[service.id] || {
       serviceId: service.id,
       question: "Kondisi pengurusan",
       hint: "Pilih kondisi yang sesuai dengan permohonan Anda.",
@@ -319,14 +320,9 @@ export interface SubmittedAttachment {
 }
 
 export type OfficerItemVerdict =
-  | "sesuai"
-  | "perlu_perbaikan"
-  | "belum_dapat_diperiksa";
+  "sesuai" | "perlu_perbaikan" | "belum_dapat_diperiksa";
 
-export const OFFICER_ITEM_VERDICT_LABELS: Record<
-  OfficerItemVerdict,
-  string
-> = {
+export const OFFICER_ITEM_VERDICT_LABELS: Record<OfficerItemVerdict, string> = {
   sesuai: "Sesuai",
   perlu_perbaikan: "Perlu perbaikan",
   belum_dapat_diperiksa: "Belum dapat diperiksa",
@@ -343,6 +339,7 @@ export interface OfficerItemAssessment {
 }
 
 export interface OfficerSubmissionEvaluation {
+  evaluatedById?: string;
   submissionVersion: number;
   decision: "SELESAI" | "PERLU_PERBAIKAN";
   summaryNote: string;
@@ -353,6 +350,9 @@ export interface OfficerSubmissionEvaluation {
 }
 
 export interface SubmissionSnapshot {
+  serviceSnapshot?: ServiceDetail;
+  requiredSlots?: DocumentSlotItem[];
+  familyMember?: FamilyMember;
   submissionVersion: number;
   submittedAt: string;
   applicantTarget: ApplicantTarget;
@@ -367,8 +367,7 @@ export interface SubmissionSnapshot {
 }
 
 export type OfficialSubmissionStatus =
-  | "DIAJUKAN_WARGA"
-  | "HASIL_DITERIMA_WARGA";
+  "DIAJUKAN_WARGA" | "HASIL_DITERIMA_WARGA";
 
 export interface OfficialSubmissionRecord {
   status?: OfficialSubmissionStatus;
@@ -402,16 +401,19 @@ export function computeDataSignature(
   conditionValue: string,
   applicantTarget: ApplicantTarget,
   formData: FormData,
+  familyMember?: FamilyMember,
 ): string {
-  return [
-    conditionValue || "",
-    applicantTarget || "diri_sendiri",
-    formData.nama_lengkap.trim(),
-    formData.nik.trim(),
-    formData.no_kk.trim(),
-    formData.alamat.trim(),
-    formData.alasan.trim(),
-  ].join("|");
+  return (
+    [
+      conditionValue || "",
+      applicantTarget || "diri_sendiri",
+      formData.nama_lengkap.trim(),
+      formData.nik.trim(),
+      formData.no_kk.trim(),
+      formData.alamat.trim(),
+      formData.alasan.trim(),
+    ].join("|") + (familyMember ? "|" + JSON.stringify(familyMember) : "")
+  );
 }
 
 export function computeDocSignature(
@@ -423,7 +425,7 @@ export function computeDocSignature(
   return slots
     .map((slot) => {
       const doc = documents.find(
-        (item) => item.id === slot.id && item.status === "TERUNGGAH",
+        (item) => item.id === slot.id && item.name === slot.name && item.status === "TERUNGGAH",
       );
       if (!doc) return `${slot.id}:missing:${slot.required ? "req" : "opt"}`;
       return `${slot.id}:v${doc.version || 1}:${doc.fileName}:${doc.qualityPreset || "user_file"}:${doc.previewKey || doc.fixtureId || ""}`;
@@ -432,7 +434,7 @@ export function computeDocSignature(
 }
 
 export function computeGuideSignature(service: ServiceDetail): string {
-  return `${service.id}:v${service.version || 1}:${service.requirements.join(";")}`;
+  return `${service.id}:v${service.version || 1}:${service.requirements.join(";")}:${JSON.stringify(getServiceConditionConfig(service))}`;
 }
 
 export function computeRulesSignature(
@@ -456,8 +458,7 @@ export function getRequiredInspectionScopes(
 ): InspectionScope[] {
   const activeRules = adminRules.filter(
     (r) =>
-      r.active &&
-      (r.service === "Semua layanan" || r.service === service.name),
+      r.active && (r.service === "Semua layanan" || r.service === service.name),
   );
   const scopes: InspectionScope[] = [];
   if (activeRules.some((r) => r.category === "Kelengkapan")) {
@@ -501,6 +502,7 @@ export interface StepCompletionStatus {
  *   BUKAN menyatakan isi dokumen sudah sesuai.
  */
 export function computePreparationReadiness(params: {
+  familyMember?: FamilyMember;
   prepId: string;
   service: ServiceDetail;
   conditionValue?: string;
@@ -554,13 +556,13 @@ export function computePreparationReadiness(params: {
     (slot) =>
       slot.required &&
       !documents.some(
-        (doc) => doc.id === slot.id && doc.status === "TERUNGGAH",
+        (doc) => doc.id === slot.id && doc.name === slot.name && doc.status === "TERUNGGAH",
       ),
   );
   const unavailableRequiredDocs = slots.filter((slot) => {
     if (!slot.required) return false;
     const doc = documents.find(
-      (item) => item.id === slot.id && item.status === "TERUNGGAH",
+      (item) => item.id === slot.id && item.name === slot.name && item.status === "TERUNGGAH",
     );
     if (!doc) return false;
     return !isDocumentContentAvailable(doc);
@@ -570,15 +572,16 @@ export function computePreparationReadiness(params: {
     conditionValue || getSelectedConditionOption(service).value,
     applicantTarget,
     formData,
+    params.familyMember,
   );
   const currentDocSig = computeDocSignature(service, documents, conditionValue);
 
   const hasUnsentDraftChanges = Boolean(
     linkedApplicationId &&
-      ((lastSubmittedDataSignature &&
-        lastSubmittedDataSignature !== currentDataSig) ||
-        (lastSubmittedDocSignature &&
-          lastSubmittedDocSignature !== currentDocSig)),
+    ((lastSubmittedDataSignature &&
+      lastSubmittedDataSignature !== currentDataSig) ||
+      (lastSubmittedDocSignature &&
+        lastSubmittedDocSignature !== currentDocSig)),
   );
 
   const hasEverInspected = Boolean(lastInspectionSnapshot);
@@ -590,12 +593,11 @@ export function computePreparationReadiness(params: {
     hasEverInspected &&
     lastInspectionSnapshot!.dataSignature !== currentDataSig;
   const docChanged =
-    hasEverInspected &&
-    lastInspectionSnapshot!.docSignature !== currentDocSig;
+    hasEverInspected && lastInspectionSnapshot!.docSignature !== currentDocSig;
 
   const isStale = Boolean(
     hasUnsentDraftChanges ||
-      (hasEverInspected && (isLegacyUnverified || dataChanged || docChanged)),
+    (hasEverInspected && (isLegacyUnverified || dataChanged || docChanged)),
   );
 
   const staleReason = hasUnsentDraftChanges
@@ -625,17 +627,18 @@ export function computePreparationReadiness(params: {
   const hasSimulatedFixtures = documents.some(
     (d) =>
       d.status === "TERUNGGAH" &&
-      (d.qualityPreset === "sample_issue" || d.qualityPreset === "sample_clean"),
+      (d.qualityPreset === "sample_issue" ||
+        d.qualityPreset === "sample_clean"),
   );
 
   // 4 Langkah Persiapan Sebelum Pengiriman:
   // 1. Kebutuhan: dikonfirmasi oleh warga
-  const step1Kebutuhan = Boolean(needConfirmed && conditionValue);
+  const step1Kebutuhan = Boolean(needConfirmed && (applicantTarget !== "anggota_keluarga" || params.familyMember?.authorization?.scope === "persiapan_dan_tinjauan") && getServiceConditionConfig(service).options.some(option => option.value === conditionValue));
 
   // 2. Data: Tahap 1 selesai + format dasar isian wajib terpenuhi
   const step2Data =
     step1Kebutuhan &&
-    formData.nama_lengkap.trim().length >= 3 &&
+    formData.nama_lengkap.trim().length >= 1 &&
     /^\d{16}$/.test(formData.nik.trim()) &&
     /^\d{16}$/.test(formData.no_kk.trim()) &&
     formData.alamat.trim().length >= 5 &&
@@ -648,8 +651,7 @@ export function computePreparationReadiness(params: {
     unavailableRequiredDocs.length === 0;
 
   // Validasi dasar aplikasi (tanpa ketergantungan AI/OCR)
-  const basicValidationPassed =
-    step1Kebutuhan && step2Data && step3Dokumen;
+  const basicValidationPassed = step1Kebutuhan && step2Data && step3Dokumen;
 
   // 4. Tinjau & kirim: Validasi dasar lolos + persetujuan pembagian dicentang + sudah dikirim ke petugas
   const step4Pemeriksaan =
@@ -903,8 +905,7 @@ export function evaluatePreparationDraft(input: {
   const slots = documentSlots(service, conditionKey);
   const activeRules = adminRules.filter(
     (r) =>
-      r.active &&
-      (r.service === "Semua layanan" || r.service === service.name),
+      r.active && (r.service === "Semua layanan" || r.service === service.name),
   );
   const hasCompletenessRule = activeRules.some(
     (r) => r.category === "Kelengkapan",
@@ -1051,7 +1052,7 @@ export function evaluatePreparationDraft(input: {
     const targetDocVer = firstDoc?.version || 1;
 
     if (
-      formData.nama_lengkap.trim().length < 3 ||
+      formData.nama_lengkap.trim().length < 1 ||
       !/^\d{16}$/.test(formData.nik.trim()) ||
       !/^\d{16}$/.test(formData.no_kk.trim())
     ) {
@@ -1061,7 +1062,8 @@ export function evaluatePreparationDraft(input: {
         scope: "format_formulir",
         evaluationStatus: "evaluated_issue",
         category: "Konsistensi Data",
-        title: "Format Nama, NIK (16 angka), atau Nomor KK (16 angka) belum sesuai",
+        title:
+          "Format Nama, NIK (16 angka), atau Nomor KK (16 angka) belum sesuai",
         evidence: `Nama: "${formData.nama_lengkap.trim() || "kosong"}", NIK: ${formData.nik.trim().length}/16 angka, Nomor KK: ${formData.no_kk.trim().length}/16 angka.`,
         rule: "Validasi format 16 angka NIK, 16 angka Nomor KK, dan nama pemohon pada formulir",
         action: "Perbaiki Nama Lengkap, NIK, dan Nomor KK pada tahap Data.",
@@ -1101,7 +1103,8 @@ export function evaluatePreparationDraft(input: {
         scope: "format_formulir",
         evaluationStatus: "evaluated_passed",
         category: "Konsistensi Data",
-        title: "Format isian formulir (Nama, 16 angka NIK, 16 angka Nomor KK, alamat, alasan) terpenuhi",
+        title:
+          "Format isian formulir (Nama, 16 angka NIK, 16 angka Nomor KK, alamat, alasan) terpenuhi",
         evidence: `Pemeriksaan format formulir pada Data v${dataVersion} memenuhi syarat panjang dan format digit. Pencocokan teks otomatis dengan isi gambar dokumen belum dijalankan (menunggu OCR backend).`,
         rule: "Validasi format isian formulir pemohon",
         action: "Pastikan ejaan pada formulir sama persis dengan dokumen asli.",

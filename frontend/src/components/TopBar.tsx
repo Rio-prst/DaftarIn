@@ -1,8 +1,15 @@
+import { NotificationsBell } from "./NotificationsBell";
+import { AccessibilityControl } from "./AccessibilityControl";
+import { useAuth } from "../auth/AuthContext";
 import { AccountMenu } from "./AccountMenu";
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { isNavItemActive, roleNavigation, type AppRole } from "./navigation";
+import {
+  isNavItemActive,
+  workspaceNavigation,
+  type AppRole,
+} from "./navigation";
 
 interface TopBarProps {
   breadcrumbs: string[];
@@ -10,7 +17,9 @@ interface TopBarProps {
   role?: AppRole;
 }
 export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
-  const { user, openChat } = useApp();
+  const { mode } = useAuth();
+  const navigate = useNavigate();
+  const { user } = useApp();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const activeRole = role || user.role;
@@ -35,7 +44,7 @@ export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
               <li
                 className={
                   index === breadcrumbs.length - 1
-                    ? "truncate text-[#142C4B] font-medium"
+                    ? "truncate text-[#17324D] font-medium"
                     : "hidden sm:flex items-center gap-2"
                 }
                 key={index}
@@ -61,11 +70,17 @@ export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
         </nav>
       </div>
       <div className="flex items-center gap-4 shrink-0">
+        <AccessibilityControl />
+        <NotificationsBell />
         <button
           type="button"
           className="help-button"
           aria-label="Bantuan"
-          onClick={onOpenHelp || openChat}
+          onClick={
+            onOpenHelp ||
+            (() =>
+              navigate(activeRole === "admin" ? "/admin/bantuan" : "/bantuan"))
+          }
         >
           <span className="material-symbols-outlined" aria-hidden="true">
             help_outline
@@ -80,12 +95,18 @@ export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
           className="workspace-mobile-nav"
           aria-label="Navigasi ruang kerja di ponsel"
         >
-          {roleNavigation[activeRole].map((item) => {
-            const active = isNavItemActive(item.path, pathname);
+          {workspaceNavigation(activeRole, mode).map((item) => {
+            const active = isNavItemActive(
+              item.path,
+              activeRole === "admin" && mode === "api" && pathname === "/admin"
+                ? "/admin/petugas"
+                : pathname,
+            );
             return (
-              <NavLink
+              <Link
                 key={item.path}
                 to={item.path}
+                aria-current={active ? "page" : undefined}
                 onClick={() => setMenuOpen(false)}
                 className={"workspace-link" + (active ? " is-active" : "")}
               >
@@ -93,7 +114,7 @@ export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
                   {item.icon}
                 </span>
                 {item.label}
-              </NavLink>
+              </Link>
             );
           })}
           <NavLink

@@ -1,12 +1,12 @@
+import { BrandLogo } from "./BrandLogo";
+import { AccessibilityControl } from "./AccessibilityControl";
 import { useAuth } from "../auth/AuthContext";
 import { roleHome } from "../auth/types";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useApp } from "../context/AppContext";
 
 export function Navbar() {
   const [expanded, setExpanded] = useState(false);
-  const { openChat } = useApp();
   const { user } = useAuth();
   const navigate = useNavigate();
   const how = () => {
@@ -22,21 +22,24 @@ export function Navbar() {
           onClick={() => setExpanded(false)}
           aria-label="DaftarIn, beranda"
         >
-          <span className="brand-mark" aria-hidden="true">
-            <span className="material-symbols-outlined">task_alt</span>
-          </span>
-          DaftarIn
+          <BrandLogo />
         </Link>
         <nav className="public-nav" aria-label="Navigasi utama">
           <Link to="/katalog">Cari layanan</Link>
           <button type="button" onClick={how}>
             Cara kerja
           </button>
-          <button type="button" onClick={openChat}>
+          <button
+            type="button"
+            onClick={() =>
+              navigate(user?.role === "admin" ? "/admin/bantuan" : "/bantuan")
+            }
+          >
             Bantuan
           </button>
         </nav>
         <div className="flex items-center gap-3">
+          <AccessibilityControl />
           {!user && (
             <Link to="/daftar" className="button-secondary registration-link">
               Daftar
@@ -83,7 +86,7 @@ export function Navbar() {
             type="button"
             onClick={() => {
               setExpanded(false);
-              openChat();
+              navigate(user?.role === "admin" ? "/admin/bantuan" : "/bantuan");
             }}
           >
             Bantuan

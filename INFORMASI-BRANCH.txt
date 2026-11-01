@@ -1,3 +1,12 @@
+PEMBARUAN LOKAL - 1 NOVEMBER 2026 (WIB)
+Branch aktif clone ini: feat1/frontend. Commit dasar clone: ae4d824.
+Perbaikan terbaru belum di-commit atau di-push.
+Perubahan: bantuan pendamping responsif, aksi HP tidak tertutup, revisi ringkas, klaim sesuai demo, fallback panduan yang jujur, navigasi layanan beranda.
+Verifikasi: 19 pemeriksaan PASS; 17 tampilan tanpa overflow; 0 error JavaScript. Build dan lint berhasil dengan peringatan yang tercatat.
+Laporan: frontend/docs/LAPORAN-PERBAIKAN-2026-11-01.txt.
+
+=== RIWAYAT PUBLIKASI SEBELUM PEMBARUAN LOKAL INI ===
+
 INFORMASI BRANCH DAN PERUBAHAN DAFTARIN
 31 Oktober 2026
 
@@ -90,3 +99,12 @@ Pahami README, keputusan produk, dan laporan perbaikan sebelum mengubah alur.
 Data serta akun demo dipakai untuk meninjau frontend. Integrasi backend,
 autentikasi sungguhan, penyimpanan privat, dan AI/OCR merupakan tahap lanjutan.
 Lihat riwayat commit Git untuk hash perubahan terbaru setelah branch dipush.
+
+Pembaruan integrasi API 1 November 2026: backend dari origin/feat/backend fb54b4b sudah masuk worktree lokal. Auth, akun, sesi, preferensi, dan akses admin memakai API; modul persiapan/dokumen/petugas masih lokal. Belum commit/push. Acuan: frontend/docs/LAPORAN-INTEGRASI-API-2026-11-01.txt.
+
+PEMBARUAN PERSONA DAN CHATBOT — 1 November 2026
+Branch kerja tetap feat1/frontend. Belum commit/push pekerjaan ini.
+featAI b818fbf diperiksa dan relay chatbot diadaptasi tanpa key di browser.
+feat/backend a56a80e diperiksa, belum digabung seluruhnya.
+Laporan: frontend/docs/LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt
+Handoff: frontend/docs/KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt

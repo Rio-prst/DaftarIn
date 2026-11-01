@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useParams,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -14,6 +19,7 @@ import {
 
 function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
   const { id } = useParams();
+  const [params, setParams] = useSearchParams();
   const { user: authUser } = useAuth();
   const {
     services,
@@ -34,11 +40,30 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
 
   const [guideCondition, setGuideCondition] = useState<string>(() => {
     if (!service) return "";
+    if (params.get("condition"))
+      return getSelectedConditionOption(service, params.get("condition")!)
+        .value;
     if (guestIntent && guestIntent.serviceId === service.id) {
       return guestIntent.conditionKey;
     }
     return getSelectedConditionOption(service).value;
   });
+  const intendedTarget =
+    params.get("target") === "anggota_keluarga"
+      ? "anggota_keluarga"
+      : params.get("target") === "diri_sendiri"
+        ? "diri_sendiri"
+        : guestIntent?.serviceId === service?.id &&
+            guestIntent?.applicantTarget === "anggota_keluarga"
+          ? "anggota_keluarga"
+          : "diri_sendiri";
+  const queryCondition = params.get("condition");
+  useEffect(() => {
+    if (service && queryCondition)
+      setGuideCondition(
+        getSelectedConditionOption(service, queryCondition).value,
+      );
+  }, [service?.id, queryCondition]);
 
   useEffect(() => {
     if (service) {
@@ -74,18 +99,24 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
 
   const handleSelectCondition = (nextVal: string) => {
     setGuideCondition(nextVal);
+    const next = new URLSearchParams(params);
+    next.set("condition", nextVal);
+    setParams(next, { replace: true });
     saveGuestIntent({
       serviceId: service.id,
       region: service.region || selectedRegion,
       conditionKey: nextVal,
+      applicantTarget: intendedTarget,
     });
   };
 
   const handleStartNewPreparation = () => {
+    if(service.availability==='paused'){navigate('/bantuan',{state:{topic:'Panduan sedang dikoreksi',question:service.availabilityNote||'Kapan saya bisa melanjutkan persiapan layanan ini?'}});return;}
     saveGuestIntent({
       serviceId: service.id,
       region: service.region || selectedRegion,
       conditionKey: activeCondition.value,
+      applicantTarget: intendedTarget,
     });
 
     if (authUser && authUser.role === "warga") {
@@ -93,7 +124,7 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
         service,
         region: service.region || selectedRegion,
         conditionKey: activeCondition.value,
-        applicantTarget: "diri_sendiri",
+        applicantTarget: intendedTarget,
         needConfirmed: false,
       });
       navigate(
@@ -103,7 +134,7 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
     }
 
     navigate(
-      `/persiapan/kebutuhan?new=1&service=${service.id}&condition=${encodeURIComponent(activeCondition.value)}`,
+      `/persiapan/kebutuhan?new=1&service=${service.id}&condition=${encodeURIComponent(activeCondition.value)}&target=${intendedTarget}`,
     );
   };
 
@@ -117,6 +148,7 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
 
   return (
     <>
+      {service.availability==='paused'&&<p className="plain-panel mb-4" role="status">Persiapan layanan sedang dijeda: {service.availabilityNote}. Panduan dan riwayat tetap dapat dibaca. <Link className="text-link" to="/bantuan">Minta bantuan petugas</Link></p>}
       {!isWorkspace ? (
         <nav
           className="text-sm text-slate-500 mb-7"
@@ -175,7 +207,7 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
                     className={
                       "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition " +
                       (isSelected
-                        ? "border-[#1769D2] bg-[#F5F9FF]"
+                        ? "border-[#17324D] bg-[#F5F9FF]"
                         : "border-slate-200 bg-white hover:border-slate-300")
                     }
                   >
@@ -185,10 +217,10 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
                       value={option.value}
                       checked={isSelected}
                       onChange={() => handleSelectCondition(option.value)}
-                      className="mt-1 w-4 h-4 accent-[#1769D2]"
+                      className="mt-1 w-4 h-4 accent-[#17324D]"
                     />
                     <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-sm block text-[#142C4B]">
+                      <span className="font-semibold text-sm block text-[#17324D]">
                         {option.label}
                       </span>
                       <span className="text-xs text-slate-600 block mt-1 leading-relaxed">
@@ -290,7 +322,8 @@ function ServiceGuideContent({ isWorkspace }: { isWorkspace: boolean }) {
           {servicePreparations.length > 0 && (
             <div className="mt-4 pt-4 border-t border-slate-200 space-y-2.5">
               <p className="text-xs font-semibold text-slate-600">
-                Atau lanjutkan persiapan yang sudah ada ({servicePreparations.length}):
+                Atau lanjutkan persiapan yang sudah ada (
+                {servicePreparations.length}):
               </p>
               {servicePreparations.map((prep) => {
                 const prepReadiness = getPreparationReadiness(prep);
@@ -387,7 +420,7 @@ export function ServiceDetailPage() {
 
   if (isCitizenWorkspace) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA] text-[#142C4B]">
+      <div className="flex min-h-screen bg-[#FAF7F2] text-[#17324D]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar

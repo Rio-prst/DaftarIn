@@ -1,5 +1,9 @@
+import { HelpPage } from './pages/HelpPage';
+import { ConnectionNotice } from './components/ConnectionNotice';
+import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { UserPreferencesProvider } from "./preferences/UserPreferencesProvider";
 import { RequireAuth } from "./auth/RequireAuth";
 import { AppContextProvider } from "./context/AppContext";
 import { ToastContainer } from "./components/ToastContainer";
@@ -23,15 +27,22 @@ import { PreparationDocsPage } from "./pages/PreparationDocsPage";
 import { PreparationInspectionPage } from "./pages/PreparationInspectionPage";
 import { PreparationSummaryPage } from "./pages/PreparationSummaryPage";
 import { TrackingPage } from "./pages/TrackingPage";
-import { OfficerPage } from "./pages/OfficerPage";
-import { AdminPage } from "./pages/AdminPage";
+import { NeedsPage } from "./pages/NeedsPage";
+import { FamilyPage } from "./pages/FamilyPage";
+
+const OfficerPage=lazy(()=>import('./pages/OfficerPage').then(module=>({default:module.OfficerPage})));
+const AdminPage=lazy(()=>import('./pages/AdminPage').then(module=>({default:module.AdminPage})));
+const OfficerOverviewPage=lazy(()=>import('./pages/OfficerWorkspacePage').then(module=>({default:module.OfficerOverviewPage})));
+const OfficerHistoryPage=lazy(()=>import('./pages/OfficerWorkspacePage').then(module=>({default:module.OfficerHistoryPage})));
 
 function Application() {
   const { user } = useAuth();
+  const canUseCitizenChat = !user || user.role === "warga";
   return (
     <AppContextProvider key={user?.id || "guest"}>
       <RouteFocus />
-      <div className="min-h-screen bg-[#F5F7FB] text-[#172B45] font-sans antialiased selection:bg-[#1769D2] selection:text-white relative">
+      <ConnectionNotice />
+      <div className="min-h-screen bg-[#F5F7FB] text-[#172B45] font-sans antialiased selection:bg-[#17324D] selection:text-white relative">
         <a
           href="#main-content"
           className="skip-link"
@@ -42,9 +53,12 @@ function Application() {
         >
           Lewati ke isi halaman
         </a>
+        <Suspense fallback={<main id="main-content" className="workspace-content" aria-busy="true"><p role="status">Membuka ruang kerja…</p></main>}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/bantuan" element={<HelpPage />} />
           <Route path="/katalog" element={<CatalogPage />} />
+          <Route path="/kebutuhan" element={<NeedsPage />} />
           <Route path="/panduan" element={<ServiceDetailPage />} />
           <Route path="/layanan/:id" element={<ServiceDetailPage />} />
           <Route path="/masuk" element={<LoginPage />} />
@@ -55,6 +69,7 @@ function Application() {
             <Route path="/akun" element={<AccountPage />} />
           </Route>
           <Route element={<RequireAuth roles={["warga"]} />}>
+            <Route path="/keluarga" element={<FamilyPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/persiapan" element={<PreparationListPage />} />
             <Route
@@ -75,19 +90,27 @@ function Application() {
               element={<PreparationSummaryPage />}
             />
             <Route path="/pelacakan" element={<TrackingPage />} />
+            <Route path="/pelacakan/:id" element={<TrackingPage />} />
           </Route>
           <Route element={<RequireAuth roles={["petugas"]} />}>
             <Route path="/petugas" element={<OfficerPage />} />
+            <Route path="/petugas/ringkasan" element={<OfficerOverviewPage />} />
+            <Route path="/petugas/riwayat" element={<OfficerHistoryPage />} />
+            <Route path="/petugas/riwayat/:id" element={<OfficerPage />} />
+            <Route path="/petugas/:id" element={<OfficerPage />} />
           </Route>
           <Route element={<RequireAuth roles={["admin"]} />}>
-            <Route path="/admin" element={<AdminPage />} />
+            {['/admin','/admin/layanan','/admin/petugas','/admin/sumber','/admin/aktivitas','/admin/bantuan'].map(path=><Route key={path} path={path} element={<AdminPage />} />)}
           </Route>
           <Route path="/akses-ditolak" element={<AccessDeniedPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </Suspense>
         <ToastContainer />
-        <ChatbotModal />
-        <FloatingAiButton />
+        {canUseCitizenChat && <>
+          <ChatbotModal />
+          <FloatingAiButton />
+        </>}
       </div>
     </AppContextProvider>
   );
@@ -97,7 +120,9 @@ export function App() {
   return (
     <HashRouter>
       <AuthProvider>
-        <Application />
+        <UserPreferencesProvider>
+          <Application />
+        </UserPreferencesProvider>
       </AuthProvider>
     </HashRouter>
   );

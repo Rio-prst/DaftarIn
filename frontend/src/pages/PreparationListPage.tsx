@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
@@ -12,26 +13,25 @@ export function PreparationListPage() {
     services,
     preparations,
     selectPreparation,
-    createPreparation,
+    manageDraft,
     getPreparationReadiness,
     applications,
   } = useApp();
   const navigate = useNavigate();
+  const [archived, setArchived] = useState(false);
+  const [error, setError] = useState("");
 
   const validPreparations = preparations.filter(
-    (p) => p.id !== "prep-draft-uninitialized",
+    (p) =>
+      p.id !== "prep-draft-uninitialized" && Boolean(p.archivedAt) === archived,
   );
 
   const handleStartNewDefault = () => {
-    const created = createPreparation({
-      service: services[0],
-      needConfirmed: false,
-    });
-    navigate(`/persiapan/kebutuhan?prep=${encodeURIComponent(created.id)}`);
+    navigate("/kebutuhan");
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F7F8FA] text-[#142C4B]">
+    <div className="flex min-h-screen bg-[#FAF7F2] text-[#17324D]">
       <Sidebar role="warga" />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar breadcrumbs={["Persiapan saya"]} role="warga" />
@@ -49,9 +49,6 @@ export function PreparationListPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <Link to="/katalog" className="button-secondary">
-                Pilih dari katalog
-              </Link>
               <button
                 type="button"
                 onClick={handleStartNewDefault}
@@ -62,6 +59,19 @@ export function PreparationListPage() {
             </div>
           </div>
 
+          <label className="flex gap-3 items-center min-h-[44px] mb-4">
+            <input
+              type="checkbox"
+              checked={archived}
+              onChange={(event) => setArchived(event.target.checked)}
+            />
+            Lihat persiapan yang diarsipkan
+          </label>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           {validPreparations.length === 0 ? (
             <div className="empty-state">
               <h2>Belum ada persiapan yang disimpan</h2>
@@ -77,9 +87,6 @@ export function PreparationListPage() {
                 >
                   Mulai persiapan baru
                 </button>
-                <Link to="/katalog" className="button-secondary">
-                  Cari layanan di katalog
-                </Link>
               </div>
             </div>
           ) : (
@@ -172,7 +179,7 @@ export function PreparationListPage() {
                         <span>Diperbarui: {prep.updatedAt}</span>
                         {linkedApp && (
                           <Link
-                            to={`/pelacakan?id=${encodeURIComponent(linkedApp.id)}`}
+                            to={`/pelacakan/${encodeURIComponent(linkedApp.id)}`}
                             className="text-link text-xs"
                           >
                             Permintaan tinjauan {linkedApp.internal_reference} (
@@ -183,6 +190,52 @@ export function PreparationListPage() {
                     </div>
 
                     <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                      <button
+                        type="button"
+                        className="text-link min-h-[44px]"
+                        onClick={() => {
+                          try {
+                            manageDraft(
+                              prep.id,
+                              archived ? "restore" : "archive",
+                            );
+                            setError("");
+                          } catch (cause) {
+                            setError(
+                              cause instanceof Error
+                                ? cause.message
+                                : "Belum berhasil.",
+                            );
+                          }
+                        }}
+                      >
+                        {archived ? "Pulihkan persiapan" : "Arsipkan persiapan"}
+                      </button>
+                      {!linkedApp && !prep.linkedApplicationId && (
+                        <button
+                          type="button"
+                          className="text-link min-h-[44px]"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "Hapus draf yang belum pernah dikirim ini?",
+                              )
+                            ) {
+                              try {
+                                manageDraft(prep.id, "delete");
+                              } catch (cause) {
+                                setError(
+                                  cause instanceof Error
+                                    ? cause.message
+                                    : "Belum berhasil.",
+                                );
+                              }
+                            }
+                          }}
+                        >
+                          Hapus draf
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="button-primary"

@@ -3,8 +3,11 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PreparationLayout } from "../components/PreparationLayout";
 import { useApp } from "../context/AppContext";
 import { getSelectedConditionOption } from "../types/preparation";
+import { useAuth } from "../auth/AuthContext";
+import { FamilyContext } from "../components/FamilyContext";
 
 export const PreparationDataPage: React.FC = () => {
+  const { mode } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
@@ -40,6 +43,7 @@ export const PreparationDataPage: React.FC = () => {
   };
 
   const querySuffix = buildQuery();
+  const [errorField, setErrorField] = useState("");
   const [error, setError] = useState("");
 
   const handleSaveAndContinue = () => {
@@ -50,28 +54,37 @@ export const PreparationDataPage: React.FC = () => {
       );
       return;
     }
-    if (formData.nama_lengkap.trim().length < 3) {
-      setError("Isi nama lengkap pemohon sesuai KTP (minimal 3 karakter).");
+    if (formData.nama_lengkap.trim().length < 1) {
+      setError("Isi nama lengkap pemohon sesuai identitas.");
+      setErrorField("applicant-name");
       document.getElementById("applicant-name")?.focus();
       return;
     }
     if (!/^\d{16}$/.test(formData.nik.trim())) {
       setError("NIK pemohon harus terdiri dari 16 angka.");
+      setErrorField("applicant-nik");
       document.getElementById("applicant-nik")?.focus();
       return;
     }
     if (!/^\d{16}$/.test(formData.no_kk.trim())) {
       setError("Nomor Kartu Keluarga (KK) harus terdiri dari 16 angka.");
+      setErrorField("family-number");
       document.getElementById("family-number")?.focus();
       return;
     }
     if (formData.alamat.trim().length < 5) {
-      setError("Isi alamat domisili sesuai Kartu Keluarga (minimal 5 karakter).");
+      setError(
+        "Isi alamat domisili sesuai Kartu Keluarga (minimal 5 karakter).",
+      );
+      setErrorField("applicant-address");
       document.getElementById("applicant-address")?.focus();
       return;
     }
     if (formData.alasan.trim().length < 5) {
-      setError("Isi rincian perubahan atau alasan permohonan (minimal 5 karakter).");
+      setError(
+        "Isi rincian perubahan atau alasan permohonan (minimal 5 karakter).",
+      );
+      setErrorField("application-reason");
       document.getElementById("application-reason")?.focus();
       return;
     }
@@ -83,31 +96,52 @@ export const PreparationDataPage: React.FC = () => {
   return (
     <PreparationLayout
       step={2}
-      title="Data Pemohon & Formulir"
+      title={
+        currentService.id === 3 && activePreparation.familyMember
+          ? "Data orang tua atau pelapor"
+          : "Data pemohon"
+      }
       actions={
         <>
           <Link
             to={"/persiapan/kebutuhan" + querySuffix}
             className="button-secondary min-h-[46px] px-5 text-sm font-semibold flex items-center gap-1.5"
           >
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Kembali ke Kebutuhan</span>
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-[18px]"
+            >
+              arrow_back
+            </span>
+            <span>Kembali ke kebutuhan</span>
           </Link>
           <button
             type="button"
             className="button-primary min-h-[46px] px-6 text-sm font-semibold flex items-center gap-2 shadow-xs"
             onClick={handleSaveAndContinue}
           >
-            <span>Simpan &amp; Lanjut ke Dokumen</span>
-            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            <span>Lanjut ke dokumen</span>
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-[18px]"
+            >
+              arrow_forward
+            </span>
           </button>
         </>
       }
     >
+      <FamilyContext
+        member={activePreparation.familyMember}
+        birth={currentService.id === 3}
+      />
       {!readiness.steps.step1Kebutuhan && (
         <div className="case-update-note mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs sm:text-sm text-blue-950 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <span>
-            <strong>Prasyarat belum selesai:</strong> Tahap 1 (Kebutuhan) belum dikonfirmasi pada draf ini. Konfirmasi layanan, subjek pengurusan, dan kondisi (saat ini: <strong>{activeCondition.label}</strong>) sebelum melanjutkan ke tahap Dokumen.
+            <strong>Prasyarat belum selesai:</strong> Tahap 1 (Kebutuhan) belum
+            dikonfirmasi pada draf ini. Konfirmasi layanan, subjek pengurusan,
+            dan kondisi (saat ini: <strong>{activeCondition.label}</strong>)
+            sebelum melanjutkan ke tahap Dokumen.
           </span>
           <Link
             to={"/persiapan/kebutuhan" + querySuffix}
@@ -119,8 +153,17 @@ export const PreparationDataPage: React.FC = () => {
       )}
 
       {error && (
-        <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm font-medium text-rose-700 flex items-center gap-2.5">
-          <span className="material-symbols-outlined text-[20px] text-rose-600 shrink-0">error</span>
+        <div
+          id="applicant-form-error"
+          role="alert"
+          className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm font-medium text-rose-700 flex items-center gap-2.5"
+        >
+          <span
+            aria-hidden="true"
+            className="material-symbols-outlined text-[20px] text-rose-600 shrink-0"
+          >
+            error
+          </span>
           <span>{error}</span>
         </div>
       )}
@@ -128,45 +171,70 @@ export const PreparationDataPage: React.FC = () => {
       <section className="space-y-6" aria-labelledby="identity-heading">
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
-            <h2 id="identity-heading" className="text-xl sm:text-2xl font-bold text-[#142C4B] font-display">
-              Identitas Pemohon dan Rincian Permohonan
+            <h2
+              id="identity-heading"
+              className="text-xl sm:text-2xl font-bold text-[#17324D] font-display"
+            >
+              Identitas pemohon
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Kondisi dipilih: <strong className="text-[#142C4B]">{activeCondition.label}</strong> (
+              Kondisi dipilih:{" "}
+              <strong className="text-[#17324D]">
+                {activeCondition.label}
+              </strong>{" "}
+              (
               {activePreparation.applicantTarget === "anggota_keluarga"
                 ? "Untuk Anggota Keluarga"
                 : "Untuk Diri Sendiri"}
               ) ·{" "}
               <Link
                 to={"/persiapan/kebutuhan" + querySuffix}
-                className="text-[#1769D2] hover:underline font-semibold"
+                className="text-[#17324D] hover:underline font-semibold"
               >
                 Ubah Kebutuhan
               </Link>
             </p>
           </div>
 
-          <button
-            type="button"
-            className="h-[40px] px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#1769D2] font-semibold text-xs sm:text-sm border border-blue-200 transition-all flex items-center gap-1.5 active:scale-97"
-            onClick={() => {
-              setError("");
-              loadDemoFormData();
-            }}
-          >
-            <span className="material-symbols-outlined text-[18px]">auto_fix_high</span>
-            <span>✨ Isi Cepat Data Warga</span>
-          </button>
+          {mode === "demo" && (
+            <button
+              type="button"
+              className="h-[40px] px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#17324D] font-semibold text-xs sm:text-sm border border-blue-200 transition-all flex items-center gap-1.5 active:scale-97"
+              onClick={() => {
+                setError("");
+                loadDemoFormData();
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className="material-symbols-outlined text-[18px]"
+              >
+                auto_fix_high
+              </span>
+              <span>Gunakan data contoh</span>
+            </button>
+          )}
         </div>
 
         <div className="space-y-5">
           {/* Nama Lengkap */}
           <div className="space-y-1.5">
-            <label htmlFor="applicant-name" className="text-sm font-bold text-[#142C4B]">
-              Nama Lengkap Pemohon (Sesuai KTP/Akta)
+            <label
+              htmlFor="applicant-name"
+              className="text-sm font-bold text-[#17324D]"
+            >
+              {currentService.id === 3 && activePreparation.familyMember
+                ? "Nama lengkap orang tua atau pelapor"
+                : "Nama lengkap pemohon (sesuai KTP/akta)"}
             </label>
             <input
               id="applicant-name"
+              aria-invalid={Boolean(error) && errorField === "applicant-name"}
+              aria-describedby={
+                error && errorField === "applicant-name"
+                  ? "applicant-form-error"
+                  : undefined
+              }
               type="text"
               value={formData.nama_lengkap}
               onChange={(e) => {
@@ -178,14 +246,17 @@ export const PreparationDataPage: React.FC = () => {
                   ? "Contoh: Bima Prasetya (Anggota Keluarga)"
                   : "Contoh: Ayu Lestari"
               }
-              className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all"
+              className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all"
             />
           </div>
 
           {/* Grid NIK & No KK */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label htmlFor="applicant-nik" className="text-sm font-bold text-[#142C4B] flex items-center justify-between">
+              <label
+                htmlFor="applicant-nik"
+                className="text-sm font-bold text-[#17324D] flex items-center justify-between"
+              >
                 <span>NIK Pemohon (16 Angka)</span>
                 <span className="text-xs font-mono font-normal text-slate-500">
                   {formData.nik.length}/16
@@ -193,6 +264,12 @@ export const PreparationDataPage: React.FC = () => {
               </label>
               <input
                 id="applicant-nik"
+                aria-invalid={Boolean(error) && errorField === "applicant-nik"}
+                aria-describedby={
+                  error && errorField === "applicant-nik"
+                    ? "applicant-form-error"
+                    : undefined
+                }
                 type="text"
                 inputMode="numeric"
                 maxLength={16}
@@ -202,12 +279,15 @@ export const PreparationDataPage: React.FC = () => {
                   updateFormField("nik", e.target.value.replace(/\D/g, ""));
                 }}
                 placeholder="3173051508950001"
-                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base font-mono text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all"
+                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base font-mono text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="family-number" className="text-sm font-bold text-[#142C4B] flex items-center justify-between">
+              <label
+                htmlFor="family-number"
+                className="text-sm font-bold text-[#17324D] flex items-center justify-between"
+              >
                 <span>Nomor Kartu Keluarga (16 Angka)</span>
                 <span className="text-xs font-mono font-normal text-slate-500">
                   {formData.no_kk.length}/16
@@ -215,6 +295,12 @@ export const PreparationDataPage: React.FC = () => {
               </label>
               <input
                 id="family-number"
+                aria-invalid={Boolean(error) && errorField === "family-number"}
+                aria-describedby={
+                  error && errorField === "family-number"
+                    ? "applicant-form-error"
+                    : undefined
+                }
                 type="text"
                 inputMode="numeric"
                 maxLength={16}
@@ -224,7 +310,7 @@ export const PreparationDataPage: React.FC = () => {
                   updateFormField("no_kk", e.target.value.replace(/\D/g, ""));
                 }}
                 placeholder="3173050101200009"
-                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base font-mono text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all"
+                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base font-mono text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all"
               />
             </div>
           </div>
@@ -232,7 +318,10 @@ export const PreparationDataPage: React.FC = () => {
           {/* Grid Telepon & Alamat */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1.5">
-              <label htmlFor="contact-phone" className="text-sm font-bold text-[#142C4B]">
+              <label
+                htmlFor="contact-phone"
+                className="text-sm font-bold text-[#17324D]"
+              >
                 Nomor Telepon / WhatsApp Aktif
               </label>
               <input
@@ -241,16 +330,27 @@ export const PreparationDataPage: React.FC = () => {
                 value={formData.telepon}
                 onChange={(e) => updateFormField("telepon", e.target.value)}
                 placeholder="081234567890"
-                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all"
+                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="applicant-address" className="text-sm font-bold text-[#142C4B]">
+              <label
+                htmlFor="applicant-address"
+                className="text-sm font-bold text-[#17324D]"
+              >
                 Alamat Domisili Sesuai KK
               </label>
               <input
                 id="applicant-address"
+                aria-invalid={
+                  Boolean(error) && errorField === "applicant-address"
+                }
+                aria-describedby={
+                  error && errorField === "applicant-address"
+                    ? "applicant-form-error"
+                    : undefined
+                }
                 type="text"
                 value={formData.alamat}
                 onChange={(e) => {
@@ -258,18 +358,29 @@ export const PreparationDataPage: React.FC = () => {
                   updateFormField("alamat", e.target.value);
                 }}
                 placeholder="Jl. Merdeka No. 12, RT 003 / RW 002"
-                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all"
+                className="w-full h-[50px] px-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all"
               />
             </div>
           </div>
 
           {/* Alasan / Rincian Permohonan */}
           <div className="space-y-1.5">
-            <label htmlFor="application-reason" className="text-sm font-bold text-[#142C4B]">
+            <label
+              htmlFor="application-reason"
+              className="text-sm font-bold text-[#17324D]"
+            >
               Rincian Perubahan atau Keperluan Permohonan
             </label>
             <textarea
               id="application-reason"
+              aria-invalid={
+                Boolean(error) && errorField === "application-reason"
+              }
+              aria-describedby={
+                error && errorField === "application-reason"
+                  ? "applicant-form-error"
+                  : undefined
+              }
               rows={3}
               value={formData.alasan}
               onChange={(e) => {
@@ -277,15 +388,23 @@ export const PreparationDataPage: React.FC = () => {
                 updateFormField("alasan", e.target.value);
               }}
               placeholder="Contoh: Pembaruan susunan anggota keluarga karena penambahan anak baru lahir."
-              className="w-full p-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#1769D2] focus:ring-4 focus:ring-blue-100 transition-all leading-relaxed"
+              className="w-full p-4 rounded-xl border border-slate-300 text-base text-[#0F223D] placeholder:text-slate-400 focus:outline-hidden focus:border-[#17324D] focus:ring-4 focus:ring-blue-100 transition-all leading-relaxed"
             />
           </div>
         </div>
 
         {readiness.isStale && (
           <p className="text-xs text-slate-500 pt-3 border-t border-slate-100 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[16px] text-amber-500">info</span>
-            <span>Perubahan data telah tersimpan dan akan diperiksa ulang pada tahap Pemeriksaan.</span>
+            <span
+              aria-hidden="true"
+              className="material-symbols-outlined text-base text-amber-500"
+            >
+              info
+            </span>
+            <span>
+              Perubahan data telah tersimpan dan akan diperiksa ulang pada tahap
+              Pemeriksaan.
+            </span>
           </p>
         )}
       </section>

@@ -1,5 +1,9 @@
+import { SubmissionReviewHistory } from '../components/SubmissionReviewHistory';
+import { Link, useLocation, useParams } from "react-router-dom";
+import { RequestListPage } from "./RequestListPage";
 import { useEffect, useState, type FormEvent } from "react";
 import { WorkspaceLayout } from "../components/WorkspaceLayout";
+import { FamilyContext } from "../components/FamilyContext";
 import {
   DocumentPreviewModal,
   isDocumentContentAvailable,
@@ -10,219 +14,87 @@ import {
   getReviewStatusLabel,
   useApp,
   type ApplicationRecord,
+  type ApplicationAttachment,
 } from "../context/AppContext";
 import {
   documentSlots,
   OFFICER_ISSUE_CATEGORY_LABELS,
-  OFFICER_ITEM_VERDICT_LABELS,
   type OfficerIssueCategory,
   type OfficerItemAssessment,
   type OfficerItemVerdict,
 } from "../types/preparation";
 
-const filterOptions: Array<{ value: string; label: string }> = [
-  { value: "", label: "Semua status tinjauan" },
-  { value: "DITERIMA", label: "Menunggu tinjauan" },
-  { value: "VERIFIKASI", label: "Sedang ditinjau" },
-  { value: "PERLU_PERBAIKAN_WARGA", label: "Perlu perbaikan (menunggu warga)" },
-  {
-    value: "PERBAIKAN_DIKIRIM",
-    label: "Perbaikan dikirim (perlu ditinjau ulang)",
-  },
-  { value: "SELESAI", label: "Tinjauan awal selesai" },
-];
-
 export function OfficerPage() {
-  const { applications } = useApp();
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("");
-  const [selectedId, setSelectedId] = useState("");
-
-  // Hanya tampilkan permintaan tinjauan yang benar-benar sudah dikirim warga dan ditugaskan ke petugas ini
-  const assignedSubmitted = applications.filter(
-    (item) =>
-      item.current_status !== "DICATAT_WARGA" &&
-      Boolean(item.assigned_officer_id),
+  const { id } = useParams();
+  return id ? (
+    <OfficerRequestPage key={id} id={id} />
+  ) : (
+    <RequestListPage kind="officer" />
   );
-
-  const filtered = assignedSubmitted.filter((item) => {
-    const matchesStatus =
-      !filter ||
-      (filter === "PERLU_PERBAIKAN_WARGA"
-        ? item.current_status === "PERLU_PERBAIKAN" && !item.revision_pending
-        : filter === "PERBAIKAN_DIKIRIM"
-          ? item.current_status === "PERLU_PERBAIKAN" &&
-            Boolean(item.revision_pending)
-          : item.current_status === filter);
-
-    const searchTarget = [
-      item.applicant_name,
-      item.service_name,
-      item.internal_reference,
-      item.preparation_reference || "",
-      item.official_number || "",
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return matchesStatus && searchTarget.includes(query.trim().toLowerCase());
-  });
-
-  const selected =
-    filtered.find((item) => item.id === selectedId) || filtered[0];
-
+}
+function OfficerRequestPage({ id }: { id: string }) {
+  const { applications } = useApp();
+  const location = useLocation();
+  const record = applications.find(
+    (item) =>
+      item.id === id &&
+      item.current_status !== "DICATAT_WARGA" &&
+      item.assigned_officer_id,
+  );
+  const previous = location.state?.returnTo;
+  const back =
+    typeof previous === "string" &&
+    (previous === "/petugas" || previous.startsWith("/petugas?") || previous === '/petugas/ringkasan' || previous === '/petugas/riwayat' || previous.startsWith('/petugas/riwayat?'))
+      ? previous
+      : location.pathname.startsWith('/petugas/riwayat/') ? '/petugas/riwayat' : '/petugas';
   return (
     <WorkspaceLayout
-      title="Antrean Tinjauan Awal Petugas"
-      description="Periksa kelengkapan data, pratinjau berkas persyaratan sesuai versi kiriman, dan berikan penilaian eksplisit per item."
+      title="Rincian tinjauan"
+      actions={
+        <Link to={back} className="button-secondary">
+          {back.startsWith('/petugas/riwayat') ? 'Kembali ke riwayat' : back === '/petugas/ringkasan' ? 'Kembali ke ringkasan' : 'Kembali ke antrean'}
+        </Link>
+      }
     >
-      <div className="mb-5 p-3.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 leading-relaxed">
-        <strong>Ruang kerja tinjauan pendamping (Contoh / Simulasi):</strong>{" "}
-        Halaman ini hanya menampilkan permintaan tinjauan yang secara eksplisit
-        dikirim oleh warga dan ditugaskan ke akun petugas ini. Alur tinjauan:{" "}
-        <strong>
-          Menunggu tinjauan / Perbaikan dikirim → Sedang ditinjau → Perlu
-          perbaikan atau Tinjauan awal selesai
-        </strong>
-        . Penyelesaian tinjauan mewajibkan penilaian eksplisit untuk data
-        pemohon dan setiap berkas persyaratan.
-      </div>
-
-      <div className="queue-filters">
-        <div className="form-field">
-          <label htmlFor="queue-search">Cari permintaan tinjauan</label>
-          <input
-            id="queue-search"
-            type="search"
-            placeholder="Nama warga, layanan, atau kode TINJAU-2026-..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="queue-status">Filter status tinjauan</label>
-          <select
-            id="queue-status"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-          >
-            {filterOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {filtered.length && selected ? (
-        <div className="officer-grid">
-          <section
-            className="queue-list"
-            aria-label="Daftar permintaan tinjauan"
-          >
-            <p className="queue-count">
-              {filtered.length} permintaan tinjauan ditugaskan
-            </p>
-            {filtered.map((item) => {
-              const statusText = getReviewStatusLabel(item);
-              const isAttention =
-                item.current_status === "DITERIMA" ||
-                (item.current_status === "PERLU_PERBAIKAN" &&
-                  Boolean(item.revision_pending));
-              const isReady =
-                item.current_status === "SELESAI" ||
-                item.current_status === "HASIL_DITERIMA_WARGA";
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={
-                    "queue-item" + (item.id === selected.id ? " selected" : "")
-                  }
-                  onClick={() => setSelectedId(item.id)}
-                  aria-pressed={item.id === selected.id}
-                >
-                  <span className="queue-item-top">
-                    <strong>{item.applicant_name}</strong>
-                    <span
-                      className={
-                        isReady
-                          ? "status-ready"
-                          : isAttention
-                            ? "status-attention"
-                            : "status-neutral"
-                      }
-                    >
-                      {statusText}
-                    </span>
-                  </span>
-                  <span>{item.service_name}</span>
-                  <small>
-                    {item.internal_reference}
-                    {item.submitted_snapshot
-                      ? ` · Kiriman #${item.submitted_snapshot.submissionVersion}`
-                      : ""}
-                  </small>
-                </button>
-              );
-            })}
-          </section>
-          <OfficerDetail
-            key={`${selected.id}-v${selected.submitted_snapshot?.submissionVersion || 1}`}
-            record={selected}
-          />
-        </div>
+      {record ? (
+        <OfficerDetail
+          key={`${record.id}-v${record.submitted_snapshot?.submissionVersion || 1}`}
+          record={record}
+          historyVersion={Number(new URLSearchParams(location.search).get('version')) || location.state?.submissionVersion}
+          readOnly={location.pathname.startsWith('/petugas/riwayat/')}
+        />
       ) : (
-        <div className="empty-state">
-          <h2>
-            {assignedSubmitted.length
-              ? "Permintaan tinjauan tidak ditemukan"
-              : "Belum ada permintaan tinjauan yang ditugaskan"}
-          </h2>
-          <p>
-            {assignedSubmitted.length
-              ? "Coba kata kunci pencarian atau filter status lain."
-              : "Permintaan yang dikirim warga melalui tombol 'Kirim untuk ditinjau petugas' akan muncul di antrean ini."}
-          </p>
-          {assignedSubmitted.length > 0 && (
-            <button
-              className="button-secondary"
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setFilter("");
-              }}
-            >
-              Reset filter
-            </button>
-          )}
+        <div className="empty-state" role="alert">
+          <h2>Tinjauan tidak ditemukan</h2>
+          <p>Permintaan tidak tersedia atau tidak ditugaskan kepadamu.</p>
         </div>
       )}
     </WorkspaceLayout>
   );
 }
-
-function OfficerDetail({ record }: { record: ApplicationRecord }) {
+function OfficerDetail({ record, historyVersion, readOnly }: { record: ApplicationRecord; historyVersion?: number; readOnly: boolean }) {
   const {
     services,
+    user,
     officerStartReview,
     officerRequestRevision,
     officerCompleteReview,
   } = useApp();
 
-  const snapshot = record.submitted_snapshot;
+  const snapshot = readOnly && historyVersion ? record.submission_history?.find(item=>item.submissionVersion===historyVersion) || record.submitted_snapshot : record.submitted_snapshot;
   const currentSubmissionVersion = snapshot?.submissionVersion || 1;
   const service =
-    services.find((s) => s.id === record.service_id) || services[0];
-  const slots = documentSlots(
+    snapshot?.serviceSnapshot || services.find((s) => s.id === record.service_id) || services[0];
+  const slots = snapshot?.requiredSlots || documentSlots(
     service,
     snapshot?.conditionKey || record.condition_key,
   );
 
-  const attachments = snapshot?.attachments?.length
+  const attachments = snapshot
     ? snapshot.attachments
     : record.attachments || [];
+
+  const assessmentDocuments: ApplicationAttachment[] = [...attachments, ...slots.filter(slot => slot.required && !attachments.some(att => att.id === slot.id || (!att.id && att.name === slot.name))).map(slot => ({id: slot.id, name: slot.name, fileName: 'Belum dilampirkan', size: '—', fileType: 'pdf' as const}))];
 
   const targetChoices = [
     ...attachments.map((att) => att.name),
@@ -241,29 +113,45 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         ? "complete"
         : "start";
 
+  const draftKey = `daftarin:review-draft:${user.id}:${record.id}:${currentSubmissionVersion}`;
+  const [savedDraft] = useState(() => {
+    try {
+      const raw = JSON.parse(sessionStorage.getItem(draftKey) || '{}');
+      const text = (key: string) => typeof raw?.[key] === 'string' ? raw[key].slice(0, 2000) as string : '';
+      const notes: Record<string,string> = {};
+      const verdicts: Record<string, OfficerItemVerdict | ''> = {};
+      if (raw?.notesByItem && typeof raw.notesByItem === 'object') for (const [key,value] of Object.entries(raw.notesByItem)) if (typeof value === 'string') notes[key] = value.slice(0,1000);
+      if (raw?.verdictsByItem && typeof raw.verdictsByItem === 'object') for (const [key,value] of Object.entries(raw.verdictsByItem)) if (['sesuai','perlu_perbaikan','belum_dapat_diperiksa',''].includes(String(value))) verdicts[key] = value as OfficerItemVerdict;
+      return {notes, verdicts, startNote:text('startNote'), targetItem:text('targetItem'), issueCategory:text('issueCategory'), problemDescription:text('problemDescription'), requiredAction:text('requiredAction'), completeNote:text('completeNote')};
+    } catch { return null; }
+  });
   const [actionTab, setActionTab] = useState<"start" | "revision" | "complete">(
     defaultActionTab,
   );
-  const [startNote, setStartNote] = useState("");
+  const [startNote, setStartNote] = useState(savedDraft?.startNote || "");
   const [targetItem, setTargetItem] = useState(
-    record.latest_revision_detail?.targetItem || targetChoices[0] || "",
+    savedDraft?.targetItem || record.latest_revision_detail?.targetItem || targetChoices[0] || "",
   );
   const [issueCategory, setIssueCategory] = useState<OfficerIssueCategory>(
-    record.latest_revision_detail?.issueCategory || "sulit_dibaca",
+    savedDraft?.issueCategory && Object.hasOwn(OFFICER_ISSUE_CATEGORY_LABELS, savedDraft.issueCategory) ? savedDraft.issueCategory as OfficerIssueCategory : record.latest_revision_detail?.issueCategory || 'sulit_dibaca',
   );
-  const [problemDescription, setProblemDescription] = useState("");
-  const [requiredAction, setRequiredAction] = useState("");
+  const [problemDescription, setProblemDescription] = useState(savedDraft?.problemDescription || "");
+  const [requiredAction, setRequiredAction] = useState(savedDraft?.requiredAction || "");
   // Catatan penyelesaian TIDAK diisi default agar petugas menulis hasil pemeriksaan secara nyata
-  const [completeNote, setCompleteNote] = useState("");
+  const [completeNote, setCompleteNote] = useState(savedDraft?.completeNote || "");
   const [error, setError] = useState("");
   const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(
     null,
   );
+  const [notesByItem, setNotesByItem] = useState<Record<string, string>>(() => savedDraft && Object.keys(savedDraft.notes).length ? savedDraft.notes : Object.fromEntries(
+    (record.latest_evaluation?.submissionVersion === currentSubmissionVersion ? record.latest_evaluation.itemAssessments : []).map(item => [item.itemId, item.note || ''])
+  ));
 
   // State penilaian eksplisit per item untuk versi kiriman aktif (tanpa auto-select saat membuka pratinjau)
   const [verdictsByItem, setVerdictsByItem] = useState<
     Record<string, OfficerItemVerdict | "">
   >(() => {
+    if (savedDraft && Object.keys(savedDraft.verdicts).length) return savedDraft.verdicts;
     const existingEval =
       record.latest_evaluation?.submissionVersion === currentSubmissionVersion
         ? record.latest_evaluation
@@ -276,7 +164,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         initial[a.itemId] = a.verdict;
       });
     }
-    attachments.forEach((att, idx) => {
+    assessmentDocuments.forEach((att, idx) => {
       const key = att.id || `att-${idx}`;
       if (!(key in initial)) {
         initial[key] = "";
@@ -284,6 +172,14 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
     });
     return initial;
   });
+
+  useEffect(() => {
+    if (readOnly) return;
+    try {
+      if (record.current_status !== 'VERIFIKASI') sessionStorage.removeItem(draftKey);
+      else sessionStorage.setItem(draftKey, JSON.stringify({verdictsByItem, notesByItem, startNote, targetItem, issueCategory, problemDescription, requiredAction, completeNote}));
+    } catch { setError('Catatan sementara belum tersimpan. Tetap di halaman ini sebelum mengirim hasil tinjauan.'); }
+  }, [readOnly, draftKey, record.current_status, verdictsByItem, notesByItem, startNote, targetItem, issueCategory, problemDescription, requiredAction, completeNote]);
 
   useEffect(() => {
     if (record.current_status === "VERIFIKASI" && actionTab === "start") {
@@ -296,7 +192,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
   // -> Sedang ditinjau (VERIFIKASI)
   // -> Perlu perbaikan (PERLU_PERBAIKAN) atau Tinjauan awal selesai (SELESAI)
   const canStartReview =
-    record.current_status === "DITERIMA" ||
+    record.current_status === "DITERIMA" || record.current_status === 'DIPROSES' ||
     (record.current_status === "PERLU_PERBAIKAN" &&
       Boolean(record.revision_pending));
   const isCurrentlyReviewing = record.current_status === "VERIFIKASI";
@@ -318,9 +214,10 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         itemName: "Data pemohon & isian formulir",
         itemType: "form_data",
         verdict: formVerdict,
+        note: notesByItem.form_data?.trim() || undefined,
       });
     }
-    attachments.forEach((att, idx) => {
+    assessmentDocuments.forEach((att, idx) => {
       const key = att.id || `att-${idx}`;
       const v = verdictsByItem[key];
       if (v) {
@@ -329,6 +226,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
           itemName: att.name,
           itemType: "document",
           verdict: v,
+          note: notesByItem[key]?.trim() || undefined,
           fileVersion: att.version || 1,
           fileName: att.fileName,
         });
@@ -337,15 +235,15 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
     return list;
   };
 
-  const unavailableAttachments = attachments.filter(
+  const unavailableAttachments = assessmentDocuments.filter(
     (att) => !isDocumentContentAvailable(att),
   );
   const allAttachmentsAvailable = unavailableAttachments.length === 0;
 
   const isFormAssessedSesuai = verdictsByItem["form_data"] === "sesuai";
   const allDocsAssessedSesuai =
-    attachments.length > 0 &&
-    attachments.every((att, idx) => {
+    assessmentDocuments.length > 0 &&
+    assessmentDocuments.every((att, idx) => {
       const key = att.id || `att-${idx}`;
       return (
         isDocumentContentAvailable(att) && verdictsByItem[key] === "sesuai"
@@ -355,7 +253,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
   const hasAnyNeedsRevisionOrUnavailable =
     verdictsByItem["form_data"] === "perlu_perbaikan" ||
     verdictsByItem["form_data"] === "belum_dapat_diperiksa" ||
-    attachments.some((att, idx) => {
+    assessmentDocuments.some((att, idx) => {
       const v = verdictsByItem[att.id || `att-${idx}`];
       return v === "perlu_perbaikan" || v === "belum_dapat_diperiksa";
     });
@@ -409,11 +307,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
     e.preventDefault();
     setError("");
     try {
-      officerCompleteReview(
-        record.id,
-        completeNote,
-        buildItemAssessments(),
-      );
+      officerCompleteReview(record.id, completeNote, buildItemAssessments());
       setCompleteNote("");
     } catch (cause) {
       setError(
@@ -437,7 +331,6 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         ? [snapshot]
         : [];
 
-  const evaluationHistory = record.evaluation_history || [];
 
   return (
     <section
@@ -477,7 +370,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
             Status Tinjauan: {getReviewStatusLabel(record)}
           </span>
           {record.official_submission && (
-            <span className="text-[11px] text-slate-500">
+            <span className="text-xs text-slate-500">
               Kanal resmi: {getOfficialSubmissionStatusLabel(record)}
             </span>
           )}
@@ -509,6 +402,10 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
           </p>
         </div>
       )}
+      <FamilyContext
+        member={snapshot?.familyMember}
+        birth={record.service_id === 3}
+      />
 
       {/* 1. Data Pemohon & Formulir yang Dikirim Warga */}
       <section className="case-section">
@@ -627,7 +524,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
                               : "Berkas unggahan warga"}
                         </span>
                         {!available && (
-                          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-800 border border-red-200">
+                          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 border border-red-200">
                             Berkas tidak tersedia
                           </span>
                         )}
@@ -711,7 +608,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
                     <button
                       key={`${ver.submissionVersion}-${att.id || idx}`}
                       type="button"
-                      className="btn-secondary !py-1 !px-2.5 !text-[11px]"
+                      className="btn-secondary !py-1 !px-2.5 !text-xs"
                       onClick={() =>
                         setPreviewDoc({
                           id: att.id || `att-${idx}`,
@@ -737,58 +634,16 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         </section>
       )}
 
-      {/* Riwayat Keputusan & Penilaian Petugas */}
-      {evaluationHistory.length > 0 && (
-        <section className="case-section">
-          <h3>
-            Riwayat keputusan &amp; penilaian petugas (
-            {evaluationHistory.length})
-          </h3>
-          <div className="space-y-2.5 mt-2">
-            {evaluationHistory.map((ev, idx) => (
-              <div
-                key={`${ev.submissionVersion}-${idx}`}
-                className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong className="text-slate-800">
-                    Penilaian Kiriman #{ev.submissionVersion} ·{" "}
-                    {ev.decision === "SELESAI"
-                      ? "Tinjauan awal selesai"
-                      : "Perlu perbaikan"}
-                  </strong>
-                  <span className="text-slate-500">
-                    {ev.evaluatedBy} · {ev.evaluatedAt}
-                  </span>
-                </div>
-                <p className="text-slate-700">{ev.summaryNote}</p>
-                {ev.itemAssessments.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {ev.itemAssessments.map((item) => (
-                      <span
-                        key={item.itemId}
-                        className="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-[11px] text-slate-700"
-                      >
-                        {item.itemName}
-                        {item.fileVersion ? ` (v${item.fileVersion})` : ""}:{" "}
-                        <strong>
-                          {OFFICER_ITEM_VERDICT_LABELS[item.verdict]}
-                        </strong>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <SubmissionReviewHistory record={record} initialVersion={historyVersion} />
 
+      {readOnly&&<p className="text-sm text-slate-600 mt-4">Menampilkan salinan Kiriman #{currentSubmissionVersion}. <Link className="text-link" to={'/petugas/'+encodeURIComponent(record.id)}>Buka permintaan terbaru →</Link></p>}
       {/* 4. Tindakan Tinjauan Petugas & Penilaian Eksplisit */}
-      <section className="case-section">
+      {!readOnly&&!['SELESAI','DITARIK','HASIL_DITERIMA_WARGA'].includes(record.current_status)&&<Link className="text-link inline-flex items-center min-h-[44px] mt-4" to="/bantuan" state={{applicationId:record.id,topic:'Klarifikasi panduan · '+record.internal_reference}}>Minta klarifikasi admin →</Link>}
+      {record.escalation?.status==='resolved'&&<p className="plain-panel mt-3">Klarifikasi admin: {record.escalation.answer}</p>}
+      {!readOnly&&<section className="case-section">
         <h3>Tindakan tinjauan petugas (Kiriman #{currentSubmissionVersion})</h3>
 
-        {record.current_status === "SELESAI" ||
+        {record.escalation?.status==='pending'?<p className="text-sm">Menunggu klarifikasi admin: {record.escalation.reason}. Keputusan ditunda sampai admin memberi tanggapan.</p>:record.current_status==='DITARIK'?<p>Warga sudah menarik tinjauan ini. Riwayat tetap dapat dibaca.</p>:record.current_status === "SELESAI" ||
         record.current_status === "HASIL_DITERIMA_WARGA" ? (
           <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-1">
             <p>
@@ -907,140 +762,150 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
             )}
 
             {/* Daftar Penilaian Eksplisit Per Item (aktif saat Sedang ditinjau) */}
-            {isCurrentlyReviewing && (actionTab === "complete" || actionTab === "revision") && (
-              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Penilaian Eksplisit Pemeriksaan Kiriman #
-                    {currentSubmissionVersion}
-                  </h4>
-                  <p className="text-xs text-slate-600 mt-0.5">
-                    Pilih hasil pemeriksaan untuk data pemohon dan setiap berkas
-                    persyaratan. Penyelesaian tinjauan awal hanya dapat dilakukan
-                    jika seluruh item tersedia dan dinilai{" "}
-                    <strong>Sesuai</strong>.
-                  </p>
-                </div>
-
-                <div className="space-y-2.5">
-                  {/* Baris 1: Data pemohon */}
-                  <div className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-slate-800">
-                        1. Data pemohon &amp; isian formulir permohonan
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {snapshot?.formData.nama_lengkap ||
-                          record.applicant_name}{" "}
-                        · NIK {snapshot?.formData.nik || record.applicant_nik} ·
-                        KK {snapshot?.formData.no_kk || "-"}
-                      </p>
-                    </div>
-                    <select
-                      aria-label="Penilaian Data pemohon dan isian formulir"
-                      value={verdictsByItem["form_data"] || ""}
-                      onChange={(e) =>
-                        setItemVerdict(
-                          "form_data",
-                          e.target.value as OfficerItemVerdict | "",
-                        )
-                      }
-                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                    >
-                      <option value="">— Pilih penilaian —</option>
-                      <option value="sesuai">Sesuai</option>
-                      <option value="perlu_perbaikan">Perlu perbaikan</option>
-                      <option value="belum_dapat_diperiksa">
-                        Belum dapat diperiksa
-                      </option>
-                    </select>
+            {isCurrentlyReviewing &&
+              (actionTab === "complete" || actionTab === "revision") && (
+                <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Penilaian Eksplisit Pemeriksaan Kiriman #
+                      {currentSubmissionVersion}
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Pilih hasil pemeriksaan untuk data pemohon dan setiap
+                      berkas persyaratan. Penyelesaian tinjauan awal hanya dapat
+                      dilakukan jika seluruh item tersedia dan dinilai{" "}
+                      <strong>Sesuai</strong>.
+                    </p>
                   </div>
 
-                  {/* Baris 2..N: Setiap berkas persyaratan */}
-                  {attachments.map((att, idx) => {
-                    const key = att.id || `att-${idx}`;
-                    const available = isDocumentContentAvailable(att);
-                    const currentVerdict = verdictsByItem[key] || "";
-                    return (
-                      <div
-                        key={key}
-                        className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-xs font-semibold text-slate-800">
-                              {idx + 2}. {att.name} (v{att.version || 1})
-                            </p>
-                            {!available && (
-                              <span className="rounded bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-800">
-                                Berkas tidak tersedia
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5">
-                            {att.fileName} · {att.size}
-                            {!available
-                              ? " — Isi berkas tidak ditemukan di penyimpanan sehingga tidak dapat ditandai Sesuai."
-                              : ""}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            className="btn-secondary !py-1 !px-2.5 !text-xs"
-                            onClick={() =>
-                              setPreviewDoc({
-                                id: key,
-                                name: att.name,
-                                fileName: att.fileName,
-                                size: att.size,
-                                fileType: att.fileType,
-                                version: att.version || 1,
-                                uploadedAt: att.uploadedAt,
-                                qualityPreset: att.qualityPreset,
-                                previewKey: att.previewKey,
-                                fixtureId: att.fixtureId,
-                              })
-                            }
-                          >
-                            Pratinjau
-                          </button>
-                          <select
-                            aria-label={`Penilaian ${att.name}`}
-                            value={currentVerdict}
-                            onChange={(e) => {
-                              const nextVal = e.target
-                                .value as OfficerItemVerdict | "";
-                              setItemVerdict(key, nextVal);
-                              if (
-                                nextVal === "perlu_perbaikan" ||
-                                nextVal === "belum_dapat_diperiksa"
-                              ) {
-                                setTargetItem(att.name);
-                              }
-                            }}
-                            className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                          >
-                            <option value="">— Pilih penilaian —</option>
-                            <option value="sesuai" disabled={!available}>
-                              {available
-                                ? "Sesuai"
-                                : "Sesuai (Tidak tersedia — berkas hilang)"}
-                            </option>
-                            <option value="perlu_perbaikan">
-                              Perlu perbaikan
-                            </option>
-                            <option value="belum_dapat_diperiksa">
-                              Belum dapat diperiksa
-                            </option>
-                          </select>
-                        </div>
+                  <div className="space-y-2.5">
+                    {/* Baris 1: Data pemohon */}
+                    <div className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-800">
+                          1. Data pemohon &amp; isian formulir permohonan
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {snapshot?.formData.nama_lengkap ||
+                            record.applicant_name}{" "}
+                          · NIK {snapshot?.formData.nik || record.applicant_nik}{" "}
+                          · KK {snapshot?.formData.no_kk || "-"}
+                        </p>
                       </div>
-                    );
-                  })}
+                      <select
+                        aria-label="Penilaian Data pemohon dan isian formulir"
+                        value={verdictsByItem["form_data"] || ""}
+                        onChange={(e) =>
+                          setItemVerdict(
+                            "form_data",
+                            e.target.value as OfficerItemVerdict | "",
+                          )
+                        }
+                        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
+                      >
+                        <option value="">— Pilih penilaian —</option>
+                        <option value="sesuai">Sesuai</option>
+                        <option value="perlu_perbaikan">Perlu perbaikan</option>
+                        <option value="belum_dapat_diperiksa">
+                          Belum dapat diperiksa
+                        </option>
+                      </select>
+                      {verdictsByItem.form_data && verdictsByItem.form_data !== 'sesuai' && <div className="form-field w-full">
+                        <label htmlFor="assessment-note-form">Masalah dan perbaikan data pemohon</label>
+                        <textarea id="assessment-note-form" rows={2} maxLength={1000} value={notesByItem.form_data || ''} onChange={event => setNotesByItem(prev => ({...prev, form_data: event.target.value}))} />
+                      </div>}
+                    </div>
+
+                    {/* Baris 2..N: Setiap berkas persyaratan */}
+                    {assessmentDocuments.map((att, idx) => {
+                      const key = att.id || `att-${idx}`;
+                      const available = isDocumentContentAvailable(att);
+                      const currentVerdict = verdictsByItem[key] || "";
+                      return (
+                        <div
+                          key={key}
+                          className="assessment-document-row rounded-lg border border-slate-200 bg-white p-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-xs font-semibold text-slate-800">
+                                {idx + 2}. {att.name} (v{att.version || 1})
+                              </p>
+                              {!available && (
+                                <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                                  Berkas tidak tersedia
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {att.fileName} · {att.size}
+                              {!available
+                                ? " — Isi berkas tidak ditemukan di penyimpanan sehingga tidak dapat ditandai Sesuai."
+                                : ""}
+                            </p>
+                          </div>
+                          <div className="assessment-document-controls">
+                            <button
+                              type="button"
+                              className="btn-secondary !py-1 !px-2.5 !text-xs"
+                              onClick={() =>
+                                setPreviewDoc({
+                                  id: key,
+                                  name: att.name,
+                                  fileName: att.fileName,
+                                  size: att.size,
+                                  fileType: att.fileType,
+                                  version: att.version || 1,
+                                  uploadedAt: att.uploadedAt,
+                                  qualityPreset: att.qualityPreset,
+                                  previewKey: att.previewKey,
+                                  fixtureId: att.fixtureId,
+                                })
+                              }
+                            >
+                              Pratinjau
+                            </button>
+                            <select
+                              aria-label={`Penilaian ${att.name}`}
+                              value={currentVerdict}
+                              onChange={(e) => {
+                                const nextVal = e.target.value as
+                                  OfficerItemVerdict | "";
+                                setItemVerdict(key, nextVal);
+                                if (
+                                  nextVal === "perlu_perbaikan" ||
+                                  nextVal === "belum_dapat_diperiksa"
+                                ) {
+                                  setTargetItem(att.name);
+                                }
+                              }}
+                              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
+                            >
+                              <option value="">— Pilih penilaian —</option>
+                              <option value="sesuai" disabled={!available}>
+                                {available
+                                  ? "Sesuai"
+                                  : "Sesuai (Tidak tersedia — berkas hilang)"}
+                              </option>
+                              <option value="perlu_perbaikan">
+                                Perlu perbaikan
+                              </option>
+                              <option value="belum_dapat_diperiksa">
+                                Belum dapat diperiksa
+                              </option>
+                            </select>
+                            
+                          </div>
+                            {verdictsByItem[key] && verdictsByItem[key] !== 'sesuai' && <div className="form-field assessment-document-note">
+                              <label htmlFor={`assessment-note-${key}`}>Masalah dan perbaikan {att.name}</label>
+                              <textarea id={`assessment-note-${key}`} rows={2} maxLength={1000} value={notesByItem[key] || ''} onChange={event => setNotesByItem(prev => ({...prev, [key]: event.target.value}))} />
+                            </div>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {actionTab === "start" && (
               <form className="auth-form" onSubmit={handleStart} noValidate>
@@ -1194,9 +1059,8 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
                   <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-950">
                     {hasAnyNeedsRevisionOrUnavailable ? (
                       <span>
-                        Ada item yang dinilai{" "}
-                        <strong>Perlu perbaikan</strong> atau{" "}
-                        <strong>Belum dapat diperiksa</strong>. Gunakan tab{" "}
+                        Ada item yang dinilai <strong>Perlu perbaikan</strong>{" "}
+                        atau <strong>Belum dapat diperiksa</strong>. Gunakan tab{" "}
                         <button
                           type="button"
                           className="underline font-semibold"
@@ -1246,7 +1110,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
             )}
           </>
         )}
-      </section>
+      </section>}
 
       {/* 5. Linimasa Tinjauan */}
       <section className="case-section">
@@ -1279,7 +1143,7 @@ function OfficerDetail({ record }: { record: ApplicationRecord }) {
         applicantAddress={snapshot?.formData.alamat}
         onClose={() => setPreviewDoc(null)}
         onOfficerMarkUnavailable={
-          previewDoc && isCurrentlyReviewing
+          previewDoc && isCurrentlyReviewing && !readOnly
             ? () => {
                 if (previewDoc.id) {
                   setItemVerdict(previewDoc.id, "belum_dapat_diperiksa");

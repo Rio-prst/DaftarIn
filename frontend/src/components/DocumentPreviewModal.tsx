@@ -280,7 +280,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               <h2
                 id="doc-preview-title"
-                className="text-base font-semibold text-[#142c4b]"
+                className="text-base font-semibold text-[#17324D]"
               >
                 Pratinjau Berkas: {doc.name}
               </h2>
@@ -309,7 +309,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto space-y-4 bg-[#F7F8FA] flex-1">
+        <div className="p-5 overflow-y-auto space-y-4 bg-[#FAF7F2] flex-1">
           {loadingBlob ? (
             <div
               className="p-6 rounded-lg bg-white border border-slate-200 text-sm text-slate-600"
@@ -391,7 +391,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                 </div>
 
                 {/* Sudut penanda dokumen */}
-                <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 mb-3 pb-2 border-b border-slate-200">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-500 mb-3 pb-2 border-b border-slate-200">
                   <span>[SUDUT KIRI ATAS: TERLIHAT]</span>
                   <span className="font-semibold text-slate-700">
                     SALINAN CONTOH SIMULASI DAFTARIN (
@@ -406,7 +406,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                       <p className="font-bold uppercase tracking-wide">
                         PROVINSI CONTOH · KOTA CONTOH
                       </p>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-xs text-slate-500">
                         KARTU TANDA PENDUDUK ELEKTRONIK (CONTOH SIMULASI)
                       </p>
                     </div>
@@ -448,7 +448,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                         <span className="material-symbols-outlined text-3xl text-slate-400">
                           badge
                         </span>
-                        <span className="text-[11px] text-slate-500 mt-1">
+                        <span className="text-xs text-slate-500 mt-1">
                           PAS FOTO &amp; TANDA TANGAN CONTOH
                         </span>
                       </div>
@@ -460,7 +460,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                       <p className="font-bold uppercase tracking-wide">
                         KUTIPAN AKTA KELAHIRAN / SURAT KETERANGAN (CONTOH)
                       </p>
-                      <p className="font-mono text-[11px] text-slate-600 mt-0.5">
+                      <p className="font-mono text-xs text-slate-600 mt-0.5">
                         Nomor Contoh: 3275-LU-2026-CONTOH-01
                       </p>
                     </div>
@@ -506,7 +506,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                       </p>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-slate-300 text-[11px]">
+                      <table className="w-full border-collapse border border-slate-300 text-xs">
                         <thead>
                           <tr className="bg-slate-100">
                             <th className="border border-slate-300 px-2 py-1 text-left">
@@ -581,7 +581,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                   </div>
                 ) : (
                   <div className="mt-5 pt-3 border-t border-slate-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[11px] text-slate-600">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600">
                       <div>
                         <p className="font-semibold text-slate-700">
                           Tanda Tangan Kepala Keluarga / Pemohon
@@ -599,7 +599,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 mt-3 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-xs font-mono text-slate-500 mt-3 pt-2 border-t border-slate-100">
                       <span>[SUDUT KIRI BAWAH: TERLIHAT]</span>
                       <span>[SUDUT KANAN BAWAH: TERLIHAT]</span>
                     </div>
@@ -628,7 +628,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                 untuk berkas unggahan warga.
               </p>
               <div className="p-3 rounded bg-white border border-amber-200 text-xs text-slate-700 space-y-1">
-                <p className="font-semibold text-[#142c4b]">
+                <p className="font-semibold text-[#17324D]">
                   Tindakan yang dapat dilakukan:
                 </p>
                 {viewerRole === "petugas" || onOfficerMarkUnavailable ? (

@@ -1,0 +1,156 @@
+LAPORAN PERBAIKAN PERSONA DAN INTEGRASI CHATBOT
+1 November 2026
+============================================================
+
+STATUS PEKERJAAN
+Repo kerja: DaftarIn-feat1-frontend; branch lokal feat1/frontend.
+Perubahan masih lokal. Tidak melakukan commit/push pada pekerjaan ini.
+Branch remote yang diperiksa:
+- featAI: b818fbf23d492d4f35c3cac17693692fe230671a.
+- feat/backend: a56a80e912a12ec2eec8b21f262967a12bfd1e96.
+Keduanya diperiksa dari source, bukan digabung seluruhnya ke branch kerja.
+Integrasi chatbot diadaptasi dari featAI melalui backend. Implementasi vision
+atau AI pemeriksaan dokumen dari branch itu tidak diambil.
+
+BAGIAN YANG SELESAI DI FRONTEND
+1. Warga lanjut usia dan tampilan
+   Tombol Aa tersedia sebelum login maupun di ruang kerja. Teks besar dan
+   kontras tersimpan, ikut dibawa setelah login, serta tombol/isian ikut
+   membesar. Tahap dan formulir tidak melebar di layar 320 px pada skenario
+   yang diuji. Error data pemohon terhubung ke isian lewat aria-describedby
+   dan aria-invalid. Nama singkat seperti Li diterima pada alur frontend.
+
+2. Pendaftaran
+   Dibagi menjadi data akun, kemudian identitas dan keamanan. Jalur demo
+   masih memakai NIK, telepon, foto KTP dan persetujuan. Ada jalur bantuan
+   bagi warga yang membutuhkan pendamping; tidak membuat OTP/verifikasi
+   pemerintah palsu. Pendaftaran tanpa email memerlukan kontrak backend.
+   Pada mode API, identitas/foto KTP belum menjadi onboarding server lengkap.
+
+3. Foto dokumen
+   Ada pilihan kamera, penyiapan foto besar, putar, kompres menjadi JPEG,
+   pratinjau dan konfirmasi pengguna sebelum menyimpan. Berkas asli di galeri
+   tidak diubah. Berkas akhir tetap maksimal 5 MB. Foto sumber dibatasi
+   30 MB dan 40 juta piksel. WebP dapat dikonversi; HEIC/HEIF bergantung pada
+   kemampuan browser. Jika gagal, tersedia arahan ekspor JPG/PNG atau kamera.
+   Tidak mengklaim kompresi membuktikan keterbacaan atau keaslian dokumen.
+
+4. Bantuan manusia
+   Halaman /bantuan berisi panduan, masalah berkas belum dimiliki, pertanyaan
+   warga, riwayat dan balasan admin. Bantuan navbar/topbar/footer menuju
+   halaman ini; chatbot tetap tombol pendamping. Tautan dari dokumen membawa
+   konteks pertanyaan. Bantuan demo bekerja pada browser yang sama; pada mode
+   API pengiriman yang belum terhubung tidak ditampilkan sebagai berhasil.
+
+5. Pendamping keluarga
+   Pemilihan anggota keluarga memerlukan pernyataan pengurus untuk persiapan
+   dan tinjauan. Deklarasi disimpan bersama subjek draf/salinan kiriman.
+   Pengurus dan subjek tetap terpisah; perubahan profil tidak mengubah kiriman
+   lama. Ini deklarasi pendampingan, bukan verifikasi surat kuasa/izin resmi.
+   Pencabutan perwakilan lintas akun dan pemeriksaan bukti memerlukan backend.
+
+6. Notifikasi
+   Ada pemberitahuan dari peristiwa tinjauan dan tanggapan bantuan, penanda
+   belum dibaca, buka rincian, serta tandai semua dibaca. Mengikuti preferensi
+   notifikasi dalam aplikasi. Penyimpanan dan pertukaran peristiwa ini masih
+   lokal; adapter notifikasi server/email/push belum tersambung.
+
+7. Draf, koneksi dan salah pilih layanan
+   Draf bisa diarsipkan/dipulihkan. Hanya draf yang belum pernah dikirim dapat
+   dihapus. Penghapusan juga membersihkan blob draf itu, tidak menghapus blob
+   sumber yang sudah disalin ke draf lain. Penggunaan ulang berkas milik akun
+   sendiri memerlukan pilihan dan konfirmasi, lalu membuat salinan versi baru.
+   Saat offline, draf dipertahankan dan kiriman ditahan; tidak membuat tanda
+   terima palsu atau antrean sinkronisasi yang seolah sudah ada.
+
+8. Penarikan tinjauan
+   Warga bisa menarik tinjauan aktif dengan alasan dan konfirmasi. Riwayat dan
+   snapshot kiriman dipertahankan. Kasus keluar dari antrean aktif dan tidak
+   dapat diputuskan petugas. Ini tidak membatalkan pengajuan di instansi.
+   Penarikan pengajuan resmi tidak diotomatisasi oleh DaftarIn.
+
+9. Petugas dan admin
+   Petugas dapat meminta klarifikasi admin dari kasus yang ditugaskan.
+   Keputusan ditahan selama klarifikasi terbuka, kemudian bisa dilanjutkan
+   setelah jawaban admin. Admin bisa menjeda persiapan layanan dengan alasan,
+   serta memulihkan versi panduan lama sebagai draf. Hasil pemulihan wajib
+   diterbitkan sebagai versi baru; sejarah tidak ditimpa. Jeda mencegah
+   persiapan baru, tetapi tidak menghapus riwayat kasus yang sudah ada.
+
+10. Perangkat bersama dan kebutuhan berantai
+    Akun menyediakan keluar + bersihkan data lokal dengan konfirmasi dampak
+    terhadap seluruh salinan DaftarIn pada perangkat. Sesi tab lain ikut
+    keluar; penghapusan tidak dinyatakan menghapus akun/data server.
+    Rekomendasi kebutuhan menampilkan draf terkait untuk melanjutkan rangkaian
+    layanan. Belum ada objek bundle lintas layanan yang disinkronkan server.
+
+ALUR CHATBOT YANG SUDAH DIPASANG
+Browser -> POST /api/chat/messages -> backend ChatService -> penyedia AI.
+GET /api/chat/status hanya mengembalikan status konfigurasi, bukan rahasia.
+- Mendukung gateway OpenAI-compatible dan Gemini.
+- API key berada di backend, tidak memakai VITE_OPENAI_API_KEY/VITE_GEMINI_API_KEY
+  seperti contoh pendekatan di branch featAI.
+- Konfigurasi CHAT_AI_* dipisah dari AI_PROVIDER/OCR_PROVIDER pemeriksaan
+  dokumen supaya pekerjaan AI dokumen teman tidak ikut diaktifkan.
+- Pertanyaan maksimum 1.000 karakter, riwayat maksimum empat pesan singkat,
+  peran dibatasi user/bot; properti seperti formData/file tidak diterima.
+- Nomor 16 digit disamarkan sebelum diteruskan. Ini bukan jaminan seluruh data
+  pribadi yang diketik manual terhapus; pengguna diminta tidak membagikannya.
+- Formulir, NIK profil, berkas KTP dan snapshot pengajuan tidak dikirim otomatis.
+- Chatbot tidak mempunyai alat untuk mengirim permohonan, mengubah status,
+  membaca berkas privat, atau menjalankan instruksi akun.
+- Jawaban ditampilkan sebagai teks; rujukan dan tombol aksi berasal dari
+  panduan aplikasi. Tautan aksi dibatasi ke rute yang diizinkan.
+- Request dibatasi 10/menit per tracker IP di satu proses server, keluaran
+  dibatasi dan provider diberi timeout 12 detik. Sebelum publik masih perlu
+  kuota biaya, pemantauan penyalahgunaan dan konfigurasi penyedia yang nyata.
+- Jika provider belum aktif/gagal, jawaban bertanda Panduan lokal. Tidak
+  menyatakan jawaban fallback sebagai hasil AI.
+
+STATUS NYATA AI
+Relay dan antarmuka sudah terintegrasi. Kredensial/model penyedia belum diisi
+pada lingkungan lokal; status aktual configured=false. Belum menguji jawaban
+model berbayar sungguhan. Pengujian provider memakai mock yang terkendali.
+Corpus panduan masih bawaan aplikasi, belum tersinkron dengan publikasi panduan
+admin. Pembatasan prompt dan hak akses mengurangi dampak injeksi, bukan jaminan
+bahwa teks model selalu benar atau tidak bisa dipengaruhi.
+
+VERIFIKASI
+- 89 skenario regresi alur sebelumnya dijalankan ulang dan lolos:
+  kebutuhan/keluarga 20, alur warga 16, daftar pengajuan 16,
+  pendalaman tinjauan 18, ruang kerja petugas/admin 19.
+- 16 skenario persona dan integrasi baru lolos, termasuk kompresi foto,
+  penggunaan ulang, penghapusan blob, offline, bantuan, eskalasi, penarikan,
+  jeda/pemulihan panduan, kontrak chatbot, fallback dan pembersihan perangkat.
+- Backend: 42 unit test lolos, termasuk enam test relay baru.
+- Empat kelompok pengujian relay/HTTP lolos: redaksi, error aman, validasi
+  request ketat, serta rate limit. Tidak memakai kredensial provider nyata.
+- Build frontend/backend berhasil. Lint backend tanpa error; lint frontend
+  tanpa error, masih memuat peringatan React pada sejumlah komponen.
+- Bukti browser dan skrip uji berada di outputs/work workspace luar repo.
+  Tidak menambahkan hasil browser, database lokal, .env atau instruksi agen
+  ke daftar berkas yang akan dipublikasikan.
+
+ENAM SKENARIO UJI MANUAL UNTUK PEMILIK
+1. Sebelum login: Aa -> teks besar/kontras -> daftar nama Li -> lanjut data
+   identitas; cek 320 px dan pesan validasi. Gunakan identitas dummy.
+2. Buat persiapan -> foto besar -> putar -> lihat pratinjau -> konfirmasi.
+   Coba format yang tidak bisa dibaca; berkas sebelumnya harus tetap ada.
+3. Buat draf kedua -> gunakan ulang berkas -> konfirmasi -> hapus draf kedua.
+   Berkas draf pertama tetap bisa dibuka. Coba arsip dan pulihkan draf.
+4. Kirim tinjauan warga -> petugas membaca snapshot -> minta klarifikasi admin
+   -> keputusan tertahan -> admin membalas -> petugas dapat melanjutkan.
+5. Warga meminta bantuan -> admin membalas -> notifikasi warga -> tarik kasus
+   aktif dengan alasan. Riwayat harus ada, antrean aktif harus berkurang.
+6. Chatbot: konfigurasi provider kosong menghasilkan label Panduan lokal.
+   Setelah konfigurasi server diisi, restart backend dan cek label Asisten AI.
+   Pastikan browser hanya memanggil /api/chat, bukan provider langsung.
+   Akhiri dengan keluar + bersihkan perangkat menggunakan data uji saja.
+
+BELUM BOLEH DIANGGAP PRODUK PUBLIK FINAL
+Alur bisnis utama masih adapter demo browser. Koneksi database/Storage tim,
+email, kontrak snapshot/revisi, bantuan/notifikasi server, perwakilan, kebijakan
+retensi dan pengujian lintas perangkat belum lengkap. Auth server lokal yang
+sudah ada tidak otomatis menyambungkan semua alur tersebut.
+Daftar tugas backend yang terperinci:
+KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt.

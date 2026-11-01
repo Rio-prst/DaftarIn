@@ -6,6 +6,8 @@ export function AccountMenu() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState("");
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -59,13 +61,31 @@ export function AccountMenu() {
           </Link>
           <button
             type="button"
-            onClick={() => {
-              logout();
-              navigate("/", { replace: true });
+            disabled={leaving}
+            onClick={async () => {
+              setLeaving(true);
+              setError("");
+              try {
+                await logout("/");
+                navigate("/", { replace: true });
+              } catch (cause) {
+                setError(
+                  cause instanceof Error
+                    ? cause.message
+                    : "Belum berhasil keluar. Coba lagi.",
+                );
+              } finally {
+                setLeaving(false);
+              }
             }}
           >
-            Keluar
+            {leaving ? "Sedang keluar…" : "Keluar"}
           </button>
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
         </div>
       )}
     </div>

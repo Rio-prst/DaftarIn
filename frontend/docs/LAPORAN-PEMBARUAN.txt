@@ -1,3 +1,98 @@
+RESET DEMO DARI AWAL — 1 November 2026
+Development demo lokal direset satu kali saat startup berikutnya: data milik
+DaftarIn pada localStorage/sessionStorage dan blob IndexedDB dibersihkan.
+Tersisa tiga akun awal: warga@daftarin.test, petugas@daftarin.test,
+admin@daftarin.test. Password contoh semuanya DaftarIn2026!.
+Transaksi/draf/kiriman contoh otomatis dihapus dari source; kondisi awal kosong.
+Katalog, panduan dan aturan dasar layanan tetap agar alur dapat didemokan.
+Tombol Isi data contoh di pendaftaran tetap tersedia. Setelah reset pertama,
+data yang dibuat pemilik tersimpan normal dan tidak dihapus tiap refresh.
+Tidak menyentuh backend/DB tim atau konfigurasi AI privat. Reset startup hanya
+berlaku pada dev dengan mode auth demo. Tidak menjalankan tes/build/browser QA.
+
+PERBAIKAN LAYOUT DOKUMEN DAN SIDEBAR — 1 November 2026
+Kartu unggahan diganti dari flex banyak kolom menjadi baris penuh agar judul,
+status, nama berkas dan bantuan tidak saling menyempit. Pilihan kebutuhan
+memakai dua kolom jika pilihannya dua; teks panjang dapat membungkus.
+Catatan penilaian petugas dipindahkan ke baris penuh, di luar kelompok tombol/
+select; textarea dibatasi lebar kartu. Kembali ke beranda ditempatkan paling
+bawah sidebar, sedangkan Akun saya tetap dekat menu utama.
+Tidak menjalankan tes/build/browser; pengecekan manual oleh pemilik.
+
+RIWAYAT CHAT DI SESSIONSTORAGE — 1 November 2026
+Riwayat disimpan per tab/per akun, maksimum 40 pesan. Refresh mempertahankan
+riwayat; menutup dialog tidak menghapusnya. Login/pergantian akun, pendaftaran
+dan logout membersihkan riwayat lokal chat. Tidak menggunakan database atau
+localStorage. Jika penyimpanan diblokir/penuh, chat tetap berjalan di memori.
+Restore tab/sesi browser dapat memulihkan sessionStorage; tidak menjamin data
+langsung terhapus ketika jendela aplikasi ditutup lalu dipulihkan browser.
+Tidak menjalankan tes/build/browser QA atas permintaan pemilik.
+
+CAKUPAN CHATBOT DIKOREKSI — 1 November 2026
+Chatbot hanya untuk pengunjung dan warga. Akun admin/petugas tidak menampilkan
+tombol maupun dialog chat, termasuk pada halaman publik. Bantuan operasional
+dan klarifikasi internal tetap tersedia. Menggantikan cakupan semua peran.
+
+CHATBOT AI LIVE TERSAMBUNG — 1 November 2026
+AtmoRouter utama/cadangan berhasil diuji. Key hanya pada backend privat.
+48 unit test backend lulus; label Asisten AI terbukti pada antarmuka web.
+Gemini langsung disimpan sebagai opsi, belum diaktifkan/diuji live.
+Backend transaksi dan OCR tetap menunggu tim; belum commit/push.
+Laporan: LAPORAN-INTEGRASI-AI-LIVE-2026-11-01.txt.
+
+CHATBOT MELAYANG RESPONSIF — 1 November 2026
+Tombol kanan bawah tersedia untuk publik, warga, petugas dan admin.
+Desktop: kapsul Tanya asisten; HP <=640 px: lingkaran 52 px.
+Tinggi bilah aksi persiapan diikuti otomatis agar tombol tidak tertutup.
+Browser: kapsul 173x53; HP 52x52; buka/tutup dan pengembalian fokus lolos.
+Uji formulir HP: tombol chat berada 14 px di atas bilah aksi, tidak menutupnya.
+Build frontend berhasil. Belum commit/push.
+
+LOGO KONSEP 02 DIPILIH DAN DIPASANG — 1 November 2026
+SVG folder/pintu navy–coral pada navbar, sidebar, footer dan favicon.
+Komponen bersama: src/components/BrandLogo.tsx.
+Aset: public/brand/daftarin-symbol.svg dan daftarin-logo.svg.
+Build frontend berhasil; belum commit/push.
+
+UI NAVY–CORAL DITERAPKAN — 1 November 2026
+Contoh HTML yang disetujui diterapkan pada frontend utama, termasuk warga,
+petugas, admin dan akun. Laporan: LAPORAN-UI-NAVY-CORAL-2026-11-01.txt.
+Perubahan masih lokal; alur/kontrak backend tidak diganti. HTML contoh dihapus.
+
+PEMERIKSAAN ULANG DAFTAR KEBUTUHAN BE — 2026-11-01T20:02:14+07:00
+Remote feat/backend tetap a56a80e (sama dengan pemeriksaan sebelumnya).
+Daftar kebutuhan dikoreksi berdasarkan controller/DTO/service/repository.
+Sudah ada: nama pendek, arsip, notifikasi baca dan konfirmasi hasil.
+Rincian aktual, kekurangan dan rujukan source ada di:
+KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt
+Audit kode saja; tidak merge branch atau menguji deployment/database tim.
+
+PEMBARUAN TERBARU — 1 November 2026
+Perbaikan persona dan integrasi chatbot server telah selesai pada ruang kerja lokal.
+Laporan detail: LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt
+Kebutuhan backend terbaru: KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt
+Branch featAI b818fbf diadaptasi untuk chat; backend a56a80e diperiksa.
+Provider AI live belum dikonfigurasi. Bisnis utama tetap demo browser.
+105 skenario browser dan 42 unit test backend lolos; detail bukti di laporan.
+Tidak ada commit/push pada pekerjaan ini.
+
+CATATAN SEBELUMNYA (HISTORIS)
+PEMBARUAN GAMBAR PEMBUKA - 1 NOVEMBER 2026 (WIB)
+Foto potret diganti foto map/dokumen contoh tanpa orang, dibuat dengan built-in image_gen. Aset WebP responsif 480/960/1440 px berukuran 16,8/51,5/109 kB.
+Layout dua kolom mulai 768 px; di HP gambar bertumpuk dengan tinggi proporsional 3:2. Badge foto dihapus dan pencarian disesuaikan pada tablet.
+Verifikasi terfokus: 9 lebar layar dan 1 layar DPR 2, seluruhnya berhasil; 0 error JavaScript/overflow horizontal. Build berhasil; peringatan bundel JavaScript >500 kB tetap ada.
+Detail aset dan prompt: frontend/docs/HERO-IMAGE.txt. Perubahan belum di-commit/push.
+
+=== RIWAYAT PERBAIKAN SEBELUM PENGGANTIAN GAMBAR ===
+================================================================================
+1 November 2026 (WIB) - Bantuan pendamping, tampilan HP, revisi, dan klaim fitur
+================================================================================
+Branch feat1/frontend pada clone DaftarIn-feat1-frontend. Perubahan masih lokal, belum di-commit/push.
+19 pemeriksaan fungsi PASS; 17 tampilan tanpa overflow horizontal; 0 error JavaScript. Build dan lint berhasil dengan peringatan lama.
+Data tetap simulasi browser; AI/OCR dan integrasi pemerintah belum terhubung.
+Laporan: frontend/docs/LAPORAN-PERBAIKAN-2026-11-01.txt.
+Riwayat pembaruan sebelumnya dipertahankan di bawah.
+
 ================================================================================
 TANGGAL DAN WAKTU PEMBARUAN
 31 Oktober 2026 pukul 14.40 WIB - Perbaikan overflow HP dan akses keyboard pratinjau berkas
@@ -467,3 +562,14 @@ LANGKAH BERIKUTNYA
 - Implementasi modul backend NestJS + Prisma/PostgreSQL untuk menyimpan PreparationRecord, ApplicationRecord, dan panduan layanan di database server.
 - Integrasi layanan penyimpanan objek privat (S3/MinIO) dan pekerja OCR/LLM nyata pada backend untuk menggantikan evaluator simulasi fixture pada berkas unggahan warga.
 ================================================================================
+
+PEMBARUAN 1 NOVEMBER 2026 — PENDALAMAN ALUR FRONTEND
+Lihat LAPORAN-PENDALAMAN-ALUR-2026-11-01.txt untuk perubahan status, catatan
+per item, versi kiriman/panduan, penugasan admin dan konfirmasi penerimaan.
+Implementasi masih lokal/demo; backend tim belum digabung atau diintegrasikan.
+
+PEMBARUAN 1 NOVEMBER 2026 — RUANG KERJA PETUGAS DAN ADMIN
+Laporan: LAPORAN-RUANG-KERJA-PETUGAS-ADMIN-2026-11-01.txt.
+Navigasi per peran, ringkasan, riwayat versi, pengelolaan kondisi/publikasi,
+peninjauan sumber dan audit operasional sudah ditambahkan pada frontend demo.
+Backend bisnis belum diintegrasikan; AI tetap ditangani teman pemilik.

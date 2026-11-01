@@ -1,0 +1,61 @@
+LAPORAN UI NAVY–CORAL — 1 November 2026
+============================================================
+Arah desain disetujui pemilik: struktur tegas dan suasana hangat,
+berdasarkan contoh HTML sementara. Diterapkan ke frontend utama.
+
+PERUBAHAN
+- Palet: canvas #FAF7F2, putih #FFFFFF, navy #17324D, coral #F58B75,
+  peach #FCE4DA, teks pendukung #52616B.
+- Teks dasar 18 px; opsi Lebih besar menjadi 20 px. Judul memakai
+  Trebuchet MS/Segoe UI dan isi memakai Segoe UI/Arial dengan fallback sistem.
+  Tidak menggantungkan keterbacaan teks pada unduhan Google Fonts.
+- Tombol utama navy/putih, tombol mulai coral/navy, target utama 48–50 px.
+  Warna hijau/kuning/merah tetap dipakai untuk status yang bermakna.
+- Navigasi, topbar, kartu, tab, formulir, dialog, tabel dan bantuan
+  diselaraskan untuk publik, warga, petugas, admin dan pengaturan akun.
+- Dashboard memakai sorotan tindakan dari data sebenarnya. Bila tidak ada
+  tindakan, tampilkan kabar urusan yang sedang berjalan; tidak mengarang
+  kekurangan berkas agar cocok dengan ilustrasi contoh.
+- Ilustrasi dokumen SVG menjadi komponen bersama untuk landing/dashboard.
+- Landing menggunakan latar hangat dan CTA coral. Kalimat menjamin bebas
+  penolakan diubah menjadi penjelasan persiapan/tinjauan yang lebih tepat.
+- Pengaturan Tailwind/PostCSS dibuat eksplisit dan relatif ke file konfigurasi,
+  sehingga dev server dan hasil build memakai palet yang sama.
+- Nama/email panjang pada tahap identitas pendaftaran dibungkus agar tidak
+  membuat halaman bergeser horizontal. Sidebar tetap menyediakan Akun saya
+  dekat menu, bukan di ujung halaman panjang.
+
+BERKAS UTAMA
+frontend/src/theme.css
+frontend/tailwind.config.js
+frontend/postcss.config.js
+frontend/src/components/DocumentIllustration.tsx
+frontend/src/components/WorkspaceLayout.tsx
+frontend/src/pages/DashboardPage.tsx
+frontend/src/pages/LandingPage.tsx
+frontend/src/index.css dan warna literal komponen/halaman terkait.
+Skema preferensi normal/large tetap; tidak membutuhkan migrasi backend.
+
+PEMERIKSAAN
+- Build frontend berhasil.
+- Lint frontend tanpa error; peringatan React yang masih ada tetap dicatat.
+- Inspeksi browser mencakup halaman publik, dua tahap pendaftaran,
+  katalog/detail layanan/kebutuhan, persiapan/data/dokumen/ringkasan,
+  daftar/rincian pengajuan, akun/keluarga/bantuan, petugas dan enam bagian admin.
+- Ukuran 320 px diperiksa; kasus teks pendaftaran melebar sudah diperbaiki.
+  Antrean dan riwayat petugas dicek kembali setelah judul tujuan muncul.
+- Kontrol Aa diuji: normal 18 px -> large 20 px -> kembali ke setelan semula.
+  Pengaturan kontras pengguna dipertahankan.
+- Pasangan warna dihitung: navy/putih 13,13:1; navy/coral 5,52:1;
+  teks pendukung/canvas 5,99:1. Ini pemeriksaan pasangan warna utama,
+  bukan sertifikasi seluruh WCAG atau uji pengguna lanjut usia sungguhan.
+- Screenshot dan catatan viewport berada di outputs/ui-refresh-20261101
+  di workspace luar repo. Tidak mengulang seluruh 105 skenario transaksi;
+  pemeriksaan kali ini berfokus pada perubahan visual dan responsivitas.
+
+STATUS
+Alur bisnis, kontrak API dan penyimpanan demo tidak diganti oleh pekerjaan UI.
+Backend/chat tetap mengikuti status laporan integrasi sebelumnya.
+Perubahan masih lokal, belum commit/push.
+HTML contoh work/ui-palette-preview/index.html dan server port 8766 dibersihkan.
+Frontend utama tetap tersedia pada http://127.0.0.1:5174/.

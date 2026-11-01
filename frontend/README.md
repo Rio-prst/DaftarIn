@@ -4,6 +4,10 @@ Website responsif berbasis React, TypeScript, Vite, dan Tailwind untuk pendampin
 
 ## Menjalankan
 
+Status integrasi 1 November 2026: autentikasi, pengaturan akun, sesi, preferensi, dan pengelolaan akses admin sudah dapat memakai API backend tim. Modul persiapan, berkas, dan antrean petugas masih lokal. [Laporan integrasi terkini](docs/LAPORAN-INTEGRASI-API-2026-11-01.txt) menjelaskan batasnya; catatan historis scaffold di bawah tidak lagi mewakili status autentikasi.
+
+Untuk mode server, gunakan `VITE_AUTH_MODE=api` dan `VITE_API_URL=/api`, lalu jalankan backend di port 3000. Lihat [API aktif](../backend/docs/IMPLEMENTED-API.md) untuk migrasi, admin pertama, serta reverse proxy produksi. Tanpa pilihan mode server, mode demo tetap digunakan. Akun contoh berikut hanya berlaku pada mode demo.
+
 ```sh
 npm ci
 npm run dev -- --host 127.0.0.1
@@ -21,7 +25,7 @@ Alamat lokal: `http://127.0.0.1:5173`. Build aplikasi: `npm run build`.
 
 Kata sandi awal ketiganya: **DaftarIn2026!**. Halaman masuk (`http://127.0.0.1:5173/#/masuk`) menyediakan bagian “Coba akun contoh” untuk mengisi kredensial. Pilih akun lalu tekan Masuk. Kata sandi yang diubah melalui pemulihan menggantikan kata sandi awal di browser ini.
 
-Akun warga contoh berisi dua pengajuan: satu membutuhkan perbaikan (`CONTOH-KK-001` untuk layanan percontohan **Pembaruan Data Kartu Keluarga (KK)**), satu selesai (`CONTOH-AKTA-002`). Petugas contoh mendapat tiga penugasan. Pendaftaran baru membuat akun warga dengan pengajuan dan dokumen kosong.
+Akun warga contoh berisi dua pengajuan: satu membutuhkan perbaikan pada layanan **Pembaruan Data Kartu Keluarga (KK)**, satu memiliki tinjauan awal selesai pada layanan **Penerbitan Kartu Identitas Anak (KIA)**. Petugas contoh mendapat tiga penugasan. Pendaftaran baru membuat akun warga dengan pengajuan dan dokumen kosong.
 
 ## Akses halaman
 
@@ -37,24 +41,43 @@ Akun warga contoh berisi dua pengajuan: satu membutuhkan perbaikan (`CONTOH-KK-0
 
 Mengakses halaman pribadi sebelum masuk membawa pengguna ke halaman masuk dan mempertahankan konteks layanan. Mengakses peran berbeda menampilkan keterangan akses dan tautan kembali ke ruang sendiri.
 
-## Alur perjalanan utama yang tersedia
+## Alur utama saat ini
 
-1. **Kebutuhan & Wilayah (`/katalog`)** → Filter wilayah (`Kota Contoh` vs wilayah belum didukung), kategori, dan pencarian layanan. Layanan percontohan utama adalah **Pembaruan Data Kartu Keluarga (KK)**.
-2. **Panduan Bersumber & Kondisi Permohonan (`/panduan`)** → Memilih kondisi permohonan (mis. perubahan biodata umum vs perubahan status kawin vs penambahan anggota keluarga) yang menentukan dokumen **Wajib** dan **Opsional**, disertai informasi biaya resmi, estimasi waktu, kanal resmi, dan sumber regulasi.
-3. **Masuk / Daftar (`/masuk`, `/daftar`)** → Menyimpan konteks layanan dan kondisi permohonan yang dipilih warga.
-4. **Persiapan Data (`/persiapan/data`)** → Draf persiapan diberi kode referensi internal (`PREP-2026-0001`) dan versi data (`Data v1`, `v2`, dst.). Warga mengisi/memperbarui kondisi permohonan, nama lengkap, NIK 16 digit, Nomor KK 16 digit, kontak, alamat domisili, dan alasan permohonan. Tersedia tombol **Isi data contoh**.
-5. **Persiapan Dokumen (`/persiapan/dokumen`)** → Menampilkan slot dokumen **Wajib** dan **Opsional** sesuai kondisi permohonan. Setiap unggahan atau penggantian berkas menaikkan versi dokumen (`Versi 1`, `Versi 2`). Tersedia tombol **Muat berkas contoh awal (v1 · ada bagian terpotong)** dan **Muat berkas contoh perbaikan (utuh)**.
-6. **Pemeriksaan Otomatis (`/persiapan/pemeriksaan`)** → Mengevaluasi kelengkapan berkas wajib, konsistensi data pemohon, kualitas berkas sesuai versi (`sample_issue` pada v1 vs `sample_clean` pada v2), serta aturan pemeriksaan aktif dari Admin. Mengubah data atau mengganti berkas setelah pemeriksaan otomatis menandai hasil lama sebagai **Perlu diperiksa ulang** (`isStale: true`).
-7. **Ringkasan Persiapan (`/persiapan/ringkasan`)** → Menampilkan status kesiapan draf secara jujur (tidak menampilkan "Siap" bila belum diperiksa, usang, atau masih ada kendala wajib), rincian kanal resmi, serta formulir pencatatan pengajuan atau perbaikan.
-8. **Pelacakan & Tindak Lanjut (`/pelacakan`)** → Memisahkan catatan pengajuan mandiri warga (`DICATAT_WARGA` — belum dikonfirmasi instansi) dari pengajuan yang ditugaskan ke petugas contoh (`CONTOH-KK-001`). Menampilkan tahap saat ini, sumber & waktu pembaruan, kendala, tindakan berikutnya, riwayat versi lampiran, alur revisi tanpa membuat nomor pengajuan baru, hingga **Konfirmasi hasil diterima** (`HASIL_DITERIMA_WARGA`).
-9. **Panel Petugas (`/petugas`) & Panel Admin (`/admin`)** → Petugas meninjau pengajuan yang ditugaskan beserta versi berkas perbaikan (`Versi 2`) dan memperbarui status; Admin mengelola versi panduan, sumber regulasi, aturan pemeriksaan, akun petugas, dan log audit.
+1. **Cari layanan dan baca panduan** — dapat diakses tanpa masuk. Pilihan layanan di beranda membuka panduan layanan yang dipilih, termasuk untuk akun yang sudah masuk.
+2. **Masuk / daftar** — menggunakan akun contoh atau registrasi lokal.
+3. **Kebutuhan** — tentukan layanan, wilayah, kondisi permohonan, dan siapa yang diurus.
+4. **Data** — lengkapi data pemohon serta alasan permohonan.
+5. **Dokumen** — unggah berkas sesuai kebutuhan. Validasi dasar memeriksa format, ukuran, dan kelengkapan, bukan membaca isi dengan AI.
+6. **Tinjau & kirim** — periksa isian dan berikan persetujuan berbagi salinan kepada petugas contoh.
+7. **Tinjauan dan revisi** — petugas contoh menilai data/berkas; warga dapat mengganti berkas dan mengirim revisi pada permintaan yang sama.
+8. **Pelacakan** — tinjauan pendamping dan laporan hasil layanan pemerintah memiliki status terpisah.
 
-## Penyimpanan dan batas implementasi
+Empat tahap persiapan yang ditampilkan adalah Kebutuhan -> Data -> Dokumen -> Tinjau & kirim. Halaman rincian validasi/simulasi aturan tetap opsional, bukan pemeriksaan AI yang wajib dilalui.
 
-Frontend saat ini menggunakan adapter akun dan data browser sementara karena backend (`backend/src/`) masih berupa scaffold awal NestJS 11 (`Hello World!`) dan belum mengimplementasikan modul `/api/v1/*` maupun database.
+## Bantuan pendamping
 
-- Akun, draf per warga (`PREP-...`), metadata versi dokumen, pengajuan contoh bersama, panduan, aturan, serta audit disimpan di `localStorage`.
-- Sesi menggunakan `sessionStorage` dengan masa berlaku 8 jam; keluar menutup sesi.
-- Pemeriksaan awal menggunakan mesin aturan dan preset kualitas berkas pada browser untuk mensimulasikan perilaku OCR/aturan secara konsisten terhadap perubahan data dan versi dokumen. Layanan AI/OCR server dan penyimpanan berkas privat (S3/MinIO) belum terhubung.
-- Tidak ada pengiriman email, verifikasi NIK ke Dukcapil, penerbitan dokumen resmi, atau integrasi langsung ke sistem pemerintah.
-- Pemeriksaan tampilan dan alur dilakukan pengguna sesuai permintaannya. Tidak menjalankan pengujian browser otomatis pada perubahan ini.
+Bantuan tersedia dari navigasi publik dan header akun. Tombol mengambang hanya ditampilkan kepada pengunjung pada beranda, katalog, dan panduan; tidak tampil di halaman akun, login, atau registrasi.
+
+Bantuan mencari kata kunci pada materi lokal di frontend. Belum ada LLM, embedding, API AI, atau hubungan dengan Kemendagri. Pertanyaan tanpa kecocokan dijawab secara jujur; konteks layanan tidak boleh memaksakan jawaban yang tidak berkaitan. Rujukan yang ditampilkan berasal dari materi jawaban terpilih.
+
+Modal mendukung Escape, Tab/Shift+Tab, pemulihan fokus, pembesaran teks, dan pembacaan jawaban melalui fitur suara browser. Dukungan suara bergantung pada perangkat/browser dan belum diverifikasi pada perangkat fisik.
+
+## Data contoh dan penyimpanan
+
+Backend saat ini masih scaffold NestJS dengan GET / -> Hello World!. Adapter API sudah disiapkan, tetapi autentikasi dan alur operasional frontend belum memakai endpoint backend produksi.
+
+- Akun contoh, akun hasil registrasi, draf, metadata dokumen, pengajuan, panduan, dan aturan disimpan di localStorage.
+- Sesi contoh memakai sessionStorage; logout menutup sesi.
+- Isi unggahan PDF/gambar disimpan sebagai Blob di IndexedDB, sampai 5 MB. Unggahan nyata adalah file yang dipilih pengguna, tetapi penyimpanannya tetap lokal di browser.
+- Berpindah akun warga/petugas pada browser yang sama dapat memperagakan tinjauan. Membuka browser atau perangkat lain belum menyinkronkan data itu.
+- Registrasi KTP/NIK belum memverifikasi identitas ke Dukcapil; pemulihan akun belum mengirim email.
+- Pemeriksaan OCR/AI, penyimpanan dokumen privat server, dan integrasi pemerintah belum terhubung.
+- Gunakan identitas dan dokumen contoh, bukan data pribadi asli. Menghapus data browser dapat menghilangkan akun/draf/berkas lokal.
+
+## Verifikasi 1 November 2026
+
+19 pemeriksaan fungsi pada perbaikan bantuan, revisi, dan navigasi layanan lolos. Sebanyak 17 kombinasi halaman/peran/lebar layar diperiksa tanpa overflow horizontal dan tanpa error JavaScript yang tertangkap. Pengujian memakai Chrome headless pada browser context terpisah.
+
+Build berhasil; lint exit code 0 dengan peringatan React yang telah ada. Peringatan bundel JavaScript >500 kB masih tersisa. Hasil ini bukan pengujian ulang menyeluruh seluruh alur backend atau seluruh 47 skenario historis.
+
+Rincian dan langkah uji manual: docs/LAPORAN-PERBAIKAN-2026-11-01.txt.

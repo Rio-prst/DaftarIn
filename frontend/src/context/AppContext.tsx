@@ -1,3 +1,4 @@
+import type { FamilyMember } from "../family/members";
 import { useAuth } from "../auth/AuthContext";
 import React, {
   createContext,
@@ -7,7 +8,8 @@ import React, {
   useRef,
 } from "react";
 import { isDocumentContentAvailable } from "../components/DocumentPreviewModal";
-import { subscribeFileStorage } from "../utils/fileStorage";
+import { subscribeFileStorage, deleteDraftFiles } from "../utils/fileStorage";
+import { mockAuth } from "../auth/mockAuth";
 import {
   computeDataSignature,
   computeDocSignature,
@@ -29,6 +31,7 @@ import {
   type OfficerItemAssessment,
   type OfficerRevisionDetail,
   type OfficerSubmissionEvaluation,
+  type ServiceConditionConfig,
   type OfficialSubmissionRecord,
   type PreparationRecord,
   type SubmissionSnapshot,
@@ -45,6 +48,12 @@ export interface UserProfile {
 }
 
 export interface ServiceDetail {
+  availability?: "active" | "paused";
+  availabilityNote?: string;
+  conditions?: ServiceConditionConfig;
+  source_review_status?: "sesuai" | "perlu_ditinjau" | "perlu_perbaikan";
+  source_review_version?: number;
+  source_review_by?: string;
   source_url?: string;
   source_title?: string;
   source_verified?: boolean;
@@ -87,7 +96,8 @@ export interface InspectionFinding {
   serviceId?: number;
   scope?: InspectionScope;
   evaluationStatus?: EvaluationStatus;
-  category: "Konsistensi Data" | "Kualitas Berkas" | "Kelengkapan" | "Legalitas";
+  category:
+    "Konsistensi Data" | "Kualitas Berkas" | "Kelengkapan" | "Legalitas";
   title: string;
   evidence: string;
   rule: string;
@@ -108,6 +118,7 @@ export interface InspectionFinding {
 }
 
 export type ApplicationStatusCode =
+  | "DITARIK"
   | "DICATAT_WARGA"
   | "DITERIMA"
   | "VERIFIKASI"
@@ -122,7 +133,7 @@ export interface TimelineEvent {
   title: string;
   time: string;
   source: string;
-  source_type?: "citizen" | "officer" | "simulation";
+  source_type?: "citizen" | "officer" | "simulation" | "admin";
   notes: string;
   next_action?: string;
   revision_detail?: OfficerRevisionDetail;
@@ -144,6 +155,12 @@ export interface ApplicationAttachment {
 }
 
 export interface ApplicationRecord {
+  escalation?: {
+    ticketId: string;
+    reason: string;
+    status: "pending" | "resolved";
+    answer?: string;
+  };
   mode?: "simulation" | "citizen" | "demo_review";
   revision_pending?: boolean;
   attachments?: ApplicationAttachment[];
@@ -164,7 +181,8 @@ export interface ApplicationRecord {
   condition_key?: string;
   condition_label?: string;
   official_number: string;
-  official_number_source?: "citizen_reported" | "simulation_assigned" | "not_provided";
+  official_number_source?:
+    "citizen_reported" | "simulation_assigned" | "not_provided";
   service_id: number;
   service_name: string;
   region?: string;
@@ -247,7 +265,8 @@ export const DEFAULT_SERVICES: ServiceDetail[] = [
     description:
       "Layanan perubahan susunan keluarga, perubahan status perkawinan, penambahan anggota, atau pembetulan elemen biodata pada Kartu Keluarga.",
     official_fee: "Gratis (Rp 0)",
-    official_duration: "1–2 Hari Kerja sejak berkas dinyatakan lengkap di kanal resmi",
+    official_duration:
+      "1–2 Hari Kerja sejak berkas dinyatakan lengkap di kanal resmi",
     official_channel: "Loket Disdukcapil / Portal Layanan Adminduk Kota Contoh",
     requirements: [
       "Kartu Keluarga (KK) Asli Lama (beserta isian Formulir F1-02/F1-06)",
@@ -266,7 +285,8 @@ export const DEFAULT_SERVICES: ServiceDetail[] = [
     region: "Kota Contoh",
     version: 1,
     reviewed_at: "26 Oktober 2026",
-    source_title: "Acuan Regulasi: Permendagri No. 108 Tahun 2019 (Data Contoh)",
+    source_title:
+      "Acuan Regulasi: Permendagri No. 108 Tahun 2019 (Data Contoh)",
     source_url: "https://dukcapil.kemendagri.go.id",
     source_verified: false,
     source_note: DEFAULT_SOURCE_NOTE,
@@ -291,7 +311,8 @@ export const DEFAULT_SERVICES: ServiceDetail[] = [
     region: "Kota Contoh",
     version: 1,
     reviewed_at: "26 Oktober 2026",
-    source_title: "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 43 (Data Contoh)",
+    source_title:
+      "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 43 (Data Contoh)",
     source_url: "https://dukcapil.kemendagri.go.id",
     source_verified: false,
     source_note: DEFAULT_SOURCE_NOTE,
@@ -317,7 +338,8 @@ export const DEFAULT_SERVICES: ServiceDetail[] = [
     region: "Kota Contoh",
     version: 1,
     reviewed_at: "26 Oktober 2026",
-    source_title: "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 17–24 (Data Contoh)",
+    source_title:
+      "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 17–24 (Data Contoh)",
     source_url: "https://dukcapil.kemendagri.go.id",
     source_verified: false,
     source_note: DEFAULT_SOURCE_NOTE,
@@ -368,7 +390,8 @@ export const DEFAULT_SERVICES: ServiceDetail[] = [
     region: "Kota Contoh",
     version: 1,
     reviewed_at: "26 Oktober 2026",
-    source_title: "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 59 (Data Contoh)",
+    source_title:
+      "Acuan Regulasi: Permendagri No. 108 Tahun 2019 Pasal 59 (Data Contoh)",
     source_url: "https://dukcapil.kemendagri.go.id",
     source_verified: false,
     source_note: DEFAULT_SOURCE_NOTE,
@@ -408,6 +431,11 @@ interface AppContextType {
   preparations: PreparationRecord[];
   activePreparation: PreparationRecord;
   selectPreparation: (prepId: string) => void;
+  manageDraft: (id: string, action: "archive" | "restore" | "delete") => void;
+  withdrawReview: (id: string, reason: string) => void;
+  escalateReview: (id: string, ticketId: string, reason: string) => void;
+  resolveReviewEscalation: (id: string, answer: string) => void;
+  setServiceAvailability: (id: number, paused: boolean, reason: string) => void;
   createPreparation: (options?: CreatePreparationOptions) => PreparationRecord;
   createLinkedRevisionPreparation: (applicationId: string) => PreparationRecord;
   dismissMigrationNote: (prepId: string) => void;
@@ -419,11 +447,20 @@ interface AppContextType {
   consumeGuestIntent: () => GuestPreparationIntent | null;
   preparationMeta: PreparationMeta;
   prepMetaByService: Record<number, PreparationMeta>;
-  confirmNeedStep: (target: ApplicantTarget, condition: string, serviceOverride?: ServiceDetail) => void;
+  confirmNeedStep: (
+    target: ApplicantTarget,
+    condition: string,
+    serviceOverride?: ServiceDetail,
+    familyMember?: FamilyMember,
+  ) => void;
   startPreparation: (
     service: ServiceDetail,
     initialCondition?: string,
-    options?: { createNew?: boolean; applicantTarget?: ApplicantTarget; needConfirmed?: boolean },
+    options?: {
+      createNew?: boolean;
+      applicantTarget?: ApplicantTarget;
+      needConfirmed?: boolean;
+    },
   ) => PreparationRecord;
   readiness: ReturnType<typeof computePreparationReadiness>;
   setConsentAccepted: (accepted: boolean) => void;
@@ -444,6 +481,43 @@ interface AppContextType {
   scanningPrepIds: string[];
   runAIScanSimulation: (targetPrepId?: string) => void;
   applications: ApplicationRecord[];
+  reviewQueue: Pick<
+    ApplicationRecord,
+    | "id"
+    | "internal_reference"
+    | "service_name"
+    | "applicant_name"
+    | "current_status"
+    | "assigned_officer_id"
+    | "revision_pending"
+  >[];
+  assignReviewOfficer: (id: string, officerId: string, reason: string) => void;
+  reviewServiceSource: (
+    id: number,
+    version: number,
+    decision: "sesuai" | "perlu_perbaikan",
+    note: string,
+  ) => void;
+  officerHistory: {
+    id: string;
+    applicationId: string;
+    reference: string;
+    serviceName: string;
+    submissionVersion: number;
+    decision: "SELESAI" | "PERLU_PERBAIKAN";
+    evaluatedAt: string;
+    summaryNote?: string;
+    canOpen: boolean;
+  }[];
+  operationalEvents: {
+    id: string;
+    message: string;
+    by: string;
+    time: string;
+    applicationId: string;
+    reference: string;
+    category: "penugasan" | "tinjauan";
+  }[];
   addApplication: (application: ApplicationRecord, prepId?: string) => void;
   submitForOfficerReview: (
     prepId?: string,
@@ -471,14 +545,22 @@ interface AppContextType {
     note: string,
   ) => void;
   addCitizenNote: (id: string, note: string) => void;
-  resubmitApplication: (id: string, citizenNote?: string, prepId?: string) => void;
+  resubmitApplication: (
+    id: string,
+    citizenNote?: string,
+    prepId?: string,
+  ) => void;
   recordOfficialSubmission: (
     id: string,
     officialNumber: string,
     channel: string,
     note?: string,
   ) => void;
-  confirmApplicationResult: (id: string, note?: string) => void;
+  confirmApplicationResult: (
+    id: string,
+    note?: string,
+    channel?: string,
+  ) => void;
   adminRules: AdminRule[];
   toggleRuleActive: (id: string) => void;
   addAdminRule: (rule: Omit<AdminRule, "id">) => void;
@@ -491,11 +573,12 @@ interface AppContextType {
 }
 
 export const statusLabels: Record<ApplicationStatusCode, string> = {
+  DITARIK: "Tinjauan ditarik warga",
   DICATAT_WARGA: "Pengajuan kanal resmi (Dilaporkan warga)",
   DITERIMA: "Menunggu tinjauan",
   VERIFIKASI: "Sedang ditinjau",
   PERLU_PERBAIKAN: "Perlu perbaikan",
-  DIPROSES: "Tinjauan awal selesai",
+  DIPROSES: "Menunggu tinjauan lanjutan",
   SELESAI: "Tinjauan awal selesai",
   HASIL_DITERIMA_WARGA: "Hasil layanan diterima (Dilaporkan warga)",
 };
@@ -505,7 +588,10 @@ export const statusLabels: Record<ApplicationStatusCode, string> = {
  * Konfirmasi hasil layanan pemerintah oleh warga TIDAK menimpa status tinjauan petugas.
  */
 export function getReviewStatusLabel(
-  record?: ApplicationRecord | null,
+  record?: Pick<
+    ApplicationRecord,
+    "mode" | "assigned_officer_id" | "current_status" | "revision_pending"
+  > | null,
 ): string {
   if (!record) return "Belum dikirim";
   if (record.mode === "citizen" && !record.assigned_officer_id) {
@@ -516,7 +602,6 @@ export function getReviewStatusLabel(
   }
   if (
     record.current_status === "SELESAI" ||
-    record.current_status === "DIPROSES" ||
     record.current_status === "HASIL_DITERIMA_WARGA"
   ) {
     return "Tinjauan awal selesai";
@@ -549,6 +634,7 @@ export const allowedStatusTransitions: Record<
   ApplicationStatusCode,
   ApplicationStatusCode[]
 > = {
+  DITARIK: [],
   DICATAT_WARGA: ["DITERIMA", "VERIFIKASI", "PERLU_PERBAIKAN"],
   DITERIMA: ["VERIFIKASI"],
   VERIFIKASI: ["PERLU_PERBAIKAN", "SELESAI"],
@@ -594,72 +680,6 @@ const formatNow = () =>
 export const DEFAULT_REVIEW_UNIT =
   "Unit Tinjauan Pendamping Adminduk — Budi Santoso (Petugas Contoh / Simulasi)";
 
-const initialAyuFindings: InspectionFinding[] = [
-  {
-    id: "finding-kk-crop-v1",
-    serviceId: 1,
-    scope: "analisis_isi_dokumen",
-    evaluationStatus: "simulated_fixture",
-    category: "Kualitas Berkas",
-    title: "[Contoh Simulasi] Bagian bawah Kartu Keluarga (KK) Asli Lama terpotong",
-    evidence:
-      "Berkas \"kk-contoh-terpotong.pdf\" (Versi 1) menggunakan dokumen contoh dengan area tanda tangan/QR code di sisi bawah dokumen terpotong.",
-    rule: "Keterbacaan empat sudut dokumen",
-    action:
-      "Ganti dengan berkas Kartu Keluarga yang memperlihatkan keempat sudut secara utuh pada tahap Dokumen, lalu kirim perbaikan ke petugas.",
-    severity: "error",
-    resolved: false,
-    docTarget: "service-1-doc-0",
-    documentVersion: 1,
-    dataVersion: 1,
-    ruleVersion: "v3",
-    sourceUrl:
-      "https://disdukcapil.pekalongankota.go.id/halaman/penerbitan-kartu-keluarga.html",
-  },
-  {
-    id: "finding-ktp-clean-v1",
-    serviceId: 1,
-    scope: "analisis_isi_dokumen",
-    evaluationStatus: "simulated_fixture",
-    category: "Kualitas Berkas",
-    title: "[Contoh Simulasi] KTP-el Kepala Keluarga & Pemohon terbaca utuh",
-    evidence:
-      "Berkas \"ktp-contoh.jpg\" (Versi 1) menggunakan dokumen contoh yang utuh.",
-    rule: "Keterbacaan empat sudut dokumen",
-    action: "Tidak diperlukan tindakan tambahan.",
-    severity: "info",
-    resolved: true,
-    resolvedReason: "Dokumen contoh utuh (Dokumen v1)",
-    docTarget: "service-1-doc-1",
-    documentVersion: 1,
-    dataVersion: 1,
-    ruleVersion: "v3",
-    sourceUrl:
-      "https://disdukcapil.pekalongankota.go.id/halaman/penerbitan-kartu-keluarga.html",
-  },
-  {
-    id: "finding-form-format-v1",
-    serviceId: 1,
-    scope: "format_formulir",
-    evaluationStatus: "evaluated_passed",
-    category: "Konsistensi Data",
-    title: "Validasi dasar isian formulir (Nama, 16 angka NIK & Nomor KK) lengkap",
-    evidence:
-      "Format isian formulir terpenuhi untuk \"Ayu Contoh\" (Data Versi 1).",
-    rule: "Validasi dasar format isian formulir permohonan",
-    action: "Pastikan ejaan pada formulir sama persis dengan dokumen fisik.",
-    severity: "info",
-    resolved: true,
-    resolvedReason: "Format formulir valid (Data v1)",
-    docTarget: "service-1-doc-1",
-    documentVersion: 1,
-    dataVersion: 1,
-    ruleVersion: "v3",
-    sourceUrl:
-      "https://disdukcapil.pekalongankota.go.id/halaman/penerbitan-kartu-keluarga.html",
-  },
-];
-
 const initialRules: AdminRule[] = [
   {
     id: "rule-required",
@@ -689,461 +709,6 @@ const initialRules: AdminRule[] = [
     severity: "Peringatan",
   },
 ];
-
-const initialAyuKkFormData: FormData = {
-  nama_lengkap: "Ayu Contoh",
-  nik: "0000000000000001",
-  no_kk: "3275010908120005",
-  telepon: "080000000001",
-  alamat: "Jl. Merdeka No. 12, RT 04/RW 02, Kota Contoh",
-  alasan: "Pembaruan elemen biodata keluarga pada Kartu Keluarga",
-};
-
-const initialAyuKkAttachments: SubmittedAttachment[] = [
-  {
-    id: "service-1-doc-0",
-    name: DEFAULT_SERVICES[0].requirements[0],
-    fileName: "kk-contoh-terpotong.pdf",
-    size: "240 KB",
-    fileType: "pdf",
-    version: 1,
-    uploadedAt: "28 Oktober 2026, 09.15 WIB",
-    qualityPreset: "sample_issue",
-    fixtureId: "sample-kk-cropped-v1",
-  },
-  {
-    id: "service-1-doc-1",
-    name: DEFAULT_SERVICES[0].requirements[1],
-    fileName: "ktp-contoh.jpg",
-    size: "210 KB",
-    fileType: "image",
-    version: 1,
-    uploadedAt: "28 Oktober 2026, 09.15 WIB",
-    qualityPreset: "sample_clean",
-    fixtureId: "sample-ktp-intact-v1",
-  },
-];
-
-const initialAyuKkSnapshot: SubmissionSnapshot = {
-  submissionVersion: 1,
-  submittedAt: "28 Oktober 2026, 09.30 WIB",
-  applicantTarget: "diri_sendiri",
-  conditionKey: "perubahan_biodata_keluarga",
-  conditionLabel: "Pembaruan elemen data / susunan keluarga umum",
-  formData: initialAyuKkFormData,
-  dataSignature: computeDataSignature(
-    "perubahan_biodata_keluarga",
-    "diri_sendiri",
-    initialAyuKkFormData,
-  ),
-  docSignature:
-    "service-1-doc-0:v1:kk-contoh-terpotong.pdf:sample_issue|service-1-doc-1:v1:ktp-contoh.jpg:sample_clean|service-1-doc-2:missing:opt|service-1-doc-3:missing:opt",
-  attachments: initialAyuKkAttachments,
-  citizenNote: "Mohon tinjauan awal untuk pembaruan elemen biodata keluarga kami.",
-};
-
-const initialApplications: ApplicationRecord[] = [
-  {
-    id: "sample-kk-01",
-    preparation_id: "prep-sample-kk-01",
-    internal_reference: "TINJAU-2026-0001",
-    preparation_reference: "PREP-2026-0001",
-    applicant_target: "diri_sendiri",
-    condition_key: "perubahan_biodata_keluarga",
-    condition_label: "Pembaruan elemen data / susunan keluarga umum",
-    mode: "simulation",
-    owner_id: "citizen-ayu",
-    assigned_officer_id: "officer-budi",
-    recipient_unit: DEFAULT_REVIEW_UNIT,
-    official_number: "TINJAU-2026-0001",
-    official_number_source: "simulation_assigned",
-    service_id: 1,
-    service_name: DEFAULT_SERVICES[0].name,
-    region: "Kota Contoh",
-    agency: DEFAULT_SERVICES[0].agency,
-    channel: DEFAULT_SERVICES[0].official_channel,
-    attachments: initialAyuKkAttachments,
-    submitted_snapshot: initialAyuKkSnapshot,
-    submission_history: [initialAyuKkSnapshot],
-    latest_revision_detail: {
-      targetItem: DEFAULT_SERVICES[0].requirements[0],
-      issueCategory: "sulit_dibaca",
-      issueCategoryLabel: OFFICER_ISSUE_CATEGORY_LABELS.sulit_dibaca,
-      problemDescription:
-        "Bagian bawah berkas Kartu Keluarga Lama (area tanggal penerbitan, tanda tangan kepala keluarga, dan kode QR) terpotong pada foto kiriman ke-1.",
-      requiredAction:
-        "Unggah ulang foto atau PDF Kartu Keluarga Lama yang memperlihatkan keempat sudut dokumen secara utuh, lalu kirim perbaikan untuk ditinjau.",
-      requestedBy: "Budi Santoso · Petugas Tinjauan Contoh (Simulasi)",
-      requestedAt: "29 Oktober 2026, 10.00 WIB",
-    },
-    applicant_name: "Ayu Contoh",
-    applicant_nik: "0000000000000001",
-    current_status: "PERLU_PERBAIKAN",
-    created_at: "28 Oktober 2026, 09.30 WIB",
-    updated_at: "29 Oktober 2026, 10.00 WIB",
-    events: [
-      {
-        id: 1,
-        status: "DITERIMA",
-        title: "Dikirim warga untuk tinjauan awal petugas (Kiriman ke-1)",
-        time: "28 Oktober 2026, 09.30 WIB",
-        source: "Ayu Contoh · kiriman tinjauan warga",
-        source_type: "citizen",
-        notes:
-          "Warga membagikan data dan 2 berkas dari draf PREP-2026-0001 kepada Unit Tinjauan Pendamping Adminduk (Nomor Tinjauan Internal: TINJAU-2026-0001). Kiriman ini merupakan tinjauan pendamping dan belum menjadi pengajuan resmi di SIAK/instansi.",
-        completed: true,
-      },
-      {
-        id: 2,
-        status: "PERLU_PERBAIKAN",
-        title: "Perlu perbaikan: Kartu Keluarga (KK) Asli Lama",
-        time: "29 Oktober 2026, 10.00 WIB",
-        source: "Budi Santoso · petugas contoh (simulasi)",
-        source_type: "officer",
-        notes:
-          "[Berkas sulit dibaca / bagian terpotong — Kartu Keluarga (KK) Asli Lama] Bagian bawah berkas Kartu Keluarga Lama (area tanggal penerbitan, tanda tangan kepala keluarga, dan kode QR) terpotong pada foto kiriman ke-1. Tindakan: Unggah ulang foto atau PDF Kartu Keluarga Lama yang memperlihatkan keempat sudut dokumen secara utuh, lalu kirim perbaikan untuk ditinjau.",
-        next_action:
-          "Buka persiapan PREP-2026-0001, ganti berkas Kartu Keluarga Lama, lalu tekan 'Kirim perbaikan untuk ditinjau'.",
-        revision_detail: {
-          targetItem: DEFAULT_SERVICES[0].requirements[0],
-          issueCategory: "sulit_dibaca",
-          issueCategoryLabel: OFFICER_ISSUE_CATEGORY_LABELS.sulit_dibaca,
-          problemDescription:
-            "Bagian bawah berkas Kartu Keluarga Lama (area tanggal penerbitan, tanda tangan kepala keluarga, dan kode QR) terpotong pada foto kiriman ke-1.",
-          requiredAction:
-            "Unggah ulang foto atau PDF Kartu Keluarga Lama yang memperlihatkan keempat sudut dokumen secara utuh, lalu kirim perbaikan untuk ditinjau.",
-          requestedBy: "Budi Santoso · Petugas Tinjauan Contoh (Simulasi)",
-          requestedAt: "29 Oktober 2026, 10.00 WIB",
-        },
-        completed: true,
-        current: true,
-      },
-    ],
-  },
-  {
-    id: "sample-kia-02",
-    preparation_id: "prep-sample-kia-02",
-    internal_reference: "TINJAU-2026-0002",
-    preparation_reference: "PREP-2026-0002",
-    applicant_target: "anggota_keluarga",
-    condition_key: "kia_5_ke_atas",
-    condition_label: "Usia 5 tahun sampai kurang dari 17 tahun",
-    mode: "simulation",
-    owner_id: "citizen-ayu",
-    assigned_officer_id: "officer-budi",
-    recipient_unit: DEFAULT_REVIEW_UNIT,
-    official_number: "TINJAU-2026-0002",
-    official_number_source: "simulation_assigned",
-    service_id: 5,
-    service_name: DEFAULT_SERVICES[4].name,
-    region: "Kota Contoh",
-    agency: DEFAULT_SERVICES[4].agency,
-    channel: DEFAULT_SERVICES[4].official_channel,
-    attachments: [
-      {
-        id: "service-5-doc-0",
-        name: "Kutipan Akta Kelahiran Anak",
-        fileName: "akta-anak-contoh.pdf",
-        size: "190 KB",
-        fileType: "pdf",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-      {
-        id: "service-5-doc-1",
-        name: "Kartu Keluarga Orang Tua",
-        fileName: "kk-orangtua-contoh.pdf",
-        size: "220 KB",
-        fileType: "pdf",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-    ],
-    submitted_snapshot: {
-      submissionVersion: 1,
-      submittedAt: "26 Oktober 2026, 08.30 WIB",
-      applicantTarget: "anggota_keluarga",
-      conditionKey: "kia_5_ke_atas",
-      conditionLabel: "Usia 5 tahun sampai kurang dari 17 tahun",
-      formData: {
-        nama_lengkap: "Raka Contoh (Anak dari Ayu Contoh)",
-        nik: "3275011204160003",
-        no_kk: "3275010908120005",
-        telepon: "080000000001",
-        alamat: "Jl. Merdeka No. 12, RT 04/RW 02, Kota Contoh",
-        alasan: "Permohonan penerbitan KIA untuk anak usia 9 tahun.",
-      },
-      dataSignature: "seed-kia",
-      docSignature: "seed-kia-docs",
-      attachments: [
-        {
-          id: "service-5-doc-0",
-          name: "Kutipan Akta Kelahiran Anak",
-          fileName: "akta-anak-contoh.pdf",
-          size: "190 KB",
-          fileType: "pdf",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-        {
-          id: "service-5-doc-1",
-          name: "Kartu Keluarga Orang Tua",
-          fileName: "kk-orangtua-contoh.pdf",
-          size: "220 KB",
-          fileType: "pdf",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-      ],
-    },
-    official_submission: {
-      recordedAt: "28 Oktober 2026, 14.00 WIB",
-      channel: "Loket Disdukcapil Kota Contoh",
-      officialNumber: "REG-KIA-2026-0118 (Dicatat warga)",
-      officialNumberSource: "citizen_reported",
-      note: "Berkas yang sudah selesai ditinjau awal telah diserahkan ke Loket 2 Disdukcapil.",
-    },
-    applicant_name: "Raka Contoh (diajukan Ayu Contoh)",
-    applicant_nik: "3275011204160003",
-    current_status: "SELESAI",
-    created_at: "26 Oktober 2026, 08.30 WIB",
-    updated_at: "28 Oktober 2026, 13.00 WIB",
-    events: [
-      {
-        id: 1,
-        status: "DITERIMA",
-        title: "Dikirim warga untuk tinjauan awal petugas",
-        time: "26 Oktober 2026, 08.30 WIB",
-        source: "Ayu Contoh · kiriman tinjauan warga",
-        source_type: "citizen",
-        notes:
-          "Permohonan tinjauan awal KIA dikirim ke Unit Tinjauan Pendamping Adminduk (TINJAU-2026-0002).",
-        completed: true,
-      },
-      {
-        id: 2,
-        status: "SELESAI",
-        title: "Tinjauan awal selesai — Siap diajukan ke kanal resmi",
-        time: "28 Oktober 2026, 13.00 WIB",
-        source: "Budi Santoso · petugas contoh (simulasi)",
-        source_type: "officer",
-        notes:
-          "Kelengkapan berkas dan kesesuaian data permohonan KIA telah selesai ditinjau awal oleh petugas pendamping. Warga dapat melanjutkan pengajuan melalui Loket Disdukcapil / Kantor Kecamatan dengan membawa berkas asli. Hasil tinjauan awal ini bukan persetujuan resmi pemerintah atau penerbitan SIAK.",
-        next_action:
-          "Ajukan berkas melalui kanal resmi instansi, catat tanda terima resmi jika ada, dan konfirmasi setelah dokumen hasil layanan diterima.",
-        completed: true,
-        current: true,
-      },
-    ],
-  },
-  {
-    id: "sample-akta-03",
-    preparation_id: "prep-sample-akta-03",
-    internal_reference: "TINJAU-2026-0003",
-    preparation_reference: "PREP-2026-0003",
-    applicant_target: "anggota_keluarga",
-    condition_key: "lahir_faskes_tercatat",
-    condition_label: "Lahir di faskes/bidan & perkawinan orang tua tercatat",
-    mode: "simulation",
-    owner_id: "citizen-dewi",
-    assigned_officer_id: "officer-budi",
-    recipient_unit: DEFAULT_REVIEW_UNIT,
-    official_number: "TINJAU-2026-0003",
-    official_number_source: "simulation_assigned",
-    service_id: 3,
-    service_name: DEFAULT_SERVICES[2].name,
-    region: "Kota Contoh",
-    agency: DEFAULT_SERVICES[2].agency,
-    channel: DEFAULT_SERVICES[2].official_channel,
-    attachments: [
-      {
-        id: "service-3-doc-0",
-        name: DEFAULT_SERVICES[2].requirements[0],
-        fileName: "surat-keterangan-lahir-contoh.pdf",
-        size: "215 KB",
-        fileType: "pdf",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-      {
-        id: "service-3-doc-1",
-        name: DEFAULT_SERVICES[2].requirements[1],
-        fileName: "buku-nikah-orangtua-contoh.pdf",
-        size: "260 KB",
-        fileType: "pdf",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-      {
-        id: "service-3-doc-2",
-        name: DEFAULT_SERVICES[2].requirements[2],
-        fileName: "ktp-orangtua-contoh.jpg",
-        size: "195 KB",
-        fileType: "image",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-      {
-        id: "service-3-doc-3",
-        name: DEFAULT_SERVICES[2].requirements[3],
-        fileName: "kk-orangtua-contoh.pdf",
-        size: "240 KB",
-        fileType: "pdf",
-        version: 1,
-        qualityPreset: "sample_clean",
-      },
-    ],
-    submitted_snapshot: {
-      submissionVersion: 1,
-      submittedAt: "30 Oktober 2026, 09.00 WIB",
-      applicantTarget: "anggota_keluarga",
-      conditionKey: "lahir_faskes_tercatat",
-      conditionLabel: "Lahir di faskes/bidan & perkawinan orang tua tercatat",
-      formData: {
-        nama_lengkap: "Dewi Contoh (untuk Nadia Contoh)",
-        nik: "3275024506940004",
-        no_kk: "3275021102180009",
-        telepon: "081200000004",
-        alamat: "Jl. Kenanga No. 8, RT 02/RW 05, Kota Contoh",
-        alasan: "Pencatatan kelahiran anak pertama lahir di RSUD Kota Contoh.",
-      },
-      dataSignature: "seed-akta",
-      docSignature: "seed-akta-docs",
-      attachments: [
-        {
-          id: "service-3-doc-0",
-          name: DEFAULT_SERVICES[2].requirements[0],
-          fileName: "surat-keterangan-lahir-contoh.pdf",
-          size: "215 KB",
-          fileType: "pdf",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-        {
-          id: "service-3-doc-1",
-          name: DEFAULT_SERVICES[2].requirements[1],
-          fileName: "buku-nikah-orangtua-contoh.pdf",
-          size: "260 KB",
-          fileType: "pdf",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-        {
-          id: "service-3-doc-2",
-          name: DEFAULT_SERVICES[2].requirements[2],
-          fileName: "ktp-orangtua-contoh.jpg",
-          size: "195 KB",
-          fileType: "image",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-        {
-          id: "service-3-doc-3",
-          name: DEFAULT_SERVICES[2].requirements[3],
-          fileName: "kk-orangtua-contoh.pdf",
-          size: "240 KB",
-          fileType: "pdf",
-          version: 1,
-          qualityPreset: "sample_clean",
-        },
-      ],
-      citizenNote: "Mohon tinjauan kelengkapan berkas akta kelahiran anak kami.",
-    },
-    applicant_name: "Dewi Contoh (untuk Nadia Contoh)",
-    applicant_nik: "3275024506940004",
-    current_status: "DITERIMA",
-    created_at: "30 Oktober 2026, 09.00 WIB",
-    updated_at: "30 Oktober 2026, 09.00 WIB",
-    events: [
-      {
-        id: 1,
-        status: "DITERIMA",
-        title: "Dikirim warga — Menunggu tinjauan petugas",
-        time: "30 Oktober 2026, 09.00 WIB",
-        source: "Dewi Contoh · kiriman tinjauan warga",
-        source_type: "citizen",
-        notes:
-          "Permintaan tinjauan awal Akta Kelahiran dikirim ke Unit Tinjauan Pendamping Adminduk (TINJAU-2026-0003).",
-        completed: true,
-        current: true,
-      },
-    ],
-  },
-];
-
-function createAyuSamplePreparation(
-  services: ServiceDetail[],
-  adminRules: AdminRule[],
-): PreparationRecord {
-  const kkService = services.find((s) => s.id === 1) || DEFAULT_SERVICES[0];
-  const conditionKey = "perubahan_biodata_keluarga";
-  const applicantTarget: ApplicantTarget = "diri_sendiri";
-  const formData: FormData = {
-    nama_lengkap: "Ayu Contoh",
-    nik: "0000000000000001",
-    no_kk: "3275010908120005",
-    telepon: "080000000001",
-    alamat: "Jl. Merdeka No. 12, Kota Contoh",
-    alasan: "Pembaruan elemen biodata keluarga pada Kartu Keluarga",
-  };
-  const documents: DocumentItem[] = kkService.requirements
-    .slice(0, 2)
-    .map((name, index) => ({
-      id: "service-1-doc-" + index,
-      name,
-      fileName: index ? "ktp-contoh.jpg" : "kk-contoh-terpotong.pdf",
-      size: index ? "210 KB" : "240 KB",
-      status: "TERUNGGAH" as const,
-      required: true,
-      fileType: index ? ("image" as const) : ("pdf" as const),
-      version: 1,
-      uploadedAt: "28 Oktober 2026, 09.15 WIB",
-      qualityPreset: index
-        ? ("sample_clean" as const)
-        : ("sample_issue" as const),
-      fixtureId: index ? "sample-ktp-intact-v1" : "sample-kk-cropped-v1",
-    }));
-
-  const snapshot: InspectionSnapshot = {
-    runId: "scan-seed-ayu-kk-1",
-    preparationId: "prep-sample-kk-01",
-    inspectedAt: "28 Oktober 2026, 09.20 WIB",
-    dataVersion: 1,
-    dataSignature: computeDataSignature(conditionKey, applicantTarget, formData),
-    conditionKey,
-    applicantTarget,
-    docSignature: computeDocSignature(kkService, documents, conditionKey),
-    guideSignature: computeGuideSignature(kkService),
-    rulesSignature: computeRulesSignature(kkService, adminRules),
-    evaluatedScopes: [
-      "keberadaan_berkas",
-      "analisis_isi_dokumen",
-      "format_formulir",
-    ],
-  };
-
-  return {
-    id: "prep-sample-kk-01",
-    internalReference: "PREP-2026-0001",
-    ownerId: "citizen-ayu",
-    serviceId: kkService.id,
-    serviceName: kkService.name,
-    region: kkService.region || "Kota Contoh",
-    agency: kkService.agency,
-    applicantTarget,
-    conditionKey,
-    needConfirmed: true,
-    formData,
-    documents,
-    consentAccepted: true,
-    inspections: initialAyuFindings,
-    dataVersion: 1,
-    lastInspectionSnapshot: snapshot,
-    linkedApplicationId: "sample-kk-01",
-    createdAt: "28 Oktober 2026, 09.10 WIB",
-    updatedAt: "28 Oktober 2026, 09.20 WIB",
-  };
-}
 
 function sanitizeStoredFinding(finding: InspectionFinding): InspectionFinding {
   const rawStatus = finding.evaluationStatus as string | undefined;
@@ -1179,7 +744,7 @@ function sanitizeStoredFinding(finding: InspectionFinding): InspectionFinding {
 function loadOrMigratePreparations(
   user: UserProfile,
   services: ServiceDetail[],
-  adminRules: AdminRule[],
+  _adminRules: AdminRule[],
 ): PreparationRecord[] {
   if (user.id === "guest") return [];
   const scope = "daftarin:" + user.id + ":";
@@ -1209,10 +774,7 @@ function loadOrMigratePreparations(
             ...item,
             inspections: sanitizedInspections,
             lastInspectionSnapshot: sanitizedSnapshot,
-            linkedApplicationId:
-              item.id === "prep-sample-kk-01" && !item.linkedApplicationId
-                ? "sample-kk-01"
-                : item.linkedApplicationId,
+            linkedApplicationId: item.linkedApplicationId,
           };
         });
       }
@@ -1255,8 +817,7 @@ function loadOrMigratePreparations(
     const migrated: PreparationRecord[] = startedMetas.map((meta, idx) => {
       const svc =
         services.find((s) => s.id === meta.serviceId) || DEFAULT_SERVICES[0];
-      const cond =
-        meta.conditionKey || getSelectedConditionOption(svc).value;
+      const cond = meta.conditionKey || getSelectedConditionOption(svc).value;
       const target: ApplicantTarget = meta.applicantTarget || "diri_sendiri";
       const svcDocs = legacyDocs.filter((d) =>
         d.id.startsWith(`service-${svc.id}-doc-`),
@@ -1283,13 +844,11 @@ function loadOrMigratePreparations(
           inspectedAt: meta.lastInspectedAt,
           dataVersion: meta.lastInspectedDataVersion || meta.dataVersion || 1,
           dataSignature:
-            meta.lastInspectedDataSignature ||
-            "legacy-unknown-data-signature",
+            meta.lastInspectedDataSignature || "legacy-unknown-data-signature",
           conditionKey: cond,
           applicantTarget: target,
           docSignature:
-            meta.lastInspectedDocSignature ||
-            "legacy-unknown-doc-signature",
+            meta.lastInspectedDocSignature || "legacy-unknown-doc-signature",
           guideSignature: `legacy-guide-v${meta.lastInspectedGuideVersion ?? "unknown"}`,
           rulesSignature: `legacy-rules-count-${meta.lastInspectedRuleCount ?? "unknown"}`,
           evaluatedScopes: [],
@@ -1323,18 +882,7 @@ function loadOrMigratePreparations(
       };
     });
 
-    if (
-      user.id === "citizen-ayu" &&
-      !migrated.some((p) => p.id === "prep-sample-kk-01")
-    ) {
-      migrated.unshift(createAyuSamplePreparation(services, adminRules));
-    }
-
     return migrated;
-  }
-
-  if (user.id === "citizen-ayu") {
-    return [createAyuSamplePreparation(services, adminRules)];
   }
 
   return [];
@@ -1459,31 +1007,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     services.find((service) => service.id === selected.id) || services[0];
 
   const [records, setRecords] = useState<ApplicationRecord[]>(() => {
-    const stored = readStored("daftarin:applications:v1", initialApplications);
+    const stored = readStored<ApplicationRecord[]>("daftarin:applications:v1", []);
     return stored.map((rec) => {
-      const template = initialApplications.find((item) => item.id === rec.id);
-      const merged: ApplicationRecord = template
-        ? {
-            ...template,
-            ...rec,
-            preparation_id: rec.preparation_id || template.preparation_id,
-            internal_reference: rec.internal_reference?.startsWith("TINJAU-")
-              ? rec.internal_reference
-              : template.internal_reference,
-            recipient_unit: rec.recipient_unit || template.recipient_unit,
-            applicant_target: rec.applicant_target || template.applicant_target,
-            submitted_snapshot:
-              rec.submitted_snapshot || template.submitted_snapshot,
-            submission_history:
-              rec.submission_history && rec.submission_history.length > 0
-                ? rec.submission_history
-                : template.submission_history,
-            latest_revision_detail:
-              rec.latest_revision_detail || template.latest_revision_detail,
-            official_submission:
-              rec.official_submission || template.official_submission,
-          }
-        : rec;
+      const merged: ApplicationRecord = rec;
 
       // Migrasi pemisahan status tinjauan pendamping vs konfirmasi hasil layanan pemerintah:
       // Jika record tinjauan petugas lama memiliki current_status === "HASIL_DITERIMA_WARGA",
@@ -1557,6 +1083,32 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isChatOpen, setChatOpen] = useState(false);
   const [scanningPrepIds, setScanningPrepIds] = useState<string[]>([]);
   const inFlightRunsRef = useRef<Record<string, string>>({});
+  const deviceClearing = useRef(
+    sessionStorage.getItem("daftarin:clearing-device") === "1",
+  );
+  useEffect(() => {
+    const clear = () => {
+      deviceClearing.current = true;
+      sessionStorage.setItem("daftarin:clearing-device", "1");
+      sessionStorage.removeItem("daftarin:session:v1");
+    };
+    const external = (event: StorageEvent) => {
+      if (event.key === "daftarin:device-clear") {
+        clear();
+        window.location.replace("/?deviceCleared=1#/masuk");
+      }
+      if (event.key === "daftarin:device-cleared") {
+        sessionStorage.removeItem("daftarin:clearing-device");
+        window.location.replace("/?deviceCleared=1#/masuk");
+      }
+    };
+    window.addEventListener("daftarin-device-clear", clear);
+    window.addEventListener("storage", external);
+    return () => {
+      window.removeEventListener("daftarin-device-clear", clear);
+      window.removeEventListener("storage", external);
+    };
+  }, []);
   const [toasts, setToasts] = useState<ToastNotice[]>([]);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1564,6 +1116,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   useEffect(() => {
+    if (deviceClearing.current) return;
     const values: [string, unknown][] = [
       ["daftarin:services:v1", services],
       ["daftarin:applications:v1", records],
@@ -1603,7 +1156,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const sync = (event: StorageEvent) => {
       if (event.key === "daftarin:applications:v1")
-        setRecords(readStored(event.key, initialApplications));
+        setRecords(readStored<ApplicationRecord[]>(event.key, []));
       if (event.key === "daftarin:services:v1")
         setServices(readStored(event.key, DEFAULT_SERVICES));
       if (event.key === "daftarin:rules:v1")
@@ -1618,7 +1171,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     type: ToastNotice["type"] = "success",
   ) => {
     const id = Date.now() + Math.random();
-    setToasts((previous) => [...previous, { id, message, type }]);
+    setToasts([{ id, message, type }]);
     timers.current.push(
       setTimeout(
         () =>
@@ -1656,6 +1209,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         (!app.preparation_id || app.preparation_id === prep.id),
     );
     return computePreparationReadiness({
+      familyMember: prep.familyMember,
       prepId: prep.id === "prep-draft-uninitialized" ? "" : prep.id,
       service: svc,
       conditionValue: prep.conditionKey,
@@ -1684,8 +1238,15 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     prevSnapshot?: SubmissionSnapshot | null,
   ): SubmissionSnapshot => {
     const condObj = getSelectedConditionOption(svc, prep.conditionKey);
+    const currentSlots = documentSlots(svc, prep.conditionKey);
     const attachments: SubmittedAttachment[] = prep.documents
-      .filter((doc) => doc.status === "TERUNGGAH")
+      .filter(
+        (doc) =>
+          doc.status === "TERUNGGAH" &&
+          currentSlots.some(
+            (slot) => slot.id === doc.id && slot.name === doc.name,
+          ),
+      )
       .map((doc) => ({
         id: doc.id,
         name: doc.name,
@@ -1702,6 +1263,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       prep.conditionKey,
       prep.applicantTarget,
       prep.formData,
+      prep.familyMember,
     );
     const docSignature = computeDocSignature(
       svc,
@@ -1711,6 +1273,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const changesSummary: string[] = [];
     if (prevSnapshot) {
+      if (
+        JSON.stringify(prevSnapshot.familyMember) !==
+        JSON.stringify(prep.familyMember)
+      )
+        changesSummary.push("Data anggota keluarga yang diurus diperbarui");
       if (prevSnapshot.conditionKey !== prep.conditionKey) {
         changesSummary.push(
           `Kondisi permohonan diubah menjadi "${condObj.label}"`,
@@ -1730,7 +1297,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         alasan: "Alasan / rincian permohonan",
       };
       (Object.keys(fieldLabels) as Array<keyof FormData>).forEach((key) => {
-        if ((prevSnapshot.formData[key] || "").trim() !== (prep.formData[key] || "").trim()) {
+        if (
+          (prevSnapshot.formData[key] || "").trim() !==
+          (prep.formData[key] || "").trim()
+        ) {
           changesSummary.push(`Data ${fieldLabels[key]} diperbarui`);
         }
       });
@@ -1761,10 +1331,15 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return {
       submissionVersion,
+      serviceSnapshot: structuredClone(svc),
+      requiredSlots: documentSlots(svc, prep.conditionKey).filter(
+        (slot) => slot.required,
+      ),
       submittedAt,
       applicantTarget: prep.applicantTarget,
       conditionKey: prep.conditionKey,
       conditionLabel: condObj.label,
+      familyMember: prep.familyMember ? { ...prep.familyMember } : undefined,
       formData: { ...prep.formData },
       attachments,
       dataSignature,
@@ -1795,9 +1370,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     options?: CreatePreparationOptions,
   ): PreparationRecord => {
     const svc = options?.service || selectedService || DEFAULT_SERVICES[0];
-    const region = options?.region || svc.region || selectedRegion || "Kota Contoh";
-    const cond =
-      options?.conditionKey || getSelectedConditionOption(svc).value;
+    ensure(
+      svc.availability !== "paused",
+      "Panduan sedang dikoreksi. Baca sumber layanan atau minta bantuan petugas.",
+    );
+    const region =
+      options?.region || svc.region || selectedRegion || "Kota Contoh";
+    const cond = options?.conditionKey || getSelectedConditionOption(svc).value;
     const target: ApplicantTarget = options?.applicantTarget || "diri_sendiri";
     const now = formatNow();
 
@@ -1822,8 +1401,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       conditionKey: cond,
       needConfirmed: Boolean(options?.needConfirmed),
       formData: {
-        nama_lengkap:
-          target === "diri_sendiri" && account ? account.name : "",
+        nama_lengkap: target === "diri_sendiri" && account ? account.name : "",
         nik: target === "diri_sendiri" && account ? account.nik : "",
         no_kk: "",
         telepon: account?.phone || "",
@@ -1844,10 +1422,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       const next = [newRecord, ...prev];
       if (account) {
         try {
-          localStorage.setItem(
-            scope + "preparations:v3",
-            JSON.stringify(next),
-          );
+          localStorage.setItem(scope + "preparations:v3", JSON.stringify(next));
           localStorage.setItem(
             scope + "active-prep-id:v1",
             JSON.stringify(newRecord.id),
@@ -1876,8 +1451,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     const svc =
       services.find((s) => s.id === appRecord!.service_id) ||
       DEFAULT_SERVICES[0];
-    const condOpt =
-      getSelectedConditionOption(svc).value;
+    const condOpt = getSelectedConditionOption(svc).value;
     const now = formatNow();
 
     const maxRefNum = preparations.reduce((max, item) => {
@@ -1903,20 +1477,29 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       serviceName: svc.name,
       region: appRecord!.region || svc.region || selectedRegion,
       agency: appRecord!.agency || svc.agency,
-      applicantTarget: "diri_sendiri",
+      applicantTarget:
+        appRecord!.submitted_snapshot?.applicantTarget ||
+        appRecord!.applicant_target ||
+        "diri_sendiri",
+      familyMember: appRecord!.submitted_snapshot?.familyMember
+        ? { ...appRecord!.submitted_snapshot.familyMember }
+        : undefined,
       conditionKey: condOpt,
       needConfirmed: true,
-      formData: {
-        nama_lengkap: appRecord!.applicant_name || user.name || "",
-        nik:
-          appRecord!.applicant_nik && /^\d{16}$/.test(appRecord!.applicant_nik)
-            ? appRecord!.applicant_nik
-            : user.nik || "",
-        no_kk: "",
-        telepon: user.phone || "",
-        alamat: "",
-        alasan: `Perbaikan berkas untuk pengajuan ${appRecord!.official_number}`,
-      },
+      formData: appRecord!.submitted_snapshot
+        ? { ...appRecord!.submitted_snapshot.formData }
+        : {
+            nama_lengkap: appRecord!.applicant_name || user.name || "",
+            nik:
+              appRecord!.applicant_nik &&
+              /^\d{16}$/.test(appRecord!.applicant_nik)
+                ? appRecord!.applicant_nik
+                : user.nik || "",
+            no_kk: "",
+            telepon: user.phone || "",
+            alamat: "",
+            alasan: `Perbaikan berkas untuk pengajuan ${appRecord!.official_number}`,
+          },
       documents: [],
       consentAccepted: false,
       inspections: [],
@@ -1958,16 +1541,21 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     setPreparations((prev) => {
-      if (
-        !prev.some((p) => p.id === idToUpdate && p.ownerId === user.id)
-      ) {
+      if (!prev.some((p) => p.id === idToUpdate && p.ownerId === user.id)) {
         return prev;
       }
-      return prev.map((item) =>
-        item.id === idToUpdate && item.ownerId === user.id
-          ? updater(item)
-          : item,
-      );
+      return prev.map((item) => {
+        if (item.id !== idToUpdate || item.ownerId !== user.id) return item;
+        const next = updater(item);
+        const contentChanged =
+          item.formData !== next.formData ||
+          item.documents !== next.documents ||
+          item.serviceId !== next.serviceId ||
+          item.conditionKey !== next.conditionKey ||
+          item.applicantTarget !== next.applicantTarget ||
+          item.familyMember !== next.familyMember;
+        return contentChanged ? { ...next, consentAccepted: false } : next;
+      });
     });
   };
 
@@ -2057,8 +1645,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         "Petugas sedang meninjau kelengkapan dan kesesuaian berkas. Pantau pembaruan berikutnya pada linimasa ini.",
       PERLU_PERBAIKAN:
         "Buka ruang persiapan untuk memperbaiki data atau mengganti dokumen sesuai catatan petugas, lalu kirim perbaikan untuk ditinjau ulang.",
-      DIPROSES:
-        "Berkas sedang dalam pemeriksaan lanjutan petugas pendamping.",
+      DIPROSES: "Berkas sedang dalam pemeriksaan lanjutan petugas pendamping.",
       SELESAI:
         "Tinjauan awal selesai. Lanjutkan pengajuan melalui kanal resmi instansi (loket Disdukcapil, MPP, atau portal resmi daerah) dan catat nomor tanda terima resmi bila sudah diajukan.",
     };
@@ -2093,6 +1680,81 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Status tinjauan diperbarui.");
   };
 
+  const assignReviewOfficer = (
+    id: string,
+    officerId: string,
+    reason: string,
+  ) => {
+    const record = records.find((item) => item.id === id);
+    ensure(user.role === "admin", "Hanya admin yang dapat mengubah penugasan.");
+    const officer = mockAuth
+      .listAccounts()
+      .find(
+        (item) =>
+          item.id === officerId &&
+          item.role === "petugas" &&
+          item.active !== false,
+      );
+    ensure(Boolean(officer), "Pilih petugas yang aktif.");
+    ensure(
+      Boolean(record) &&
+        record!.current_status !== "DICATAT_WARGA" &&
+        !["SELESAI", "DITARIK", "HASIL_DITERIMA_WARGA"].includes(
+          record!.current_status,
+        ),
+      "Penugasan hanya tersedia untuk tinjauan yang masih aktif.",
+    );
+    ensure(
+      record!.assigned_officer_id !== officerId,
+      "Permintaan sudah ditugaskan kepada petugas ini.",
+    );
+    ensure(
+      reason.trim().length >= 10,
+      "Tuliskan alasan penugasan minimal 10 karakter.",
+    );
+    const now = formatNow();
+    setRecords((previous) =>
+      previous.map((item) =>
+        item.id !== id
+          ? item
+          : {
+              ...item,
+              assigned_officer_id: officerId,
+              current_status:
+                item.current_status === "VERIFIKASI" ||
+                item.current_status === "DIPROSES"
+                  ? "DITERIMA"
+                  : item.current_status,
+              updated_at: now,
+              events: [
+                ...item.events.map((event) => ({ ...event, current: false })),
+                {
+                  id: Date.now(),
+                  status:
+                    item.current_status === "VERIFIKASI" ||
+                    item.current_status === "DIPROSES"
+                      ? "DITERIMA"
+                      : item.current_status,
+                  title: "Penugasan petugas diperbarui",
+                  time: now,
+                  source: user.name + " · Admin",
+                  source_type: "admin",
+                  notes: `Ditugaskan kepada ${officer!.name}. Alasan: ${reason.trim()}`,
+                  next_action:
+                    item.current_status === "PERLU_PERBAIKAN" &&
+                    !item.revision_pending
+                      ? "Warga melanjutkan perbaikan sesuai catatan yang sudah diberikan."
+                      : "Petugas yang ditugaskan memulai tinjauan kiriman aktif.",
+                  completed: true,
+                  current: true,
+                },
+              ],
+            },
+      ),
+    );
+    showToast("Penugasan petugas diperbarui.");
+  };
+
   const officerStartReview = (id: string, note?: string) => {
     const record = records.find((item) => item.id === id);
     ensure(
@@ -2101,6 +1763,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     ensure(
       record!.current_status === "DITERIMA" ||
+        record!.current_status === "DIPROSES" ||
         (record!.current_status === "PERLU_PERBAIKAN" &&
           Boolean(record!.revision_pending)),
       "Permintaan ini sudah dalam tahap tinjauan atau telah selesai.",
@@ -2154,6 +1817,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const record = records.find((item) => item.id === id);
     ensure(
+      record?.escalation?.status !== "pending",
+      "Tunggu klarifikasi admin sebelum mengirim keputusan.",
+    );
+    ensure(
       user.role === "petugas" && record?.assigned_officer_id === user.id,
       "Hanya petugas yang ditugaskan yang dapat meminta perbaikan.",
     );
@@ -2172,6 +1839,17 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     ensure(
       detail.requiredAction.trim().length >= 5,
       "Tuliskan tindakan perbaikan yang harus dilakukan warga minimal 5 karakter.",
+    );
+    const issues = (itemAssessments || []).filter(
+      (item) => item.verdict !== "sesuai",
+    );
+    ensure(
+      issues.length > 0,
+      "Tandai bagian yang perlu diperbaiki atau belum dapat diperiksa.",
+    );
+    ensure(
+      issues.every((item) => (item.note || "").trim().length >= 5),
+      "Isi masalah dan perbaikan pada setiap bagian yang belum sesuai, minimal 5 karakter.",
     );
 
     const now = formatNow();
@@ -2196,6 +1874,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       decision: "PERLU_PERBAIKAN",
       summaryNote: `[${categoryLabel} — ${fullDetail.targetItem}] ${fullDetail.problemDescription}`,
       evaluatedBy: user.name,
+      evaluatedById: user.id,
       evaluatedAt: now,
       itemAssessments: itemAssessments || [],
       revisionDetail: fullDetail,
@@ -2245,6 +1924,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   ) => {
     const record = records.find((item) => item.id === id);
     ensure(
+      record?.escalation?.status !== "pending",
+      "Tunggu klarifikasi admin sebelum mengirim keputusan.",
+    );
+    ensure(
       user.role === "petugas" && record?.assigned_officer_id === user.id,
       "Hanya petugas yang ditugaskan yang dapat menyelesaikan tinjauan ini.",
     );
@@ -2259,6 +1942,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const currentAttachments =
       record!.submitted_snapshot?.attachments || record!.attachments || [];
+    const required = record!.submitted_snapshot?.requiredSlots;
+    ensure(
+      !required ||
+        required.every((slot) =>
+          currentAttachments.some((att) => att.id === slot.id),
+        ),
+      "Masih ada dokumen wajib pada acuan kiriman yang belum dilampirkan. Minta perbaikan terlebih dahulu.",
+    );
 
     const formAssessment = itemAssessments.find(
       (a) => a.itemId === "form_data",
@@ -2290,6 +1981,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
       decision: "SELESAI",
       summaryNote: note.trim(),
       evaluatedBy: user.name,
+      evaluatedById: user.id,
       evaluatedAt: now,
       itemAssessments,
     };
@@ -2370,7 +2062,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                     : "DIAJUKAN_WARGA",
                 recordedAt: now,
                 channel: cleanChannel,
-                officialNumber: cleanNum || "Belum diterbitkan (Dilaporkan warga)",
+                officialNumber:
+                  cleanNum || "Belum diterbitkan (Dilaporkan warga)",
                 officialReceiptNumber: cleanNum || undefined,
                 officialNumberSource: cleanNum
                   ? "citizen_reported"
@@ -2392,7 +2085,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                   source_type: "citizen",
                   notes:
                     `Diajukan melalui ${cleanChannel}` +
-                    (cleanNum ? ` dengan nomor tanda terima resmi ${cleanNum}. ` : ". ") +
+                    (cleanNum
+                      ? ` dengan nomor tanda terima resmi ${cleanNum}. `
+                      : ". ") +
                     (note?.trim() ||
                       "Catatan mandiri warga untuk memantau proses di kanal resmi instansi."),
                   next_action:
@@ -2404,7 +2099,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             },
       ),
     );
-    showToast("Catatan pengajuan di kanal resmi instansi (Dilaporkan warga) berhasil disimpan.");
+    showToast(
+      "Catatan pengajuan di kanal resmi instansi (Dilaporkan warga) berhasil disimpan.",
+    );
   };
 
   const addCitizenNote = (id: string, note: string) => {
@@ -2442,7 +2139,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     showToast("Catatan warga tersimpan.");
   };
 
-  const confirmApplicationResult = (id: string, note?: string) => {
+  const confirmApplicationResult = (
+    id: string,
+    note?: string,
+    channel?: string,
+  ) => {
     const record = records.find((item) => item.id === id);
     ensure(
       user.role === "warga" &&
@@ -2451,6 +2152,17 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           record?.mode === "citizen" ||
           Boolean(record?.official_submission)),
       "Konfirmasi penerimaan hasil hanya tersedia setelah tinjauan awal selesai atau pengajuan kanal resmi dicatat.",
+    );
+    ensure(
+      !record!.official_submission?.resultReceivedAt &&
+        record!.official_submission?.status !== "HASIL_DITERIMA_WARGA",
+      "Penerimaan hasil sudah dicatat.",
+    );
+    const resultChannel =
+      record!.official_submission?.channel || channel?.trim();
+    ensure(
+      Boolean(resultChannel && resultChannel.length >= 3),
+      "Tuliskan kanal resmi tempat menerima hasil layanan.",
     );
     const now = formatNow();
     const cleanResultNote =
@@ -2473,10 +2185,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           official_submission: {
             status: "HASIL_DITERIMA_WARGA",
             recordedAt: item.official_submission?.recordedAt || now,
-            channel:
-              item.official_submission?.channel ||
-              item.channel ||
-              "Kanal Resmi Instansi",
+            channel: resultChannel!,
             officialNumber:
               item.official_submission?.officialNumber ||
               item.official_number ||
@@ -2513,7 +2222,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       }),
     );
-    showToast("Penerimaan hasil layanan resmi berhasil dicatat (Dilaporkan warga).");
+    showToast(
+      "Penerimaan hasil layanan resmi berhasil dicatat (Dilaporkan warga).",
+    );
   };
 
   return (
@@ -2557,6 +2268,176 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         preparations,
         activePreparation,
         selectPreparation,
+        manageDraft: (id, action) => {
+          const prep = preparations.find(
+            (item) => item.id === id && item.ownerId === user.id,
+          );
+          ensure(
+            user.role === "warga" && Boolean(prep),
+            "Persiapan tidak tersedia.",
+          );
+          const linked =
+            records.some((item) => item.preparation_id === id) ||
+            Boolean(prep!.linkedApplicationId);
+          ensure(
+            action !== "delete" || !linked,
+            "Persiapan yang pernah dikirim hanya dapat diarsipkan agar riwayat tetap tersedia.",
+          );
+          setPreparations((previous) =>
+            action === "delete"
+              ? previous.filter((item) => item.id !== id)
+              : previous.map((item) =>
+                  item.id !== id
+                    ? item
+                    : {
+                        ...item,
+                        archivedAt:
+                          action === "archive"
+                            ? new Date().toISOString()
+                            : undefined,
+                      },
+                ),
+          );
+          if (activePrepId === id && action !== "restore")
+            setActivePrepId(
+              preparations.find((item) => item.id !== id && !item.archivedAt)
+                ?.id || "",
+            );
+          if (action === "delete")
+            void deleteDraftFiles(id).catch(() =>
+              showToast(
+                "Draf dihapus, tetapi salinan berkas belum dapat dibersihkan. Gunakan pembersihan perangkat setelah menutup tab lain.",
+                "error",
+              ),
+            );
+          showToast(
+            action === "delete"
+              ? "Draf dihapus."
+              : action === "restore"
+                ? "Persiapan dipulihkan."
+                : "Persiapan diarsipkan.",
+          );
+        },
+        withdrawReview: (id, reason) => {
+          const record = records.find((item) => item.id === id);
+          ensure(
+            user.role === "warga" && record?.owner_id === user.id,
+            "Permintaan tidak tersedia.",
+          );
+          ensure(
+            ["DITERIMA", "VERIFIKASI", "DIPROSES", "PERLU_PERBAIKAN"].includes(
+              record!.current_status,
+            ) && !record!.official_submission,
+            "Penarikan hanya berlaku untuk tinjauan pendamping aktif, sebelum pengajuan resmi dicatat.",
+          );
+          ensure(
+            reason.trim().length >= 5,
+            "Tuliskan alasan penarikan minimal 5 karakter.",
+          );
+          const now = formatNow();
+          setRecords((previous) =>
+            previous.map((item) =>
+              item.id !== id
+                ? item
+                : {
+                    ...item,
+                    current_status: "DITARIK",
+                    revision_pending: false,
+                    updated_at: now,
+                    events: [
+                      ...item.events.map((event) => ({
+                        ...event,
+                        current: false,
+                      })),
+                      {
+                        id: Date.now(),
+                        status: "DITARIK",
+                        title: "Permintaan tinjauan ditarik warga",
+                        time: now,
+                        source: user.name,
+                        source_type: "citizen",
+                        notes: reason.trim(),
+                        completed: true,
+                        current: true,
+                      },
+                    ],
+                  },
+            ),
+          );
+          showToast(
+            "Tinjauan ditarik. Riwayat tetap tersimpan; ini tidak membatalkan pengajuan di instansi.",
+          );
+        },
+        escalateReview: (id, ticketId, reason) => {
+          const record = records.find((item) => item.id === id);
+          ensure(
+            user.role === "petugas" && record?.assigned_officer_id === user.id,
+            "Permintaan tidak ditugaskan kepadamu.",
+          );
+          ensure(
+            !["SELESAI", "DITARIK", "HASIL_DITERIMA_WARGA"].includes(
+              record!.current_status,
+            ),
+            "Tinjauan sudah ditutup.",
+          );
+          setRecords((previous) =>
+            previous.map((item) =>
+              item.id !== id
+                ? item
+                : {
+                    ...item,
+                    escalation: { ticketId, reason, status: "pending" },
+                  },
+            ),
+          );
+          showToast("Klarifikasi disimpan untuk admin.");
+        },
+        resolveReviewEscalation: (id, answer) => {
+          ensure(
+            user.role === "admin",
+            "Hanya admin yang dapat menjawab klarifikasi.",
+          );
+          setRecords((previous) =>
+            previous.map((item) =>
+              item.id !== id || !item.escalation
+                ? item
+                : {
+                    ...item,
+                    escalation: {
+                      ...item.escalation,
+                      status: "resolved",
+                      answer,
+                    },
+                  },
+            ),
+          );
+        },
+        setServiceAvailability: (id, paused, reason) => {
+          ensure(
+            user.role === "admin",
+            "Hanya admin yang dapat mengatur panduan.",
+          );
+          ensure(
+            reason.trim().length >= 10,
+            "Jelaskan alasan minimal 10 karakter.",
+          );
+          setServices((previous) =>
+            previous.map((item) =>
+              item.id !== id
+                ? item
+                : {
+                    ...item,
+                    availability: paused ? "paused" : "active",
+                    availabilityNote: reason.trim(),
+                  },
+            ),
+          );
+          showToast(
+            paused
+              ? "Persiapan baru dijeda. Riwayat tetap tersedia."
+              : "Persiapan layanan diaktifkan kembali.",
+          );
+        },
         createPreparation,
         createLinkedRevisionPreparation,
         dismissMigrationNote,
@@ -2566,16 +2447,32 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         consumeGuestIntent,
         preparationMeta: currentPrepMeta,
         prepMetaByService,
-        confirmNeedStep: (target, nextCondition, serviceOverride) => {
+        confirmNeedStep: (
+          target,
+          nextCondition,
+          serviceOverride,
+          familyMember,
+        ) => {
+          ensure(
+            target !== "anggota_keluarga" || Boolean(familyMember?.name),
+            "Pilih anggota keluarga yang diurus.",
+          );
           const targetSvc =
             serviceOverride ||
             services.find((s) => s.id === activePreparation.serviceId) ||
             selectedService;
+          ensure(
+            target !== "anggota_keluarga" ||
+              familyMember?.authorization?.scope === "persiapan_dan_tinjauan",
+            "Konfirmasikan kewenangan pendampingan sebelum melanjutkan.",
+          );
           updateActivePreparation((prev) => {
             const changed =
               prev.serviceId !== targetSvc.id ||
               prev.conditionKey !== nextCondition ||
-              prev.applicantTarget !== target;
+              prev.applicantTarget !== target ||
+              JSON.stringify(prev.familyMember) !==
+                JSON.stringify(familyMember);
             return {
               ...prev,
               serviceId: targetSvc.id,
@@ -2584,6 +2481,26 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
               agency: targetSvc.agency,
               needConfirmed: true,
               applicantTarget: target,
+              familyMember:
+                target === "anggota_keluarga" && familyMember
+                  ? { ...familyMember }
+                  : undefined,
+              formData:
+                changed && target === "anggota_keluarga" && familyMember
+                  ? {
+                      ...prev.formData,
+                      nama_lengkap:
+                        targetSvc.id === 3 ? user.name : familyMember.name,
+                      nik:
+                        targetSvc.id === 3 ? user.nik || "" : familyMember.nik,
+                    }
+                  : changed && prev.applicantTarget !== target
+                    ? {
+                        ...prev.formData,
+                        nama_lengkap: user.name,
+                        nik: user.nik || "",
+                      }
+                    : prev.formData,
               conditionKey: nextCondition,
               dataVersion:
                 changed && prev.needConfirmed
@@ -2672,17 +2589,19 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             activePreparation.conditionKey,
           );
           const isFamily =
-            activePreparation.applicantTarget === "anggota_keluarga";
+            activePreparation.applicantTarget === "anggota_keluarga" &&
+            svc.id !== 3;
           updateActivePreparation((prev) => ({
             ...prev,
             formData: {
               nama_lengkap: isFamily
-                ? "Bima Contoh (Anggota Keluarga)"
+                ? activePreparation.familyMember?.name ||
+                  "Bima Contoh (Anggota Keluarga)"
                 : user.name === "Pengunjung"
                   ? "Ayu Contoh"
                   : user.name,
               nik: isFamily
-                ? "3275011505150002"
+                ? activePreparation.familyMember?.nik || "3275011505150002"
                 : user.nik && /^\d{16}$/.test(user.nik)
                   ? user.nik
                   : "0000000000000001",
@@ -2743,7 +2662,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         loadSampleDocuments: (mode, targetPrepId) => {
           const now = formatNow();
           const targetPrepObj = targetPrepId
-            ? preparations.find((p) => p.id === targetPrepId) || activePreparation
+            ? preparations.find((p) => p.id === targetPrepId) ||
+              activePreparation
             : activePreparation;
           const svc =
             services.find((s) => s.id === targetPrepObj.serviceId) ||
@@ -2839,7 +2759,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
               return {
                 ...item,
                 resolved: true,
-                resolvedReason: "Catatan konfirmasi warga pada peringatan format",
+                resolvedReason:
+                  "Catatan konfirmasi warga pada peringatan format",
                 userCorrection: {
                   note: note.trim(),
                   correctedAt: now,
@@ -2877,7 +2798,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                 (p) => p.id === activePreparation.id && p.ownerId === user.id,
               );
           if (!prep) {
-            showToast("Persiapan yang akan diperiksa tidak ditemukan.", "error");
+            showToast(
+              "Persiapan yang akan diperiksa tidak ditemukan.",
+              "error",
+            );
             return;
           }
           const prepId = prep.id;
@@ -2926,6 +2850,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           };
           const capturedConditionKey = prep.conditionKey;
           const capturedTarget = prep.applicantTarget;
+          const capturedFamily = prep.familyMember
+            ? { ...prep.familyMember }
+            : undefined;
           const capturedFormData: FormData = { ...prep.formData };
           const capturedDocs: DocumentItem[] = prep.documents.map((d) => ({
             ...d,
@@ -2937,6 +2864,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             capturedConditionKey,
             capturedTarget,
             capturedFormData,
+            capturedFamily,
           );
           const capturedDocSig = computeDocSignature(
             capturedService,
@@ -2999,6 +2927,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                     item.conditionKey,
                     item.applicantTarget,
                     item.formData,
+                    item.familyMember,
                   );
                   const liveDocSig = computeDocSignature(
                     capturedService,
@@ -3049,9 +2978,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             "Masuk menggunakan akun warga untuk mengirim berkas ke petugas pendamping.",
           );
           const targetPrep = prepId
-            ? preparations.find(
-                (p) => p.id === prepId && p.ownerId === user.id,
-              )
+            ? preparations.find((p) => p.id === prepId && p.ownerId === user.id)
             : preparations.find(
                 (p) => p.id === activePreparation.id && p.ownerId === user.id,
               );
@@ -3110,6 +3037,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             services.find((s) => s.id === targetPrep!.serviceId) ||
             selectedService;
           const now = formatNow();
+          ensure(
+            navigator.onLine,
+            "Koneksi terputus. Draf tetap tersimpan; coba kirim lagi setelah terhubung.",
+          );
+          ensure(
+            targetSvc.availability !== "paused",
+            "Panduan sedang dikoreksi. Tunggu pembaruan atau minta bantuan petugas.",
+          );
           const snapshot = buildSubmissionSnapshot(
             targetPrep!,
             targetSvc,
@@ -3157,7 +3092,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             updated_at: now,
             estimated_completion: targetSvc.official_duration,
             owner_id: user.id,
-            assigned_officer_id: "officer-budi",
+            assigned_officer_id: mockAuth.reviewOfficers()[0]?.id,
             recipient_unit: DEFAULT_REVIEW_UNIT,
             mode: "demo_review",
             submitted_snapshot: snapshot,
@@ -3199,9 +3134,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         addApplication: (application, prepId) => {
           ensure(user.role === "warga" && !!account);
           const targetPrep = prepId
-            ? preparations.find(
-                (p) => p.id === prepId && p.ownerId === user.id,
-              )
+            ? preparations.find((p) => p.id === prepId && p.ownerId === user.id)
             : preparations.find(
                 (p) => p.id === activePreparation.id && p.ownerId === user.id,
               );
@@ -3256,8 +3189,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             preparation_reference:
               application.preparation_reference ||
               targetPrep!.internalReference,
-            condition_label:
-              application.condition_label || conditionObj.label,
+            condition_label: application.condition_label || conditionObj.label,
             service_id: targetSvc.id,
             service_name: targetSvc.name,
             region: targetPrep!.region || targetSvc.region || selectedRegion,
@@ -3301,6 +3233,134 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         },
         officerUpdateApplication,
         officerStartReview,
+        reviewQueue:
+          user.role === "admin"
+            ? records
+                .filter(
+                  (item) =>
+                    item.current_status !== "DICATAT_WARGA" &&
+                    item.mode !== "citizen",
+                )
+                .map(
+                  ({
+                    id,
+                    internal_reference,
+                    service_name,
+                    applicant_name,
+                    current_status,
+                    assigned_officer_id,
+                    revision_pending,
+                  }) => ({
+                    id,
+                    internal_reference,
+                    service_name,
+                    applicant_name,
+                    current_status,
+                    assigned_officer_id,
+                    revision_pending,
+                  }),
+                )
+            : [],
+        assignReviewOfficer,
+        reviewServiceSource: (id, version, decision, note) => {
+          ensure(
+            user.role === "admin",
+            "Hanya admin yang dapat meninjau sumber panduan.",
+          );
+          const service = services.find((item) => item.id === id);
+          ensure(
+            Boolean(service) && (service!.version || 1) === version,
+            "Versi panduan telah berubah. Buka kembali sumber terbaru.",
+          );
+          ensure(
+            note.trim().length >= 10,
+            "Tuliskan hasil peninjauan minimal 10 karakter.",
+          );
+          ensure(
+            ["sesuai", "perlu_perbaikan"].includes(decision),
+            "Pilih hasil peninjauan yang benar.",
+          );
+          try {
+            ensure(
+              new URL(service!.source_url || "").protocol === "https:",
+              "Tautan sumber harus memakai https.",
+            );
+          } catch {
+            throw new Error(
+              "Tambahkan tautan sumber yang benar pada panduan layanan.",
+            );
+          }
+          setServices((previous) =>
+            previous.map((item) =>
+              item.id !== id
+                ? item
+                : {
+                    ...item,
+                    source_verified: decision === "sesuai",
+                    source_review_status: decision,
+                    source_review_version: version,
+                    source_review_by: user.name,
+                    source_note: note.trim(),
+                    reviewed_at: new Date().toISOString(),
+                  },
+            ),
+          );
+          showToast("Peninjauan sumber disimpan.");
+        },
+        officerHistory:
+          user.role === "petugas"
+            ? records.flatMap((record) =>
+                (record.evaluation_history?.length
+                  ? record.evaluation_history
+                  : record.latest_evaluation
+                    ? [record.latest_evaluation]
+                    : []
+                )
+                  .filter((evaluation) =>
+                    evaluation.evaluatedById
+                      ? evaluation.evaluatedById === user.id
+                      : evaluation.evaluatedBy === user.name &&
+                        record.assigned_officer_id === user.id,
+                  )
+                  .map((evaluation, index) => ({
+                    id: `${record.id}-${evaluation.submissionVersion}-${index}`,
+                    applicationId: record.id,
+                    reference: record.internal_reference || "",
+                    serviceName: record.service_name,
+                    submissionVersion: evaluation.submissionVersion,
+                    decision: evaluation.decision,
+                    evaluatedAt: evaluation.evaluatedAt,
+                    summaryNote:
+                      record.assigned_officer_id === user.id
+                        ? evaluation.summaryNote
+                        : undefined,
+                    canOpen: record.assigned_officer_id === user.id,
+                  })),
+              )
+            : [],
+        operationalEvents:
+          user.role === "admin"
+            ? records.flatMap((record) =>
+                record.events
+                  .filter(
+                    (event) =>
+                      event.source_type === "admin" ||
+                      event.source_type === "officer",
+                  )
+                  .map((event) => ({
+                    id: `${record.id}-${event.id}`,
+                    message: event.title,
+                    by: event.source,
+                    time: event.time,
+                    applicationId: record.id,
+                    reference: record.internal_reference || "",
+                    category:
+                      event.source_type === "admin"
+                        ? ("penugasan" as const)
+                        : ("tinjauan" as const),
+                  })),
+              )
+            : [],
         officerRequestRevision,
         officerCompleteReview,
         addCitizenNote,
@@ -3336,6 +3396,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const prepReadiness = getPreparationReadiness(targetPrep);
           ensure(
+            prepReadiness.hasUnsentDraftChanges ||
+              (citizenNote || "").trim().length >= 5,
+            "Belum ada perubahan pada data atau berkas. Jika hanya memberi klarifikasi, tuliskan penjelasan minimal 5 karakter sebelum mengirim perbaikan.",
+          );
+          ensure(
             prepReadiness.steps.step1Kebutuhan && prepReadiness.steps.step2Data,
             "Pastikan kebutuhan permohonan dan data wajib pemohon pada persiapan asal sudah lengkap.",
           );
@@ -3368,6 +3433,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
           const now = formatNow();
           const nextSubVersion =
             (record!.submitted_snapshot?.submissionVersion || 1) + 1;
+          ensure(
+            navigator.onLine,
+            "Koneksi terputus. Draf perbaikan tetap tersimpan; coba kirim lagi setelah terhubung.",
+          );
           const nextSnapshot = buildSubmissionSnapshot(
             targetPrep,
             targetSvc,

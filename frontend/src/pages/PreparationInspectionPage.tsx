@@ -232,7 +232,7 @@ export function PreparationInspectionPage() {
                   >
                     description
                   </span>
-                  <p className="text-sm font-semibold mt-3 break-words text-[#142c4b]">
+                  <p className="text-sm font-semibold mt-3 break-words text-[#17324D]">
                     {selected.fileName} (v{selected.version || 1})
                   </p>
                   <p className="text-xs text-slate-500 mt-2 leading-relaxed">
@@ -338,7 +338,7 @@ export function PreparationInspectionPage() {
                         </span>
                       </div>
 
-                      <h3 className="text-base font-semibold mt-2.5 text-[#142c4b]">
+                      <h3 className="text-base font-semibold mt-2.5 text-[#17324D]">
                         {finding.title}
                       </h3>
 
@@ -353,8 +353,8 @@ export function PreparationInspectionPage() {
                       )}
 
                       {finding.userCorrection && (
-                        <div className="text-xs text-slate-700 mt-2.5 bg-[#f0f5fc] p-3 rounded-lg border border-[#cbd7e6] space-y-1">
-                          <p className="font-semibold text-[#142c4b]">
+                        <div className="text-xs text-slate-700 mt-2.5 bg-[#f0f5fc] p-3 rounded-lg border border-[#C5CDD0] space-y-1">
+                          <p className="font-semibold text-[#17324D]">
                             Catatan warga ({finding.userCorrection.correctedAt})
                             {" · "}
                             Sumber:{" "}
@@ -384,7 +384,7 @@ export function PreparationInspectionPage() {
                             confirmingId !== finding.id && (
                               <button
                                 type="button"
-                                className="text-xs font-medium text-slate-600 hover:text-[#1769d2]"
+                                className="text-xs font-medium text-slate-600 hover:text-[#17324D]"
                                 onClick={() => {
                                   setConfirmingId(finding.id);
                                   setConfirmationNote(

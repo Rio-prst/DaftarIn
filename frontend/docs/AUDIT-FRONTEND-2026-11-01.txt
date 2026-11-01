@@ -1,0 +1,126 @@
+AUDIT BENTUK FRONTEND DAFTARIN — 1 NOVEMBER 2026
+================================================
+
+KESIMPULAN
+Belum final. Arah visual dapat dipertahankan, tetapi hierarki informasi,
+alur tindakan, pengalaman HP, dan cakupan halaman mode API perlu dirapikan.
+Menambah kartu, status, atau paragraf bukan solusi utama.
+Audit ini tidak mengubah kode aplikasi.
+
+CAKUPAN
+- Memeriksa kode frontend pada clone DaftarIn-feat1-frontend.
+- Membuka 24 tampilan pada lebar 1440 dan 390 piksel: halaman publik,
+  dashboard/persiapan/pelacakan/pengaturan warga, petugas, admin demo,
+  serta registrasi dan pemulihan akun mode API.
+- Browser pengujian terpisah, tidak memakai sesi pengguna.
+- Tidak ditemukan pelebaran dokumen melewati viewport pada tampilan tersebut.
+- Tidak ada error JavaScript tercatat pada halaman demo yang dipantau.
+- Ini audit tampilan dan struktur alur, bukan pengujian ulang seluruh
+  pengiriman/revisi, audit keamanan, atau uji pengguna lanjut usia.
+- Fitur admin mode API dibandingkan melalui kode; tidak login menggunakan
+  akun admin sungguhan pada audit ini.
+
+YANG SUDAH CUKUP MATANG UNTUK DIPERTAHANKAN
+1. Warna navy/biru, latar netral, sidebar, dan bentuk komponen dasar.
+2. Katalog warga menggunakan kerangka ruang kerja, bukan topbar landing.
+3. Struktur empat tahap: Kebutuhan -> Data -> Dokumen -> Tinjau & kirim.
+4. Dashboard sudah menampilkan tindakan berikutnya, bukan hanya statistik.
+5. Pembedaan tinjauan pendamping dan pengajuan resmi sudah dirancang.
+6. Chatbot menjadi pendamping, bukan pusat interaksi.
+7. Pengaturan akun sudah memiliki profil, keamanan, tampilan, dan preferensi.
+
+PRIORITAS 1 — HIERARKI TINDAKAN DAN HP
+
+A. Tahap aktif terakhir terpotong di HP.
+Pada lebar 390, label Tinjau & kirim keluar dari area stepper yang terlihat.
+Batas kanan label sekitar 461 px, area terlihat berakhir pada 370 px.
+Komponen tidak otomatis membawa tahap aktif ke posisi yang terlihat.
+Rujukan: frontend/src/components/PreparationStepper.tsx;
+frontend/src/index.css, bagian .jmw-progress dan .jmw-step.
+Saran: gunakan ringkasan tahap aktif yang terbaca, misalnya
+Langkah 4 dari 4 — Tinjau & kirim, dengan navigasi tahap yang tetap mudah.
+
+B. Tindakan kirim kalah prioritas dari cetak.
+Pada contoh revisi di HP, tombol Kirim perbaikan untuk ditinjau berada
+sekitar posisi vertikal 4263 px. Bilah tindakan yang terus terlihat justru
+berisi Kembali ke dokumen dan Cetak ringkasan.
+Rujukan: frontend/src/pages/PreparationSummaryPage.tsx:294 dan bagian kirim.
+Saran: ringkasan data/dokumen, koreksi, persetujuan, dan tindakan kirim
+menjadi urutan utama. Cetak menjadi tindakan tambahan. Pemeriksaan wajib
+serta persetujuan tetap dipertahankan; yang diubah adalah penyajiannya.
+
+C. Bagian pengantar menghabiskan ruang layar.
+Di halaman Data pada HP, judul, metadata, catatan perbaikan, stepper, dan
+pengantar membuat isian pertama baru terlihat dekat bagian bawah viewport.
+Di halaman petugas, penjelasan panjang muncul sebelum antrean kerja.
+Saran: tampilkan satu arahan singkat yang relevan. Detail tambahan bisa
+dibuka ketika dibutuhkan, bukan diulang di semua halaman.
+
+PRIORITAS 2 — KONTEN DAN KONSISTENSI
+
+D. Informasi tindakan di dashboard berulang.
+Permintaan perbaikan yang sama muncul dalam Perlu tindakanmu, kemudian
+muncul lagi sebagai penjelasan panjang dan tombol yang sama di kartu urusan.
+Rujukan: frontend/src/pages/DashboardPage.tsx.
+Saran: tugas mendesak tetap jelas di atas; kartu urusan cukup memberi
+status, waktu pembaruan, dan akses rincian tanpa mengulang seluruh instruksi.
+
+E. Bahasa belum seragam dan masih terlalu teknis.
+Contoh: Data Pemohon & Formulir, Isi Cepat Data Warga dengan emoji,
+penilaian eksplisit, validasi dasar, salinan kiriman, serta simulasi aturan.
+Ada campuran Anda/kamu dan kapitalisasi judul yang tidak konsisten.
+Rujukan: PreparationDataPage.tsx:86,158; OfficerPage.tsx:77-87;
+PreparationSummaryPage.tsx:320-350.
+Saran: satu gaya bahasa yang sopan dan mudah dipahami. Misalnya Data pemohon,
+Gunakan data akun, Kelengkapan berkas. Detail audit tetap tersedia bila perlu.
+
+F. Halaman ringkasan dan petugas masih seperti dokumentasi sistem.
+Penjelasan batas pemeriksaan AI, aturan, metadata versi, dan alur teknis
+mengambil perhatian lebih besar daripada data serta dokumen yang ditinjau.
+Saran: pusatkan warga pada memeriksa dan mengirim; pusatkan petugas pada
+antrean, dokumen, temuan, serta keputusan. Jangan menghapus penjelasan
+penting mengenai batas layanan, tetapi ringkas dan letakkan secara tepat.
+
+PRIORITAS 3 — CAKUPAN PRODUK YANG BELUM FINAL
+
+G. Admin demo dan admin mode API belum setara.
+Admin demo mempunyai panduan, aturan, akun, serta riwayat. Admin API baru
+mempunyai akun dan riwayat. Pengelolaan panduan server belum tersedia.
+Rujukan: frontend/src/pages/AdminPage.tsx dan ServerAdminPage.tsx:97-99.
+Ini kekurangan cakupan halaman operasional, bukan sekadar masalah warna.
+
+H. Registrasi dan pemulihan akun belum mencakup seluruh siklus akun.
+Mode API hanya mengumpulkan nama/email/sandi, sementara NIK/foto KTP hanya
+ada pada demo. Pemulihan akun API masih menampilkan keterangan belum tersedia.
+Rujukan: RegisterPage.tsx:205-210; PasswordRecoveryPage.tsx:49 dan seterusnya.
+Perlu diputuskan secara konsisten kapan identitas dibutuhkan: saat membuat
+akun atau saat menggunakan layanan. Jangan mengklaim NIK/KTP sudah
+terverifikasi selama proses dan penyimpanannya belum tersedia.
+
+I. Transaksi layanan masih menggunakan penyimpanan browser.
+Katalog, draf, berkas, pengiriman tinjauan, dan antrean belum memakai backend
+operasional lintas perangkat. Auth dan akun sudah memakai API pada mode API.
+Rujukan: frontend/src/context/AppContext.tsx dan utils/fileStorage.ts.
+Ini batas integrasi, bukan alasan untuk merombak visual yang sudah baik.
+Namun pesan tersimpan/terkirim tidak boleh mengesankan layanan instansi
+sudah menerima berkas sungguhan.
+
+URUTAN REVISI YANG DISARANKAN
+1. Rapikan perjalanan warga dari katalog sampai kirim dan revisi.
+2. Perbaiki navigasi tahap serta tindakan utama pada HP.
+3. Ringkas dashboard, pengantar, dan bahasa seluruh halaman.
+4. Rapikan ruang kerja petugas agar berpusat pada tugas pemeriksaan.
+5. Lengkapi cakupan admin mode API dan keputusan alur identitas/akun.
+6. Hubungkan transaksi bisnis dengan backend, lalu uji lintas peran.
+
+BATAS SEBELUM DISEBUT FINAL
+- Warga selalu memahami posisi, apa yang kurang, dan tindakan berikutnya.
+- Tahap aktif serta tindakan utama terlihat/jelas pada layar kecil.
+- Alur pertama kali, revisi, menunggu, dan selesai menggunakan istilah seragam.
+- Admin/petugas memiliki halaman yang sesuai tugas operasionalnya.
+- Data lokal, data server, dan pengajuan resmi tidak tertukar dalam pesan UI.
+- Verifikasi/reset email dan keputusan pengumpulan identitas sudah jelas.
+- Dilakukan uji pemahaman dengan pengguna sebenarnya dari usia berbeda.
+
+Bukti screenshot dan catatan audit berada di outputs/frontend-audit-20261101
+pada workspace lokal, di luar folder repo. Tidak dimasukkan sebagai aset web.

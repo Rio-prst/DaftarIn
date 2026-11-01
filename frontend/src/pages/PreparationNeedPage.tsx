@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PreparationLayout } from "../components/PreparationLayout";
 import { useApp } from "../context/AppContext";
+import { FamilyPicker } from "../components/FamilyPicker";
+import type { FamilyMember } from "../family/members";
 import {
   documentSlots,
   getSelectedConditionOption,
@@ -12,6 +14,7 @@ import {
 export function PreparationNeedPage() {
   const {
     services,
+    user,
     selectedRegion,
     activePreparation,
     createPreparation,
@@ -21,6 +24,18 @@ export function PreparationNeedPage() {
     showToast,
   } = useApp();
   const navigate = useNavigate();
+  const [familyMember, setFamilyMember] = useState<FamilyMember | undefined>(
+    activePreparation.familyMember,
+  );
+  const [authorized, setAuthorized] = useState(
+    Boolean(activePreparation.familyMember?.authorization),
+  );
+  const [needError, setNeedError] = useState("");
+  useEffect(() => {
+    setFamilyMember(activePreparation.familyMember);
+    setAuthorized(Boolean(activePreparation.familyMember?.authorization));
+    setNeedError("");
+  }, [activePreparation.id]);
   const [params, setParams] = useSearchParams();
   const lastHandledNewQueryRef = useRef<string | null>(null);
   const [prefilledFromGuide, setPrefilledFromGuide] = useState(
@@ -40,8 +55,7 @@ export function PreparationNeedPage() {
       !revisionParam &&
       (isNewRequest || Boolean(guestIntent))
     ) {
-      const currentQueryKey =
-        params.toString() + "::" + (guestIntent ? "intent" : "nointent");
+      const currentQueryKey = params.toString();
       if (lastHandledNewQueryRef.current === currentQueryKey) return;
       lastHandledNewQueryRef.current = currentQueryKey;
 
@@ -60,11 +74,20 @@ export function PreparationNeedPage() {
           : undefined) ||
         getSelectedConditionOption(targetService).value;
 
+      if (targetService.availability === "paused") {
+        setNeedError(
+          "Panduan sedang dikoreksi. Buka Bantuan untuk menentukan langkah berikutnya.",
+        );
+        return;
+      }
       const created = createPreparation({
         service: targetService,
         region: savedIntent?.region || targetService.region || selectedRegion,
         conditionKey: targetCondition,
-        applicantTarget: savedIntent?.applicantTarget || "diri_sendiri",
+        applicantTarget:
+          params.get("target") === "anggota_keluarga"
+            ? "anggota_keluarga"
+            : savedIntent?.applicantTarget || "diri_sendiri",
         needConfirmed: false,
       });
 
@@ -97,7 +120,9 @@ export function PreparationNeedPage() {
     currentService.id,
   );
   const [target, setTarget] = useState<ApplicantTarget>(
-    activePreparation.applicantTarget || "diri_sendiri",
+    params.get("target") === "anggota_keluarga"
+      ? "anggota_keluarga"
+      : activePreparation.applicantTarget || "diri_sendiri",
   );
   const [selectedCondition, setSelectedCondition] = useState<string>(
     activePreparation.conditionKey ||
@@ -107,7 +132,11 @@ export function PreparationNeedPage() {
   // Sync local form controls when activePreparation changes
   useEffect(() => {
     setSelectedServiceId(activePreparation.serviceId);
-    setTarget(activePreparation.applicantTarget || "diri_sendiri");
+    setTarget(
+      params.get("target") === "anggota_keluarga"
+        ? "anggota_keluarga"
+        : activePreparation.applicantTarget || "diri_sendiri",
+    );
     const svc =
       services.find((s) => s.id === activePreparation.serviceId) || services[0];
     setSelectedCondition(
@@ -146,7 +175,33 @@ export function PreparationNeedPage() {
   };
 
   const handleConfirmAndNext = () => {
-    confirmNeedStep(target, activeOption.value, activeServiceObj);
+    if (target === "anggota_keluarga" && !familyMember) {
+      setNeedError("Pilih atau tambahkan anggota keluarga yang diurus.");
+      document.getElementById("family-member")?.focus();
+      return;
+    }
+    if (target === "anggota_keluarga" && !authorized) {
+      setNeedError(
+        "Konfirmasikan kewenangan pendampingan sebelum melanjutkan.",
+      );
+      document.getElementById("family-authorization")?.focus();
+      return;
+    }
+    confirmNeedStep(
+      target,
+      activeOption.value,
+      activeServiceObj,
+      target === "anggota_keluarga" && familyMember
+        ? {
+            ...familyMember,
+            authorization: familyMember.authorization || {
+              by: user.name,
+              confirmedAt: new Date().toISOString(),
+              scope: "persiapan_dan_tinjauan",
+            },
+          }
+        : undefined,
+    );
     showToast("Kebutuhan permohonan dikonfirmasi dan disimpan.", "success");
     navigate("/persiapan/data" + buildNextQuery());
   };
@@ -171,6 +226,11 @@ export function PreparationNeedPage() {
       }
     >
       <div className="space-y-6">
+        {needError && (
+          <p className="form-error" role="alert">
+            {needError}
+          </p>
+        )}
         {prefilledFromGuide && (
           <div className="case-update-note">
             Konteks layanan (<strong>{activeServiceObj.name}</strong>) dan
@@ -242,8 +302,8 @@ export function PreparationNeedPage() {
               className={
                 "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-colors " +
                 (target === "diri_sendiri"
-                  ? "border-[#1769d2] bg-[#f0f5fc]"
-                  : "border-[#dfe5ed] bg-white hover:border-[#aab8c9]")
+                  ? "border-[#17324D] bg-[#f0f5fc]"
+                  : "border-[#E6E7E4] bg-white hover:border-[#aab8c9]")
               }
             >
               <input
@@ -252,10 +312,10 @@ export function PreparationNeedPage() {
                 value="diri_sendiri"
                 checked={target === "diri_sendiri"}
                 onChange={() => setTarget("diri_sendiri")}
-                className="mt-1 w-4 h-4 accent-[#1769d2] shrink-0"
+                className="mt-1 w-4 h-4 accent-[#17324D] shrink-0"
               />
               <div>
-                <span className="font-semibold text-sm block text-[#142c4b]">
+                <span className="font-semibold text-sm block text-[#17324D]">
                   Diri sendiri / Kepala keluarga
                 </span>
                 <span className="text-xs text-slate-600 mt-1 block leading-relaxed">
@@ -268,8 +328,8 @@ export function PreparationNeedPage() {
               className={
                 "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-colors " +
                 (target === "anggota_keluarga"
-                  ? "border-[#1769d2] bg-[#f0f5fc]"
-                  : "border-[#dfe5ed] bg-white hover:border-[#aab8c9]")
+                  ? "border-[#17324D] bg-[#f0f5fc]"
+                  : "border-[#E6E7E4] bg-white hover:border-[#aab8c9]")
               }
             >
               <input
@@ -278,21 +338,45 @@ export function PreparationNeedPage() {
                 value="anggota_keluarga"
                 checked={target === "anggota_keluarga"}
                 onChange={() => setTarget("anggota_keluarga")}
-                className="mt-1 w-4 h-4 accent-[#1769d2] shrink-0"
+                className="mt-1 w-4 h-4 accent-[#17324D] shrink-0"
               />
               <div>
-                <span className="font-semibold text-sm block text-[#142c4b]">
-                  Anggota keluarga dalam satu KK
+                <span className="font-semibold text-sm block text-[#17324D]">
+                  Anggota keluarga
                 </span>
                 <span className="text-xs text-slate-600 mt-1 block leading-relaxed">
-                  Mengurus dokumen untuk pasangan, anak, atau anggota keluarga
-                  lain tanpa menimpa data urusan pribadimu.
+                  Mengurus dokumen keluarga. Persyaratan hubungan atau kuasa
+                  mengikuti panduan layanan.
                 </span>
               </div>
             </label>
           </div>
         </section>
 
+        {target === "anggota_keluarga" && (
+          <section className="plain-panel" aria-label="Pemohon keluarga">
+            <FamilyPicker
+              value={familyMember}
+              onChange={(member) => {
+                setFamilyMember(member);
+                setAuthorized(Boolean(member?.authorization));
+              }}
+            />
+            <label className="consent-field mt-3">
+              <input
+                id="family-authorization"
+                type="checkbox"
+                checked={authorized}
+                onChange={(event) => setAuthorized(event.target.checked)}
+              />
+              <span>
+                Saya adalah orang tua/wali atau mendapat izin mendampingi
+                anggota keluarga ini untuk persiapan dan tinjauan berkas. Saya
+                akan memenuhi bukti perwakilan yang diminta layanan.
+              </span>
+            </label>
+          </section>
+        )}
         <section className="plain-panel" aria-labelledby="condition-heading">
           <h2 id="condition-heading" className="panel-title">
             3. {conditionConfig.question}
@@ -311,8 +395,8 @@ export function PreparationNeedPage() {
                   className={
                     "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-colors " +
                     (selected
-                      ? "border-[#1769d2] bg-[#f0f5fc]"
-                      : "border-[#dfe5ed] bg-white hover:border-[#aab8c9]")
+                      ? "border-[#17324D] bg-[#f0f5fc]"
+                      : "border-[#E6E7E4] bg-white hover:border-[#aab8c9]")
                   }
                 >
                   <input
@@ -321,10 +405,10 @@ export function PreparationNeedPage() {
                     value={opt.value}
                     checked={selected}
                     onChange={() => setSelectedCondition(opt.value)}
-                    className="mt-1 w-4 h-4 accent-[#1769d2] shrink-0"
+                    className="mt-1 w-4 h-4 accent-[#17324D] shrink-0"
                   />
                   <div>
-                    <span className="font-semibold text-sm block text-[#142c4b]">
+                    <span className="font-semibold text-sm block text-[#17324D]">
                       {opt.label}
                     </span>
                     <span className="text-xs text-slate-600 mt-1 block leading-relaxed">

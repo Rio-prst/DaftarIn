@@ -1,7 +1,6 @@
 import axios, { type AxiosInstance } from "axios";
 import type {
   ApiResponse,
-  User,
   ServiceItem,
   ServiceGuide,
   Preparation,
@@ -12,17 +11,14 @@ import type {
   StatusEvent,
 } from "../types/api";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1";
+import { ApiError, API_BASE_URL } from "./transport";
+export { API_BASE_URL } from "./transport";
+export { serverAuth as authApi } from "../auth/serverAuth";
 
 /**
- * HTTP Client untuk komunikasi dengan Backend NestJS (/api/v1).
- * Catatan implementasi saat ini:
- * - Backend di folder `backend/` baru berisi scaffold awal NestJS 11 (`GET /` -> "Hello World!").
- * - Saat backend diimplementasikan, autentikasi menggunakan cookie `httpOnly` (`withCredentials: true`),
- *   bukan menyimpan access token di `localStorage`.
- * - Selama endpoint `/api/v1/*` belum tersedia di backend, aplikasi menggunakan adapter lokal
- *   di `src/auth/mockAuth.ts` dan `src/context/AppContext.tsx` dengan kontrak data yang setara.
+ * Backend feat/backend uses /api and httpOnly authentication cookies.
+ * Only authentication is implemented there today; other clients below describe
+ * planned contracts and are not used as a silent fallback for browser data.
  */
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -36,31 +32,11 @@ export const api: AxiosInstance = axios.create({
 
 export async function requestSafe<T>(
   promise: Promise<{ data: ApiResponse<T> }>,
-  fallbackData: T,
 ): Promise<T> {
-  try {
-    const res = await promise;
-    return res.data?.data ?? fallbackData;
-  } catch (err) {
-    console.warn("[DaftarIn API Adapter: fallback ke penyimpanan browser]", err);
-    return fallbackData;
-  }
+  const res = await promise;
+  if (!res.data || !("data" in res.data)) throw new ApiError(502, "Respons server belum sesuai.");
+  return res.data.data;
 }
-
-export const authApi = {
-  login: async (
-    identifier: string,
-    password: string,
-  ): Promise<ApiResponse<{ user: User }>> => {
-    return (await api.post("/auth/login", { email: identifier, password })).data;
-  },
-  getMe: async (): Promise<ApiResponse<User>> => {
-    return (await api.get("/auth/me")).data;
-  },
-  logout: async (): Promise<void> => {
-    await api.post("/auth/logout");
-  },
-};
 
 export const servicesApi = {
   getAll: async (params?: {

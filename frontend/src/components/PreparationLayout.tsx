@@ -22,6 +22,7 @@ export function PreparationLayout({
 }) {
   const {
     user,
+    manageDraft,
     activePreparation,
     preparations,
     selectPreparation,
@@ -46,7 +47,10 @@ export function PreparationLayout({
   const isInvalidPrepParam = Boolean(prepParam && !requestedPrep);
 
   const isInitializingNewDraft =
-    step === 1 && !prepParam && !revisionId && (isNewRequest || Boolean(guestIntent));
+    step === 1 &&
+    !prepParam &&
+    !revisionId &&
+    (isNewRequest || Boolean(guestIntent));
 
   const linkResolution =
     !isInvalidPrepParam && revisionId
@@ -85,7 +89,7 @@ export function PreparationLayout({
 
   if (isInitializingNewDraft) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA]">
+      <div className="flex min-h-screen bg-[#FAF7F2]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar breadcrumbs={["Persiapan saya", title]} role="warga" />
@@ -108,7 +112,7 @@ export function PreparationLayout({
 
   if (isInvalidPrepParam) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA]">
+      <div className="flex min-h-screen bg-[#FAF7F2]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar
@@ -143,7 +147,7 @@ export function PreparationLayout({
 
   if (!resolvedPrep) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA]">
+      <div className="flex min-h-screen bg-[#FAF7F2]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar breadcrumbs={["Persiapan saya", title]} role="warga" />
@@ -155,7 +159,8 @@ export function PreparationLayout({
             <div className="empty-state">
               <h1>Belum ada persiapan yang dipilih</h1>
               <p>
-                Pilih persiapan dari daftar persiapanmu atau mulai draf persiapan baru dari tahap pertama.
+                Pilih persiapan dari daftar persiapanmu atau mulai draf
+                persiapan baru dari tahap pertama.
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-4">
                 <Link
@@ -177,7 +182,7 @@ export function PreparationLayout({
 
   if (isSyncingActivePrep) {
     return (
-      <div className="flex min-h-screen bg-[#F7F8FA]">
+      <div className="flex min-h-screen bg-[#FAF7F2]">
         <Sidebar role="warga" />
         <div className="flex-1 min-w-0 flex flex-col">
           <TopBar breadcrumbs={["Persiapan saya", title]} role="warga" />
@@ -202,6 +207,7 @@ export function PreparationLayout({
     );
   }
 
+  if(resolvedPrep?.archivedAt)return <div className="plain-panel m-5"><h1>Persiapan diarsipkan</h1><p>Pulihkan dahulu jika ingin melanjutkan perubahan.</p><button type="button" className="button-primary mt-4" onClick={()=>manageDraft(resolvedPrep.id,'restore')}>Pulihkan persiapan</button><Link className="text-link ml-4" to="/persiapan">Kembali ke daftar</Link></div>;
   const revisionApp =
     linkResolution && linkResolution.status === "valid"
       ? linkResolution.application
@@ -238,16 +244,18 @@ export function PreparationLayout({
           <div className="flex flex-wrap items-baseline justify-between gap-4 pb-1 border-b border-slate-200/60">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-[#1769D2] font-mono font-bold text-xs">
+                <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-[#17324D] font-mono font-bold text-xs">
                   {activePreparation.internalReference}
                 </span>
-                <span className="text-xs text-slate-500 font-medium">{targetLabel}</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  {targetLabel}
+                </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#142C4B] mt-1 font-display tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#17324D] mt-1 font-display tracking-tight">
                 {title}
               </h1>
               <p className="text-sm text-slate-600 mt-0.5">
-                Layanan: <strong>{activePreparation.serviceName}</strong> · Terakhir diperbarui {activePreparation.updatedAt}
+                <strong>{activePreparation.serviceName}</strong>
               </p>
             </div>
 
@@ -261,7 +269,8 @@ export function PreparationLayout({
           {activePreparation.migrationNote && (
             <div className="case-update-note mt-4 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-950 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
               <p className="max-w-2xl leading-relaxed">
-                <strong>Catatan data sebelumnya:</strong> {activePreparation.migrationNote}
+                <strong>Catatan data sebelumnya:</strong>{" "}
+                {activePreparation.migrationNote}
               </p>
               <button
                 type="button"
@@ -273,70 +282,88 @@ export function PreparationLayout({
             </div>
           )}
 
-          {/* Banner Permintaan Perbaikan Petugas (Tactile Civic Notice) */}
           {revisionApp && revisionApp.current_status === "PERLU_PERBAIKAN" && (
-            <div
-              className={`mt-5 rounded-2xl border-l-4 p-5 shadow-xs transition-all ${
-                revisionApp.revision_pending
-                  ? "bg-blue-50/95 border-l-blue-600 border border-blue-200/90 text-blue-950"
-                  : "bg-amber-50/95 border-l-amber-500 border border-amber-200/90 text-amber-950"
-              }`}
+            <section
+              className="mt-4 rounded-lg border border-slate-200 bg-white p-3 sm:p-4"
+              aria-label="Catatan tinjauan"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-amber-200/70">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-amber-600">
-                    notification_important
-                  </span>
-                  <span className="text-xs font-bold uppercase tracking-wider font-mono">
-                    {revisionApp.revision_pending
-                      ? `Perbaikan Telah Dikirim · ${revisionApp.internal_reference}`
-                      : `Permintaan Tindakan Perbaikan Petugas · ${revisionApp.internal_reference}`}
-                  </span>
-                </div>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white font-medium border border-amber-200 text-amber-800">
-                  Draf Berkas: {activePreparation.internalReference}
-                </span>
-              </div>
-
-              {latestOfficerRevision ? (
-                <div className="mt-3.5 space-y-2 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-slate-700 font-semibold">Bagian yang Perlu Diperbaiki:</span>
-                    <span className="font-bold text-[#142C4B] bg-white px-2.5 py-0.5 rounded-md border border-amber-200">
-                      {latestOfficerRevision.targetItem}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-semibold text-xs border border-amber-300">
-                      {OFFICER_ISSUE_CATEGORY_LABELS[latestOfficerRevision.issueCategory]}
-                    </span>
+              <h2 className="text-base font-semibold text-[#17324D]">
+                {revisionApp.revision_pending
+                  ? "Perbaikan sudah dikirim"
+                  : "Perlu perbaikan"}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                {revisionApp.revision_pending
+                  ? "Perbaikanmu sedang menunggu tinjauan petugas."
+                  : latestOfficerRevision?.requiredAction ||
+                    "Perbaiki data atau berkas sesuai catatan petugas, lalu kirim ulang pada tahap Tinjau & kirim."}
+              </p>
+              <details
+                key={
+                  revisionApp.id + ":" + Boolean(revisionApp.revision_pending)
+                }
+                className="mt-1"
+              >
+                <summary className="cursor-pointer py-2 text-sm font-medium text-[#17324D]">
+                  Lihat catatan petugas
+                </summary>
+                <dl className="mt-2 space-y-3 text-sm leading-relaxed [overflow-wrap:anywhere]">
+                  {latestOfficerRevision && (
+                    <>
+                      <div>
+                        <dt className="font-medium text-slate-800">
+                          Bagian yang diperiksa
+                        </dt>
+                        <dd className="mt-1 text-slate-600">
+                          {latestOfficerRevision.targetItem}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium text-slate-800">Kendala</dt>
+                        <dd className="mt-1 text-slate-600">
+                          {
+                            OFFICER_ISSUE_CATEGORY_LABELS[
+                              latestOfficerRevision.issueCategory
+                            ]
+                          }
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium text-slate-800">Catatan</dt>
+                        <dd className="mt-1 text-slate-600">
+                          {latestOfficerRevision.problemDescription}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-medium text-slate-800">Petugas</dt>
+                        <dd className="mt-1 text-slate-600">
+                          {latestOfficerRevision.officerName || "Petugas"}
+                        </dd>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <dt className="font-medium text-slate-800">
+                      Referensi tinjauan
+                    </dt>
+                    <dd className="mt-1 text-slate-600">
+                      {revisionApp.internal_reference}
+                    </dd>
                   </div>
-
-                  <p className="text-slate-800 leading-relaxed bg-white/70 p-3 rounded-xl border border-amber-100">
-                    <strong className="text-amber-950">Catatan Petugas ({latestOfficerRevision.officerName}):</strong>{" "}
-                    {latestOfficerRevision.problemDescription}
-                  </p>
-
-                  <div className="p-3 rounded-xl bg-white border border-amber-300/80 text-amber-950 flex items-start gap-2.5">
-                    <span className="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">
-                      task_alt
-                    </span>
-                    <p className="leading-relaxed">
-                      <strong>Tindakan yang Diminta:</strong> {latestOfficerRevision.requiredAction}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-2 text-sm leading-relaxed">
-                  Perbaiki data atau ganti berkas sesuai catatan petugas pada permintaan tinjauan{" "}
-                  <strong>{revisionApp.internal_reference}</strong>, lalu kirimkan kembali perbaikan pada tahap Tinjau &amp; kirim.
-                </p>
-              )}
-            </div>
+                </dl>
+              </details>
+              {!revisionApp.revision_pending && <ul className="mt-3 space-y-2 text-sm">
+                {revisionApp.latest_evaluation?.itemAssessments.filter(item => item.verdict !== 'sesuai').map(item => <li key={item.itemId}>
+                  <strong>{item.itemName}:</strong> {item.note || 'Lihat catatan perbaikan petugas.'}
+                </li>)}
+              </ul>}
+            </section>
           )}
 
           {/* Stepper Manila Tab + Konten Halaman */}
           <div key={activePreparation.id} className="mt-4">
             <PreparationStepper currentStep={step} />
-            <div className="civic-dossier-body bg-white rounded-b-2xl border border-t-0 border-[#CBD7E6] p-6 sm:p-8 shadow-xs">
+            <div className="civic-dossier-body bg-white rounded-b-2xl border border-t-0 border-[#C5CDD0] p-6 sm:p-8 shadow-xs">
               {children}
             </div>
           </div>

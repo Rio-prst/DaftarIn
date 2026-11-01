@@ -1,5 +1,42 @@
 # Keputusan produk dan UI/UX
 
+## Demo dimulai dari kosong — 1 November 2026
+
+Pemilik meminta reset untuk mendemokan setiap fitur sendiri. Akun awal hanya warga, petugas dan admin; transaksi dan persiapan tidak diisi otomatis. Katalog/panduan dan alat isi contoh manual tetap tersedia. Reset penyimpanan lokal berjalan sekali pada startup dev mode demo dengan penguncian lintas tab. Data yang dibuat setelahnya tetap tersimpan; tidak ada reset pada mode API/produksi dan tidak ada penghapusan database tim.
+
+
+## Penyimpanan chat per sesi tab — 1 November 2026
+
+Riwayat chatbot memakai sessionStorage per akun/guest, maksimum 40 pesan. Refresh tetap mempertahankan percakapan; menutup dialog tidak menghapusnya. Login, pergantian akun, pendaftaran dan logout membersihkan riwayat chat pada tab itu. Tidak ada penyimpanan chat ke database/localStorage. Penyimpanan yang rusak/diblokir ditangani tanpa mematikan chat. Pemulihan tab/sesi oleh browser dapat memulihkan sessionStorage, sehingga tutup tab bukan jaminan penghapusan mutlak. Pengujian manual diserahkan kepada pemilik sesuai arahan terakhir.
+
+
+## Cakupan chatbot diperbarui — 1 November 2026
+
+Chatbot pendamping hanya untuk pengunjung tanpa login dan akun warga. Tombol melayang beserta dialog tidak dipasang untuk akun admin/petugas, termasuk pada halaman publik dan pengaturan akun. Bantuan operasional dan eskalasi petugas–admin tetap ada. Ketentuan ini menggantikan cakupan semua peran pada catatan sebelumnya; endpoint panduan publik tetap melayani pengunjung.
+
+
+## Akses chatbot melayang — 1 November 2026
+
+Chatbot pendamping dapat dibuka langsung dari tombol kanan bawah pada halaman publik maupun akun warga, petugas, dan admin. Desktop memakai kapsul bertuliskan Tanya asisten; lebar <=640 px memakai lingkaran 52 px dengan label aksesibel yang sama. Pada persiapan, posisi naik mengikuti tinggi aktual bilah aksi bawah, termasuk saat teks membesar. Dialog tetap memakai penguncian/pengembalian fokus. Halaman bantuan tetap untuk panduan dan permintaan bantuan manusia; tombol chat duplikat di dalam halaman itu dihapus. Tidak mengubah provider, hak akses data, atau fungsi pengiriman chatbot.
+
+
+## Logo terpilih — 1 November 2026
+
+Pemilik memilih konsep 02: simbol folder dengan ruang negatif berupa pintu, navy/coral, tulisan DaftarIn dengan aksen In. Simbol dirapikan menjadi SVG rata tanpa tekstur dan digunakan oleh komponen BrandLogo pada navbar, sidebar semua peran, serta footer. Favicon memakai simbol yang sama. Aset berada di frontend/public/brand/daftarin-symbol.svg dan daftarin-logo.svg. Wordmark web memakai tipografi sistem agar tetap tajam; bentuk tulisan merupakan adaptasi, bukan bitmap gambar konsep.
+
+
+## Arah visual disetujui — 1 November 2026
+
+Struktur tegas dan suasana hangat sesuai contoh HTML navy–coral yang dipilih pemilik. Palet dasar putih hangat/navy dengan coral/peach sebagai aksen; status tetap semantik. Tipografi sistem 18/20 px, tombol utama 48–50 px, ilustrasi SVG terbatas pada konteks yang membantu. Tema berlaku juga untuk petugas/admin dengan aksen lebih sedikit. [Rincian penerapan](LAPORAN-UI-NAVY-CORAL-2026-11-01.txt).
+
+
+## Pembaruan 1 November 2026 — persona dan chatbot
+
+Chatbot adalah pendamping panduan dan navigasi; kini memakai relay server dengan `CHAT_AI_*`, terpisah dari AI/OCR pemeriksaan berkas. Kegagalan provider memakai panduan lokal yang ditandai. Tidak ada tools kirim/ubah status atau akses otomatis ke KTP. Tinjauan manusia tetap bisa berjalan tanpa AI.
+
+Bantuan manusia dipisah dari chatbot. Deklarasi pendamping tidak dianggap verifikasi kuasa resmi. Penarikan tinjauan menyimpan sejarah dan tidak membatalkan urusan instansi. Pemulihan panduan wajib melalui draf dan publikasi versi baru. Bersihkan perangkat hanya menghapus salinan lokal. Detail perubahan dan batas backend ada di [LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt](LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt).
+
+
 Diperbarui 31 Oktober 2026 berdasarkan arahan pemilik produk.
 
 ## Pembaruan Arah Produk: Validasi Dasar + Tinjauan Manusia Petugas Pendamping (AI/OCR Ditunda)
@@ -86,3 +123,41 @@ Data tetap dummy. Formulir menyediakan isian identitas dan ilustrasi KTP contoh.
 Alur akun, dashboard warga, daftar persiapan per urusan (`PreparationRecord`), pemeriksaan berbasis bukti & snapshot, pencatatan/perbaikan pengajuan, panel petugas, dan panel admin disiapkan untuk dicoba dengan data contoh. Sistem AI/OCR server, email, autentikasi server, penyimpanan privat, dan integrasi pemerintah dikerjakan pada tahap backend.
 
 Pengguna meminta melakukan pengecekan tampilan dan alur sendiri. Jangan menjalankan pengujian browser atau otomatis tanpa arahan baru.
+
+## Penyelarasan alur warga — 1 November 2026
+
+Persiapan baru dimulai dari katalog. Pengunjung boleh membaca panduan, lalu pilihan layanan diteruskan setelah login ke tahap Kebutuhan. Tahap berikutnya tersedia setelah prasyarat terpenuhi. Tahap Tinjau & kirim hanya berisi peninjauan data/berkas, catatan dan persetujuan; pencatatan pengajuan resmi berada pada Pengajuan saya. Perubahan isi draf membatalkan persetujuan lama, tanpa mengubah salinan kiriman sebelumnya. Tahap aktif harus terbaca pada HP. Pengujian atas arahan terbaru pengguna mencakup 16 skenario alur dan telah lulus.
+
+## Pola daftar dan rincian — 1 November 2026
+
+Pengajuan saya dan Antrean tinjauan memakai daftar terurut pembaruan terbaru, filter status, pencarian dan pagination. Pengguna membuka satu item ke halaman rincian tersendiri. Dropdown pemilihan pengajuan serta panel rincian antrean otomatis digantikan pola ini. Keadaan daftar dipertahankan saat kembali. Profil berada dekat navigasi utama sidebar. Status tinjauan pendamping dan pengajuan instansi tetap dipisahkan.
+
+## Penyimpanan berkas — keputusan terbaru 1 November 2026
+
+Pemilik membatalkan Cloudflare R2 dan memilih Supabase Storage. Target bucket privat dengan akses melalui backend NestJS yang memeriksa kepemilikan serta penugasan petugas. Auth NestJS tetap dipakai. SDK Supabase sudah terpasang; adapter dokumen dan konfigurasi Storage belum diaktifkan. Daftar kebutuhan terkini ada di DAFTAR-API-DAN-AKSES.txt; referensi R2 sebelumnya merupakan riwayat keputusan, bukan kebutuhan aktif.
+
+## Batas integrasi chatbot — 1 November 2026
+
+Atas arahan pemilik, kebutuhan API/key/model LLM dikeluarkan dari daftar akses aktif. Integrasi LLM/chatbot akan ditangani pemilik nanti. Pekerjaan integrasi sekarang tidak bergantung pada kredensial LLM.
+
+## Kebutuhan, keluarga, dan batas backend — 1 November 2026
+
+Pilihan peristiwa kehidupan mendahului persiapan, dengan akses langsung katalog. Rekomendasi mengikuti jawaban dan wilayah. Profil keluarga milik akun; kiriman tidak berubah ketika profil diedit. NIK bayi tidak dipaksakan pada profil; formulir mengikuti layanan. Pelapor kelahiran berbeda dari subjek anak. Panduan sesudah tinjauan tidak mengajukan otomatis ke instansi.
+
+Branch backend 96a092c sudah menyediakan adapter Storage, tetapi belum digabung/diaktifkan pada frontend lokal. Catatan historis adapter belum dibuat sudah digantikan temuan ini. Backend AI ditangani teman pemilik, di luar daftar integrasi/API aktif.
+
+## Status selesai dan kedalaman tinjauan — 1 November 2026
+
+Selesai pada daftar warga berarti hasil layanan dilaporkan diterima; tinjauan awal selesai tetap perlu tindak lanjut jika belum ada pengajuan resmi. Pada antrean petugas, Selesai berarti tugas tinjauan selesai. Logika tindakan dipakai bersama dashboard dan daftar/rincian.
+
+Setiap kiriman baru menyimpan acuan panduan dan persyaratan wajib. Catatan penilaian melekat pada versi kiriman; versi revisi membutuhkan penilaian baru. Semua bagian bermasalah harus memiliki catatan. Pemindahan tugas admin memerlukan alasan, mempertahankan sejarah, dan meminta petugas pengganti memulai tinjauan ulang bila sebelumnya sedang berjalan. Konfirmasi hasil adalah laporan warga dengan pernyataan eksplisit dan kanal resmi, bukan verifikasi instansi.
+
+Urutan yang disepakati: matangkan alur FE, baru UI, kemudian integrasi backend. Seluruh otorisasi lokal hanya simulasi; harus diterapkan ulang di backend. Backend AI tetap ditangani teman pemilik.
+
+## Pembagian ruang kerja — 1 November 2026
+
+Ringkasan petugas menentukan pekerjaan berikutnya; antrean memuat permintaan aktif; riwayat menelusuri keputusan terdahulu. Tautan riwayat memilih versi secara eksplisit dan tidak menyediakan tindakan pada salinan lama. Hak membuka data tetap mengikuti penugasan, sedangkan metadata pekerjaan petugas dipertahankan berdasarkan ID aktor.
+
+Admin memisahkan pengelolaan panduan, petugas, sumber dan aktivitas ke rute sendiri. Persyaratan per kondisi merupakan konfigurasi versi panduan, bukan daftar bebas yang boleh rusak saat persyaratan dihapus. Publikasi memerlukan pratinjau-konfirmasi dan peninjauan sumber baru. Peninjauan sumber admin adalah pencatatan manual sesuai versi, bukan verifikasi instansi. Petugas dengan pekerjaan aktif harus dipindahkan tugasnya sebelum akses dinonaktifkan.
+
+Data operasional masih lokal; fungsi server akun/aktivitas lama tetap dipertahankan. UI bisnis baru tidak dianggap sudah terintegrasi API. Tahap berikutnya evaluasi UI lalu integrasi backend, dengan AI ditangani teman pemilik.

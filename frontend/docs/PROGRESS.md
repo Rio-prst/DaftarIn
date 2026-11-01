@@ -1,6 +1,48 @@
 # Progres frontend DaftarIn
 
-Dilanjutkan dan diperbarui 31 Oktober 2026. Seluruh pembaruan frontend telah dipush ke `feat/frontend`, setelah sebelumnya disimpan pada branch `codex/frontend-flow-and-responsive-fixes`. Informasi branch dan lingkup perubahan tersedia di `INFORMASI-BRANCH.txt`; laporan teks biasa tersedia di `frontend/docs/LAPORAN-PEMBARUAN.txt`.
+## Chatbot AI live — 1 November 2026
+
+AtmoRouter utama dan cadangan sudah terhubung melalui backend privat. UI menerima jawaban model nyata; 48 unit test backend lulus. Tidak ada provider key di source/build frontend. Gemini langsung tetap opsi yang belum diaktifkan. Backend transaksi/OCR tidak digabung pada pekerjaan ini. [Laporan integrasi AI](LAPORAN-INTEGRASI-AI-LIVE-2026-11-01.txt).
+
+
+## UI navy–coral — 1 November 2026
+
+Tema contoh yang disetujui diterapkan ke frontend utama: latar hangat, navy/coral, teks dasar 18 px (besar 20 px), komponen formulir/navigasi/akun yang konsisten dan ilustrasi dokumen. Dashboard tetap memakai tindakan/status aktual. Konfigurasi Tailwind diselaraskan antara dev/build. [Laporan UI](LAPORAN-UI-NAVY-CORAL-2026-11-01.txt). Belum commit/push.
+
+
+## Perbaikan persona dan relay chatbot — 1 November 2026
+
+Akses tampilan publik, pendaftaran bertahap, penyiapan foto, bantuan manusia, notifikasi lokal, deklarasi pendamping, arsip/hapus draf, penggunaan ulang berkas, penarikan tinjauan, klarifikasi admin, jeda/pemulihan panduan, dan pembersihan perangkat telah ditambahkan. Chatbot dari `featAI` diadaptasi melalui backend; kredensial tidak diletakkan pada frontend. Provider live belum dikonfigurasi, sehingga fallback berlabel panduan lokal. AI pemeriksaan dokumen tetap terpisah.
+
+Branch backend yang terakhir diperiksa adalah `a56a80e`, bukan baseline lama yang disebut pada catatan historis di bawah. Modul petugas/admin sudah ada di remote tetapi belum digabung penuh. Bisnis frontend masih demo browser; auth API tidak otomatis menyambungkan seluruh alur.
+
+105 skenario browser (89 regresi + 16 tambahan), 42 unit test backend dan empat kelompok pengujian relay telah lolos. Lihat [LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt](LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt) dan [KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt](KEBUTUHAN-BACKEND-SETELAH-PERBAIKAN-PERSONA-2026-11-01.txt). Perubahan masih lokal.
+
+## Integrasi API akun dan admin (1 November 2026)
+
+Backend tim dari `origin/feat/backend` (`fb54b4b`) sudah diintegrasikan secara lokal. Autentikasi, pengaturan akun, preferensi, sesi, dan pengelolaan akses admin telah memakai database server. Persiapan, berkas, antrean petugas, dan panduan masih memakai adapter browser; website belum siap dibuka untuk publik. Pernyataan scaffold pada catatan historis di bawah sudah digantikan oleh bagian ini.
+
+Laporan lengkap, enam skenario uji manual, batas integrasi, dan kebutuhan akses berikutnya: [LAPORAN-INTEGRASI-API-2026-11-01.txt](LAPORAN-INTEGRASI-API-2026-11-01.txt). Kontrak API yang benar-benar aktif: [IMPLEMENTED-API.md](../../backend/docs/IMPLEMENTED-API.md).
+
+
+Diperbarui 1 November 2026 pada clone terpisah DaftarIn-feat1-frontend, branch feat1/frontend. Perubahan terbaru masih lokal, belum di-commit/push. Laporan: frontend/docs/LAPORAN-PERBAIKAN-2026-11-01.txt.
+
+## Gambar pembuka responsif (1 November 2026)
+
+- Foto potret diganti visual map/dokumen tanpa figur orang. Aset WebP 480/960/1440 px.
+- Dua kolom mulai 768 px; gambar HP tidak memanjang dan tidak lagi memakai badge dekoratif.
+- 10 pemeriksaan responsif pada 9 lebar layar ditambah layar DPR 2 lolos; build berhasil.
+- Aset dan prompt: HERO-IMAGE.txt. Perubahan masih lokal.
+
+## Bantuan pendamping dan perbaikan HP (1 November 2026)
+
+- Bantuan akun lewat header dan tidak menutupi aksi bawah.
+- Dialog bantuan responsif, fokus/keyboard, pembesaran teks, dan sumber panduan lokal yang jelas.
+- Pertanyaan tak cocok tidak diberi jawaban atau rujukan yang dipaksakan.
+- Landing menjelaskan demo; catatan revisi ringkas dengan rincian yang dapat dibuka.
+- Empat pilihan layanan memakai data panduan yang sama dan membuka layanan yang tepat.
+- 19 pemeriksaan fungsi lolos, 17 tampilan tanpa overflow, 0 error JavaScript; build dan lint berhasil dengan peringatan lama.
+- AI/OCR, backend produksi, dan integrasi pemerintah tetap belum terhubung.
 
 ## Perbaikan hasil pengujian browser (31 Oktober 2026)
 
@@ -118,3 +160,38 @@ Kata sandi awal semua akun: `DaftarIn2026!`
 - Admin: `admin@daftarin.test`
 
 Buka `http://127.0.0.1:5173/#/masuk`, buka **Coba akun contoh**, pilih peran, lalu tekan **Masuk**.
+
+
+Validasi integrasi API final: 36 unit backend (5 suite), 15 skenario akun, dan 14 skenario admin lulus; tidak ada error JavaScript pada kedua harness browser. Lint/typecheck backend dan build kedua aplikasi lulus. Lint frontend exit 0 dengan peringatan React terkait efek/dependensi; bundel utama masih >500 kB. Database tim belum diuji dan aplikasi belum dinyatakan production-ready.
+
+## Perbaikan alur warga (1 November 2026)
+
+Persiapan baru memilih layanan lebih dahulu; tahap HP terbaca; ringkasan berpusat pada data/berkas/persetujuan dan tombol kirim pada bilah bawah; perubahan isi membatalkan persetujuan; catatan instansi dipindahkan ke Pengajuan saya. Pengujian alur baru: 16 skenario lulus, termasuk unggah berkas nyata, salinan kiriman warga–petugas, revisi dan melanjutkan setelah login. Laporan: [LAPORAN-ALUR-WARGA-2026-11-01.txt](LAPORAN-ALUR-WARGA-2026-11-01.txt). Data transaksi layanan masih lokal; belum commit/push.
+
+## Daftar pengajuan dan antrean — 1 November 2026
+
+Sidebar akun didekatkan ke navigasi utama. Pengajuan saya dan Antrean tinjauan menjadi daftar dengan filter, pencarian, urutan terbaru, serta pagination. Item membuka halaman rincian sendiri (/pelacakan/:id dan /petugas/:id); kembali mempertahankan keadaan daftar. Tautan rincian lama tetap didukung. Verifikasi: 16 skenario daftar/rincian dan 16 skenario alur warga lulus. Laporan: [LAPORAN-DAFTAR-PENGAJUAN-2026-11-01.txt](LAPORAN-DAFTAR-PENGAJUAN-2026-11-01.txt).
+
+## Kebutuhan dan keluarga — 1 November 2026
+
+Halaman /kebutuhan memberi rekomendasi kondisional; /keluarga mengelola profil per akun. Subjek disalin ke draf/kiriman, pelapor kelahiran dipisahkan, dan panduan instansi tersedia setelah tinjauan. Verifikasi: 20 skenario fitur, 16 alur warga, dan 16 daftar/rincian lulus. Data bisnis masih lokal. Laporan: LAPORAN-KEBUTUHAN-DAN-KELUARGA-2026-11-01.txt.
+
+Backend terbaru 96a092c diperiksa tanpa merge: katalog, kebutuhan, persiapan, dokumen Supabase, pengajuan, dashboard dan notifikasi warga. Kekurangan integrasi: CATATAN-BACKEND-TERBARU-2026-11-01.txt. Backend AI ditangani teman pemilik.
+
+## Pendalaman alur — 1 November 2026
+
+Tindakan warga diselaraskan di dashboard/daftar/rincian; hasil diterima dipisahkan dari tinjauan selesai. Perbaikan memiliki catatan per item, rute sesuai masalah, catatan sementara petugas, dan penilaian baru tiap revisi. Kiriman baru menyimpan acuan panduan serta slot wajib. Admin demo dapat memindahkan penugasan aktif dengan alasan dan riwayat. Penerimaan hasil memakai konfirmasi eksplisit. Lihat LAPORAN-PENDALAMAN-ALUR-2026-11-01.txt. Alur bisnis masih lokal; desain besar dan integrasi backend merupakan tahap berikutnya.
+
+Verifikasi pendalaman: 16 skenario baru + 52 regresi lulus (68 total); build lulus, lint exit 0 dengan peringatan React dan ukuran bundel yang masih perlu ditangani. Perubahan tetap lokal, belum commit/push.
+
+## Ruang kerja petugas dan admin — 1 November 2026
+
+Petugas memiliki ringkasan, antrean aktif dan riwayat keputusan per versi. Riwayat yang dibuka dari daftar bersifat baca dan mempertahankan versi pada URL. ID pembuat keputusan disimpan; petugas lama hanya menerima metadata setelah tugas dipindahkan.
+
+Admin memiliki ringkasan, layanan/persyaratan, petugas/penugasan, sumber/versi dan aktivitas. Publikasi memakai pratinjau-konfirmasi, kondisi wajib dapat dikonfigurasi, versi lama dipertahankan, editor serta peninjauan sumber menolak versi yang sudah berubah. Penonaktifan petugas sibuk ditahan sampai tugas dialihkan. Navigasi desktop/ponsel konsisten. Halaman peran dimuat terpisah; build utama sekitar 432 kB tanpa peringatan >500 kB. Lihat LAPORAN-RUANG-KERJA-PETUGAS-ADMIN-2026-11-01.txt. Data operasional masih demo; backend AI tetap milik teman pemilik.
+
+Verifikasi akhir ruang kerja: 19 skenario operasional + 18 kiriman/revisi + 20 kebutuhan/keluarga + 16 alur warga + 16 daftar/rincian lulus (89 total), tanpa error JavaScript pada harness. Build lulus dan tidak lagi memberi peringatan ukuran bundel >500 kB; lint exit 0 dengan peringatan React yang masih ada. Belum commit/push.
+
+## Audit persona — 1 November 2026
+
+Audit browser dan kode dari sudut kebutuhan lansia, pengguna ponsel, koneksi terbatas, pengurus keluarga, aksesibilitas, literasi, perangkat bersama, petugas dan admin. Cakupan inti cukup untuk lomba, tetapi terdapat hambatan yang belum termasuk pengujian fungsional sebelumnya: pembesaran teks belum merata dan stepper melebar pada 320 px, unggahan besar hanya diarahkan kompres manual, validasi nama singkat, akses bantuan manusia, notifikasi bisnis dan pengelolaan draf/penarikan. Usulan perwakilan dan pengecualian operasional perlu keputusan produk. Lihat AUDIT-PERSONA-DAN-KEKURANGAN-FITUR-2026-11-01.txt. Ini audit skenario, bukan pengujian pengguna sungguhan; belum ada implementasi baru dari rekomendasi audit.

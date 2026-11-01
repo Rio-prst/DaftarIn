@@ -14,6 +14,7 @@ export interface Account {
   role: Role;
   active?: boolean;
   identityStatus: "complete" | "pending";
+  emailVerified?: boolean;
   identityPhoto?: IdentityPhoto;
   createdAt: string;
 }
@@ -27,7 +28,7 @@ export interface RegisterInput {
 }
 export const roleHome: Record<Role, string> = {
   warga: "/dashboard",
-  petugas: "/petugas",
+  petugas: "/petugas/ringkasan",
   admin: "/admin",
 };
 export function permittedReturnPath(next: string | null, role: Role) {
@@ -35,13 +36,19 @@ export function permittedReturnPath(next: string | null, role: Role) {
     return roleHome[role];
   const pathname = next.split("?")[0];
   if (
-    pathname === "/akun" ||
+    pathname === "/akun" || pathname === "/bantuan" ||
     pathname === roleHome[role] ||
+    (role === "petugas" && pathname.startsWith("/petugas/")) ||
+    (role === "petugas" && pathname === '/petugas') ||
+    (role === "admin" && ['/admin/layanan', '/admin/petugas', '/admin/sumber', '/admin/aktivitas', '/admin/bantuan'].includes(pathname)) ||
     (role === "warga" &&
       (pathname === "/persiapan" ||
         pathname.startsWith("/persiapan/") ||
         pathname === "/pelacakan" ||
+        pathname.startsWith("/pelacakan/") ||
         pathname === "/katalog" ||
+        pathname === "/kebutuhan" ||
+        pathname === "/keluarga" ||
         pathname === "/panduan" ||
         pathname.startsWith("/layanan/")))
   )

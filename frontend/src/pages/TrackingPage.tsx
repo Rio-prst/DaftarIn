@@ -1,5 +1,17 @@
+import { caseNextAction, revisionEntryPath } from '../utils/dashboard';
+import { SubmissionReviewHistory } from '../components/SubmissionReviewHistory';
+import { RequestListPage } from "./RequestListPage";
+import { FamilyContext } from "../components/FamilyContext";
+import { NextStepsGuide } from "../components/NextStepsGuide";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
 import {
@@ -11,37 +23,33 @@ import {
   getOfficialSubmissionStatusLabel,
   getReviewStatusLabel,
   useApp,
-  type ApplicationStatusCode,
 } from "../context/AppContext";
 import {
   OFFICER_ISSUE_CATEGORY_LABELS,
-  OFFICER_ITEM_VERDICT_LABELS,
   resolveApplicationPreparationLink,
 } from "../types/preparation";
 
-const NEXT_ACTION_GUIDANCE: Record<ApplicationStatusCode, string> = {
-  DICATAT_WARGA:
-    "Simpan bukti tanda terima fisik/digital dari loket instansi. Catatan ini dibuat oleh warga dan belum dikonfirmasi oleh sistem instansi.",
-  DITERIMA:
-    "Permintaan tinjauan awal sudah masuk ke antrean petugas pendamping. Tunggu petugas memulai pemeriksaan kelengkapan dan keterbacaan berkas.",
-  VERIFIKASI:
-    "Petugas pendamping sedang memeriksa kesesuaian data dan keterbacaan berkas. Pantau halaman ini apabila ada permintaan perbaikan.",
-  PERLU_PERBAIKAN:
-    "Buka draf persiapan asal, perbaiki data atau ganti berkas sesuai catatan terstruktur petugas, lalu klik 'Kirim perbaikan untuk ditinjau' pada tahap Tinjau & kirim.",
-  DIPROSES:
-    "Berkas sedang dalam pemeriksaan lanjutan petugas pendamping.",
-  SELESAI:
-    "Tinjauan awal di DaftarIn telah selesai. Ajukan berkas melalui kanal resmi instansi (loket Disdukcapil, MPP, atau portal resmi daerah), catat nomor tanda terima resmi di bawah, lalu konfirmasi setelah dokumen hasil diterima.",
-  HASIL_DITERIMA_WARGA:
-    "Seluruh tahapan tinjauan pendamping dan penerimaan dokumen hasil dari kanal resmi instansi telah selesai dicatat.",
-};
-
 export function TrackingPage() {
+  const { id } = useParams();
+  const [params] = useSearchParams();
+  const legacyId = params.get("id") || params.get("application");
+  if (!id && legacyId)
+    return (
+      <Navigate replace to={"/pelacakan/" + encodeURIComponent(legacyId)} />
+    );
+  return id ? (
+    <TrackingDetailPage key={id} id={id} />
+  ) : (
+    <RequestListPage kind="citizen" />
+  );
+}
+function TrackingDetailPage({ id }: { id: string }) {
   const {
     user,
     applications,
     preparations,
     selectPreparation,
+    withdrawReview,
     createLinkedRevisionPreparation,
     addCitizenNote,
     recordOfficialSubmission,
@@ -50,9 +58,19 @@ export function TrackingPage() {
     setSelectedService,
   } = useApp();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const previous = location.state?.returnTo;
+  const back =
+    typeof previous === "string" &&
+    (previous === "/pelacakan" || previous.startsWith("/pelacakan?"))
+      ? previous
+      : "/pelacakan";
   const [note, setNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [confirmingResult, setConfirmingResult] = useState(false);
+  const [receivedConfirmed, setReceivedConfirmed] = useState(false);
+  const [resultNote, setResultNote] = useState('');
+  const [resultChannel, setResultChannel] = useState('');
   const [recordingOfficial, setRecordingOfficial] = useState(false);
   const [officialNumInput, setOfficialNumInput] = useState("");
   const [officialChannelInput, setOfficialChannelInput] = useState("");
@@ -62,10 +80,8 @@ export function TrackingPage() {
     null,
   );
 
-  const requestedAppId = params.get("id") || params.get("application");
-  const currentApp = requestedAppId
-    ? applications.find((app) => app.id === requestedAppId)
-    : applications[0];
+  const requestedAppId = id;
+  const currentApp = applications.find((app) => app.id === id);
 
   const linkedService = currentApp
     ? services.find((item) => item.id === currentApp.service_id)
@@ -136,20 +152,26 @@ export function TrackingPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F7F8FA]">
+    <div className="flex min-h-screen bg-[#FAF7F2]">
       <Sidebar role="warga" />
       <div className="min-w-0 flex-1">
         <TopBar
-          breadcrumbs={["Pengajuan saya", "Status Tinjauan & Pelacakan"]}
+          breadcrumbs={["Pengajuan saya", "Rincian pengajuan"]}
           role="warga"
         />
         <main id="main-content" tabIndex={-1} className="workspace-content">
+          <Link
+            to={back}
+            className="text-link inline-flex min-h-[44px] items-center mb-4"
+          >
+            ← Kembali ke daftar pengajuan
+          </Link>
           <div className="section-heading">
             <div>
-              <h1>Status tinjauan awal &amp; pelacakan pengajuan</h1>
+              <h1>Rincian pengajuan</h1>
               <p className="text-sm text-slate-500 mt-1">
-                Memisahkan secara jelas status tinjauan awal petugas pendamping
-                DaftarIn dari catatan pengajuan pada kanal resmi instansi.
+                Lihat hasil tinjauan petugas, tindak lanjuti perbaikan, dan
+                catat pengajuan di instansi.
               </p>
             </div>
             {currentApp && (
@@ -186,39 +208,9 @@ export function TrackingPage() {
             </div>
           ) : (
             <>
-              {applications.length > 1 && (
-                <div className="mb-6">
-                  <label
-                    htmlFor="application-select"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Pilih urusan ({applications.length} tercatat)
-                  </label>
-                  <select
-                    id="application-select"
-                    className="w-full max-w-xl border border-slate-300 rounded-lg p-3 text-sm bg-white"
-                    value={currentApp.id}
-                    onChange={(event) => {
-                      setParams({ id: event.target.value });
-                      setNote("");
-                      setAddingNote(false);
-                      setRecordingOfficial(false);
-                    }}
-                  >
-                      {applications.map((app) => (
-                      <option value={app.id} key={app.id}>
-                        {app.service_name} · {app.internal_reference} (Tinjauan:{" "}
-                        {getReviewStatusLabel(app)} · Kanal Resmi:{" "}
-                        {getOfficialSubmissionStatusLabel(app)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               {/* Ringkasan Pemisahan 2 Lapis Status: Tinjauan DaftarIn vs Kanal Resmi Instansi */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <section className="plain-panel !p-4 border-l-4 border-l-[#142c4b]">
+                <section className="plain-panel !p-4 border-l-4 border-l-[#17324D]">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                       1. Status Tinjauan Pendamping DaftarIn
@@ -237,7 +229,7 @@ export function TrackingPage() {
                       {getReviewStatusLabel(currentApp)}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-[#142c4b] mt-2">
+                  <p className="text-sm font-semibold text-[#17324D] mt-2">
                     Kode Tinjauan: {currentApp.internal_reference}
                     {currentApp.submitted_snapshot
                       ? ` · Kiriman #${currentApp.submitted_snapshot.submissionVersion}`
@@ -252,7 +244,7 @@ export function TrackingPage() {
                           : "Tidak melalui tinjauan petugas (Dilaporkan warga)")}
                     </strong>
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-1.5">
+                  <p className="text-xs text-slate-500 mt-1.5">
                     Status ini menunjukkan hasil pemeriksaan awal pendamping di
                     DaftarIn dan tidak menyatakan instansi pemerintah telah
                     menerima pengajuan resmi.
@@ -278,7 +270,7 @@ export function TrackingPage() {
                       {getOfficialSubmissionStatusLabel(currentApp)}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-[#142c4b] mt-2">
+                  <p className="text-sm font-semibold text-[#17324D] mt-2">
                     Tanda Terima Resmi:{" "}
                     {currentApp.official_submission?.officialReceiptNumber ||
                       currentApp.official_submission?.officialNumber ||
@@ -294,7 +286,8 @@ export function TrackingPage() {
                         <strong>
                           {currentApp.official_submission.channel}
                         </strong>{" "}
-                        pada {currentApp.official_submission.recordedAt} (Sumber:{" "}
+                        pada {currentApp.official_submission.recordedAt}{" "}
+                        (Sumber:{" "}
                         <strong>
                           {currentApp.official_submission.sourceLabel ||
                             "Dilaporkan warga"}
@@ -315,6 +308,18 @@ export function TrackingPage() {
                 </section>
               </div>
 
+              {linkedService &&
+                currentApp.current_status === "SELESAI" &&
+                !currentApp.official_submission && (
+                  <NextStepsGuide
+                    service={linkedService}
+                    condition={
+                      currentApp.submitted_snapshot?.conditionKey ||
+                      currentApp.condition_key
+                    }
+                  />
+                )}
+              <FamilyContext member={currentApp.submitted_snapshot?.familyMember} birth={currentApp.service_id === 3} />
               <section className="tracking-overview">
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-semibold">
@@ -360,7 +365,7 @@ export function TrackingPage() {
                                 );
                                 if (created) {
                                   navigate(
-                                    `/persiapan/dokumen?prep=${encodeURIComponent(created.id)}&application=${encodeURIComponent(currentApp.id)}`,
+                                    revisionEntryPath(currentApp, created),
                                   );
                                 }
                               }}
@@ -391,9 +396,7 @@ export function TrackingPage() {
                     <div>
                       <dt>Tindakan berikutnya untuk warga</dt>
                       <dd>
-                        {currentApp.revision_pending
-                          ? "Perbaikan berkas sudah dikirim ke petugas pendamping (Status: Perbaikan dikirim). Tunggu petugas meninjau ulang berkas versi terbaru."
-                          : NEXT_ACTION_GUIDANCE[currentApp.current_status]}
+                        {caseNextAction(currentApp, linkedPrep).description}
                       </dd>
                     </div>
                   </dl>
@@ -427,6 +430,9 @@ export function TrackingPage() {
                       )}
                     </div>
 
+                    {!currentApp.revision_pending && <ul className="space-y-2 text-sm text-slate-700">
+                      {currentApp.latest_evaluation?.itemAssessments.filter(item => item.verdict !== 'sesuai').map(item => <li key={item.itemId}><strong>{item.itemName}:</strong> {item.note || 'Lihat catatan perbaikan petugas.'}</li>)}
+                    </ul>}
                     {currentApp.revision_pending ? (
                       <div className="text-sm text-slate-700 space-y-1">
                         <p>
@@ -479,7 +485,7 @@ export function TrackingPage() {
 
                   {linkedPrep ? (
                     <Link
-                      to={`/persiapan/dokumen?prep=${encodeURIComponent(linkedPrep.id)}&application=${encodeURIComponent(currentApp.id)}`}
+                      to={revisionEntryPath(currentApp, linkedPrep)}
                       onClick={() => {
                         selectPreparation(linkedPrep.id);
                         if (linkedService) setSelectedService(linkedService);
@@ -500,7 +506,7 @@ export function TrackingPage() {
                         if (created) {
                           if (linkedService) setSelectedService(linkedService);
                           navigate(
-                            `/persiapan/dokumen?prep=${encodeURIComponent(created.id)}&application=${encodeURIComponent(currentApp.id)}`,
+                            revisionEntryPath(currentApp, created),
                           );
                         }
                       }}
@@ -576,12 +582,7 @@ export function TrackingPage() {
                         <button
                           type="button"
                           className="button-primary"
-                          onClick={() =>
-                            confirmApplicationResult(
-                              currentApp.id,
-                              "Warga mengonfirmasi dokumen hasil layanan dari kanal resmi instansi telah diterima dengan lengkap.",
-                            )
-                          }
+                          onClick={() => {setConfirmingResult(true); setReceivedConfirmed(false); setError('');}}
                         >
                           Konfirmasi hasil layanan diterima
                         </button>
@@ -589,6 +590,18 @@ export function TrackingPage() {
                     </div>
                   </div>
 
+                  {confirmingResult && <form className="auth-form mt-4 border-t border-slate-200 pt-4" onSubmit={event => {
+                    event.preventDefault();
+                    if (!receivedConfirmed) {setError('Konfirmasi bahwa dokumen hasil layanan sudah diterima.'); return;}
+                    try {confirmApplicationResult(currentApp.id, resultNote, resultChannel); setConfirmingResult(false); setError('');}
+                    catch(cause) {setError(cause instanceof Error ? cause.message : 'Konfirmasi belum tersimpan.');}
+                  }}>
+                    <p className="text-sm">Konfirmasi ini mencatat laporanmu tentang hasil dari instansi. Pastikan dokumen yang diterima sudah sesuai sebelum menutup pengurusan.</p>
+                    {!currentApp.official_submission && <div className="form-field"><label htmlFor="result-channel">Kanal resmi tempat menerima hasil</label><input id="result-channel" maxLength={200} value={resultChannel} onChange={event => setResultChannel(event.target.value)} /></div>}
+                    <label className="flex gap-3 items-start min-h-[44px] py-2"><input type="checkbox" checked={receivedConfirmed} onChange={event => setReceivedConfirmed(event.target.checked)} /><span>Dokumen hasil layanan sudah saya terima.</span></label>
+                    <div className="form-field"><label htmlFor="result-note">Catatan penerimaan (opsional)</label><textarea id="result-note" rows={2} maxLength={2000} value={resultNote} onChange={event => setResultNote(event.target.value)} /></div>
+                    <div className="flex gap-3"><button type="submit" className="button-primary">Simpan konfirmasi penerimaan</button><button type="button" className="button-secondary" onClick={() => {setConfirmingResult(false); setError('');}}>Batal</button></div>
+                  </form>}
                   {recordingOfficial && (
                     <form
                       onSubmit={handleSaveOfficialSubmission}
@@ -646,45 +659,8 @@ export function TrackingPage() {
                 </div>
               )}
 
-              {/* Penilaian Terstruktur Petugas (jika ada) */}
-              {currentApp.latest_evaluation && (
-                <section
-                  className="plain-panel mt-6"
-                  aria-labelledby="evaluation-heading"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 id="evaluation-heading" className="panel-title">
-                      Penilaian petugas pada Kiriman #
-                      {currentApp.latest_evaluation.submissionVersion}
-                    </h2>
-                    <span className="text-xs text-slate-500">
-                      {currentApp.latest_evaluation.evaluatedBy} ·{" "}
-                      {currentApp.latest_evaluation.evaluatedAt}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-700 mt-2">
-                    {currentApp.latest_evaluation.summaryNote}
-                  </p>
-                  {currentApp.latest_evaluation.itemAssessments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {currentApp.latest_evaluation.itemAssessments.map(
-                        (item) => (
-                          <span
-                            key={item.itemId}
-                            className="rounded-lg bg-slate-50 border border-slate-200 px-2.5 py-1 text-xs text-slate-700"
-                          >
-                            {item.itemName}
-                            {item.fileVersion ? ` (v${item.fileVersion})` : ""}:{" "}
-                            <strong>
-                              {OFFICER_ITEM_VERDICT_LABELS[item.verdict]}
-                            </strong>
-                          </span>
-                        ),
-                      )}
-                    </div>
-                  )}
-                </section>
-              )}
+              {!currentApp.official_submission&&['DITERIMA','VERIFIKASI','DIPROSES','PERLU_PERBAIKAN'].includes(currentApp.current_status)&&<details className="plain-panel mt-5"><summary className="cursor-pointer min-h-[44px] py-2 font-medium">Salah memilih atau tidak ingin melanjutkan tinjauan?</summary><p className="text-sm mt-2">Penarikan hanya menutup tinjauan pendamping di DaftarIn. Catatan dan kiriman tetap disimpan; pengajuan pada instansi tidak ikut dibatalkan.</p><form className="auth-form" onSubmit={event=>{event.preventDefault();const form=event.currentTarget;try{withdrawReview(currentApp.id,String(new FormData(form).get('withdrawReason')||''));setError('');}catch(cause){setError(cause instanceof Error?cause.message:'Penarikan belum berhasil.');}}}><div className="form-field"><label htmlFor="withdraw-reason">Alasan penarikan</label><textarea id="withdraw-reason" name="withdrawReason" rows={2} maxLength={1000}/></div><label className="consent-field"><input type="checkbox" required/><span>Saya memahami tinjauan akan ditutup dan riwayat tetap tersedia.</span></label><button type="submit" className="button-secondary">Tarik permintaan tinjauan</button></form></details>}
+              <SubmissionReviewHistory record={currentApp} />
 
               {/* Daftar Dokumen pada Kiriman Ini (dengan Pratinjau) */}
               {currentApp.attachments && currentApp.attachments.length > 0 && (
@@ -775,7 +751,7 @@ export function TrackingPage() {
                                 <button
                                   key={`${ver.submissionVersion}-${att.id || idx}`}
                                   type="button"
-                                  className="btn-secondary !py-1 !px-2 !text-[11px]"
+                                  className="btn-secondary !py-1 !px-2 !text-xs"
                                   onClick={() =>
                                     setPreviewDoc({
                                       id: att.id,
@@ -880,7 +856,7 @@ export function TrackingPage() {
                                   : "status-attention"
                               }
                             >
-                              {isCitizenSource
+                              {event.source_type === 'admin' ? 'Penugasan admin' : isCitizenSource
                                 ? "Dilaporkan warga"
                                 : "Tinjauan petugas pendamping"}
                             </span>

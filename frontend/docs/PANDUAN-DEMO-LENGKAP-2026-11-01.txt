@@ -1,0 +1,486 @@
+PANDUAN DEMO LENGKAP DAFTARIN
+Tanggal: 1 November 2026
+Alamat aplikasi: http://127.0.0.1:5174/#/
+
+Panduan ini disusun dari implementasi saat ini. Langkah dan hasil di bawah
+adalah panduan untuk kamu coba, bukan laporan bahwa pengujian sudah lulus.
+Tidak ada pengujian atau build yang dijalankan untuk membuat panduan ini.
+
+============================================================
+0. PERSIAPAN SEBELUM MULAI
+============================================================
+
+[ ] Muat ulang aplikasi sekali agar pembaruan reset demo diterapkan.
+[ ] Gunakan data contoh. Jangan gunakan NIK, KTP, atau dokumen pribadi asli.
+[ ] Gunakan browser/profil dan alamat aplikasi yang sama untuk semua peran.
+    Jangan mencampur localhost dengan 127.0.0.1 atau port yang berbeda.
+    Alur bisnis demo berbagi data melalui penyimpanan lokal browser.
+    Data belum otomatis tersedia di laptop/browser   orang lain.
+[ ] Boleh menggunakan tiga tab: warga, petugas, dan admin. Masuk pada
+    masing-masing tab. Alternatifnya, keluar-masuk akun pada satu tab.
+[ ] Jangan pilih "Keluar dan bersihkan perangkat" di tengah demonstrasi.
+    Itu menghapus data demo pada perangkat, bukan sekadar keluar akun.
+
+AKUN CONTOH AWAL
+Warga   : warga@daftarin.test
+Petugas : petugas@daftarin.test
+Admin   : admin@daftarin.test
+Sandi ketiganya: DaftarIn2026!
+
+Sesudah reset, pengajuan/persiapan contoh lama tidak otomatis dibuat lagi.
+Panduan layanan dan persyaratan tetap tersedia. Antrean kosong sebelum
+ada warga yang mengirim permintaan tinjauan adalah keadaan yang wajar.
+
+Untuk mencoba pendaftaran, gunakan akun warga BARU sebagai pelaku utama
+seluruh alur di bagian 1-9. Catat email dan sandinya agar tidak tertukar
+dengan akun warga contoh ketika kembali memperbaiki berkas.
+
+Email warga baru: ___________________________________________
+Sandi warga baru: ___________________________________________
+Referensi persiapan/pengajuan utama: _________________________
+
+============================================================
+1. PENGUNJUNG: COBA FITUR SEBELUM LOGIN
+============================================================
+
+[ ] Buka beranda. Coba navigasi Cari layanan, Cara kerja, dan Bantuan.
+[ ] Masuk katalog. Cari "KK", lalu hapus pencarian.
+[ ] Coba filter wilayah, kategori, dan pengurutan layanan.
+[ ] Coba pencarian yang tidak menemukan hasil, kemudian pulihkan filter.
+[ ] Buka detail layanan Pembaruan Data Kartu Keluarga (KK).
+    Baca kondisi permohonan, dokumen yang dibutuhkan, sumber panduan,
+    dan langkah berikutnya. Informasi layanan dapat dibaca tanpa login.
+[ ] Coba mulai persiapan saat belum login. Ikuti arahan masuk/daftar;
+    pekerjaan pribadi dan pengiriman tinjauan memerlukan akun.
+[ ] Coba tombol Aa: ukuran tulisan dan kontras. Kembalikan sesuai selera.
+[ ] Buka chatbot di kanan bawah dan tanyakan panduan umum, misalnya:
+    "Saya ingin memperbarui KK, mulai dari mana?"
+    Coba tombol navigasi yang muncul pada jawaban jika tersedia.
+
+============================================================
+2. DAFTAR AKUN WARGA BARU
+============================================================
+
+[ ] Buka Daftar.
+[ ] Klik "Isi data contoh" untuk mengisi identitas dummy dan foto KTP
+    contoh. Tombol ini dapat langsung membawamu ke tahap berikutnya.
+[ ] Catat email unik yang dihasilkan. Sandi contoh: DaftarIn2026!
+[ ] Periksa nama, email, NIK 16 angka, nomor telepon, foto contoh,
+    sandi dan konfirmasi sandi.
+[ ] Centang persetujuan yang diperlukan, lalu klik Buat akun.
+[ ] Pada mode demo, akun baru masuk ke ruang warga. Pastikan identitas
+    profil sesuai akun yang baru dibuat dan daftar persiapannya kosong.
+
+Cabang tambahan untuk mencoba validasi:
+[ ] Sebelum mengirim formulir, kosongkan satu isian wajib atau gunakan
+    NIK kurang dari 16 angka. Lihat petunjuk kesalahan, lalu perbaiki.
+[ ] Coba sandi dan konfirmasi yang berbeda, lalu samakan kembali.
+
+Catatan: pendaftaran demo ini bukan verifikasi identitas Dukcapil dan
+bukan bukti bahwa email/nomor telepon sudah diverifikasi secara nyata.
+
+============================================================
+3. WARGA: BUAT PERSIAPAN UTAMA DARI AWAL
+============================================================
+
+[ ] Dari dashboard, klik Pilih layanan atau menu Cari layanan.
+[ ] Pilih Pembaruan Data Kartu Keluarga (KK), lalu mulai persiapan.
+[ ] Tahap 1 - Kebutuhan:
+    - Pilih pengurusan untuk diri sendiri.
+    - Pilih kondisi pembaruan yang sesuai pada layar.
+    - Baca persyaratan berdasarkan kondisi, lalu lanjut.
+[ ] Tahap 2 - Data:
+    - Gunakan tombol data contoh untuk mengisi data dummy.
+    - Periksa nama, NIK, nomor KK, telepon, alamat, dan alasan permohonan.
+    - Simpan dan lanjut ke Dokumen.
+[ ] Tahap 3 - Dokumen:
+    - Klik "Muat dokumen contoh (1 berkas terpotong)".
+    - Buka pratinjau berkas untuk melihat dokumen yang akan ditinjau.
+    - Perhatikan jumlah dokumen wajib yang telah tersedia.
+    - Lanjutkan tanpa mengganti berkas terpotong terlebih dahulu.
+[ ] Tahap 4 - Tinjau & kirim:
+    - Baca rangkuman data dan berkas.
+    - Lengkapi persetujuan pengiriman.
+    - Klik "Kirim untuk ditinjau petugas".
+[ ] Buka Pengajuan saya dan detail kiriman tersebut.
+    Catat referensinya agar mudah ditemukan petugas/admin.
+
+Yang perlu dilihat:
+- Persiapan baru dimulai dari kebutuhan, bukan otomatis melompat ke Data.
+- Berkas baru menjadi bahan kerja petugas setelah dikirim.
+- Cek kelengkapan/format formulir tidak sama dengan AI membaca dokumen.
+- Dokumen contoh terpotong dipakai untuk memperagakan koreksi manusia;
+  jangan menganggap sistem sudah mendeteksi isinya secara otomatis.
+
+============================================================
+4. PETUGAS: TINJAU KIRIMAN PERTAMA DAN MINTA PERBAIKAN
+============================================================
+
+[ ] Masuk sebagai petugas@daftarin.test pada tab petugas.
+[ ] Buka Ringkasan pekerjaan, lalu Antrean tinjauan.
+[ ] Temukan kiriman dengan referensi/nama warga yang dicatat tadi.
+    Jika belum menjadi penugasan petugas ini, lakukan bagian 5 dahulu.
+[ ] Buka detail. Periksa data pemohon, panduan yang digunakan, dan berkas.
+[ ] Mulai tinjauan melalui aksi yang tersedia.
+[ ] Nilai data pemohon dan setiap berkas wajib secara eksplisit.
+    - Gunakan "Sesuai" untuk bagian yang telah ditinjau dan sesuai.
+    - Gunakan "Perlu perbaikan" pada dokumen contoh yang terpotong.
+    - Gunakan "Belum dapat diperiksa" jika berkas tidak dapat ditinjau;
+      jangan memaksakan nilai Sesuai.
+[ ] Pada dokumen terpotong, tulis catatan yang jelas, misalnya:
+    "Bagian bawah dokumen terpotong. Unggah ulang seluruh halaman
+     dengan keempat sudut terlihat dan tulisan terbaca."
+[ ] Coba simpan penilaian sementara sebelum mengirim keputusan.
+[ ] Pilih aksi permintaan perbaikan. Lengkapi kategori/target, masalah,
+    dan arahan tindakan sesuai kolom yang ditampilkan.
+[ ] Kirim keputusan perbaikan.
+
+Yang perlu dilihat:
+- Penilaian sementara berbeda dari keputusan yang sudah dikirim.
+- Warga memperoleh instruksi per dokumen/isian, bukan status umum saja.
+- Petugas membaca salinan kiriman yang dikirim warga, bukan sembarang
+  perubahan draf warga yang belum dikirim ulang.
+
+============================================================
+5. ADMIN: PERIKSA ATAU ATUR PENUGASAN
+============================================================
+
+[ ] Masuk sebagai admin@daftarin.test pada tab admin.
+[ ] Buka Ringkasan operasional untuk melihat pekerjaan yang masuk.
+[ ] Buka Petugas & penugasan, kemudian tab Penugasan.
+[ ] Cari permintaan tinjauan milik warga baru tadi.
+[ ] Periksa petugas yang ditugaskan. Jika belum ditugaskan, pilih Budi
+    atau petugas aktif yang akan digunakan untuk demo.
+[ ] Isi alasan penugasan yang jelas, lalu simpan.
+[ ] Kembali ke tab petugas dan buka antreannya lagi.
+
+Bagian ini bisa dilewati pada putaran utama jika kiriman sudah otomatis
+ditugaskan kepada petugas yang benar. Tetap coba penugasan lanjutan pada
+bagian 16 menggunakan kasus tambahan.
+
+============================================================
+6. WARGA: BACA CATATAN DAN KIRIM PERBAIKAN
+============================================================
+
+[ ] Kembali ke akun WARGA BARU yang mengirim tadi.
+[ ] Buka dashboard/notifikasi, lalu Pengajuan saya > detail pengajuan.
+[ ] Baca keputusan dan catatan dokumen yang perlu diperbaiki.
+[ ] Ikuti aksi perbaikan menuju data atau dokumen yang dimaksud.
+[ ] Ganti dokumen bermasalah dengan dummy yang utuh, atau gunakan
+    "Muat dokumen contoh (semua berkas utuh)".
+[ ] Periksa pratinjau dan versi berkas yang baru.
+[ ] Kembali ke tahap Tinjau & kirim. Baca ulang rangkuman dan persetujuan.
+[ ] Klik aksi "Kirim perbaikan" / "Kirim perbaikan untuk ditinjau".
+[ ] Pastikan riwayat tetap memperlihatkan kiriman/keputusan sebelumnya.
+
+Penting: mengganti dokumen atau menyimpan data saja belum mengirim
+perbaikan ke petugas. Warga harus melakukan pengiriman ulang secara
+eksplisit. Persetujuan sebelumnya perlu diperbarui setelah perubahan.
+
+============================================================
+7. PETUGAS: TINJAU ULANG DAN SELESAIKAN TINJAUAN
+============================================================
+
+[ ] Kembali ke akun petugas yang ditugaskan.
+[ ] Buka kiriman perbaikan warga dari antrean.
+[ ] Bandingkan versi berkas dan riwayat catatan yang tersedia.
+[ ] Nilai ulang data pemohon dan semua berkas wajib pada kiriman baru.
+    Jangan mengandalkan penilaian versi lama.
+[ ] Jika semua benar, tandai bagian-bagian yang wajib dinilai sebagai
+    Sesuai dan lengkapi catatan hasil tinjauan.
+[ ] Isi catatan, misalnya:
+    "Data dan berkas contoh telah ditinjau. Lanjutkan melalui kanal
+     resmi instansi sesuai panduan layanan."
+[ ] Selesaikan tinjauan melalui aksi yang tersedia.
+[ ] Buka Riwayat tinjauan dan baca pekerjaan yang baru diselesaikan.
+
+Selesai ditinjau di DaftarIn tidak berarti dokumen resmi sudah terbit.
+Petugas demo tidak menerbitkan KTP/KK atau mengubah data Dukcapil.
+
+============================================================
+8. WARGA: LANJUT KE KANAL RESMI DAN CATAT PENGAJUAN
+============================================================
+
+[ ] Kembali ke akun warga baru, buka detail hasil tinjauan.
+[ ] Baca catatan petugas dan panduan langkah selanjutnya.
+[ ] Coba "Unduh panduan persiapan (.txt)" jika ditampilkan.
+[ ] Lihat tautan/arahan kanal resmi yang tersedia. Untuk demo, cukup
+    lihat arahannya; tidak perlu mengirim dokumen ke instansi sungguhan.
+[ ] Setelah mensimulasikan pengajuan di instansi, buka pencatatan
+    pengajuan resmi yang tersedia pada detail/halaman Pengajuan saya.
+[ ] Isi kanal pengajuan, tanggal, nomor tanda terima dummy, dan catatan.
+    Contoh tanda terima: DEMO-KK-2026-001.
+[ ] Simpan dan periksa bahwa informasi tersebut berlabel laporan warga.
+[ ] Simulasikan hasil sudah diterima melalui aksi konfirmasi penerimaan
+    yang tersedia, centang persetujuannya, dan tambahkan catatan bila perlu.
+[ ] Buka daftar selesai/riwayat untuk menemukan pengurusan tersebut.
+
+Pencatatan ini berasal dari warga. Tidak ada sinkronisasi status resmi
+instansi yang membuktikan permohonan sungguhan sudah diterima/diterbitkan.
+
+============================================================
+9. WARGA: COBA DASHBOARD, DAFTAR, DAN NOTIFIKASI
+============================================================
+
+[ ] Lihat dashboard saat masih draf, perlu perbaikan, menunggu petugas,
+    selesai ditinjau, dan setelah hasil diterima, selama putaran di atas.
+    Perhatikan apakah arahan tindakan berikutnya sesuai keadaan.
+[ ] Di Persiapan saya, coba pencarian/filter/pengurutan yang tersedia.
+[ ] Di Pengajuan saya, coba kelompok aktif dan selesai/riwayat, pencarian,
+    filter, pengurutan, serta buka detail dari daftar.
+[ ] Coba pagination bila jumlah data sudah cukup untuk berpindah halaman.
+[ ] Buka lonceng notifikasi setelah ada keputusan petugas/balasan bantuan.
+[ ] Buka notifikasi menuju urusan terkait. Coba tandai sudah dibaca dan
+    tandai semua dibaca apabila tersedia.
+
+============================================================
+10. WARGA: KEBUTUHAN HIDUP DAN PENGURUSAN KELUARGA
+============================================================
+
+Gunakan PERSIAPAN BARU agar pengajuan utama yang sudah selesai tetap utuh.
+
+[ ] Buka "Mulai dari kebutuhanmu" pada alur kebutuhan.
+[ ] Coba skenario kelahiran, pindah tempat tinggal, lalu dokumen
+    hilang/rusak. Jawab pertanyaannya dan lihat rekomendasi layanan.
+[ ] Buka rekomendasi yang sesuai dan mulai persiapan baru.
+    Rekomendasi hanya mencakup layanan yang memang tersedia di aplikasi.
+[ ] Buka Akun saya > pengelolaan keluarga. Tambahkan anggota dummy.
+[ ] Coba ubah data anggota dan simpan.
+[ ] Mulai pengurusan lain untuk keluarga, pilih anggota yang benar,
+    lalu lengkapi persetujuan/otorisasi yang diminta.
+[ ] Periksa data pemohon/anggota pada tahap Data. Jangan sampai identitas
+    anggota keluarga diam-diam tertukar dengan pemilik akun.
+[ ] Coba kebutuhan kelahiran anak untuk membedakan data pelapor dan anak.
+    Ikuti kolom yang diminta; jangan mengarang NIK bayi jika tidak diminta.
+[ ] Untuk mencoba hapus anggota, gunakan anggota dummy tambahan yang
+    tidak sedang dipakai pengurusan utama.
+
+============================================================
+11. WARGA: UPLOAD, PENGGANTIAN, DAN KEGAGALAN BERKAS
+============================================================
+
+Gunakan draf tambahan yang belum dikirim, bukan berkas pengajuan utama.
+
+[ ] Unggah PDF/JPG/PNG dummy pada slot dokumen yang sesuai.
+    Batas yang ditampilkan: maksimal 5 MB per berkas.
+[ ] Buka pratinjau, ganti berkas, lalu lihat perubahan nama/versinya.
+[ ] Hapus berkas dari draf dan lihat kebutuhan wajib yang kembali kosong.
+[ ] Coba unggah tipe tidak didukung atau berkas terlalu besar untuk
+    melihat pesan penolakan. Lalu unggah berkas yang sesuai.
+[ ] Jika perangkat mendukung, coba pengambilan foto lewat kamera.
+[ ] Coba alur persiapan foto/rotasi/konversi yang muncul untuk foto
+    yang perlu disiapkan. Periksa pratinjau sebelum menyetujui hasilnya.
+[ ] Coba memakai ulang berkas milik akun yang sama dari persiapan lain.
+    Pilih berkas secara eksplisit dan konfirmasi sebelum digunakan.
+[ ] Aktifkan "Simulasi uji kegagalan penyimpanan" bila tersedia.
+    Coba ganti berkas sekali. Pastikan pesan gagal muncul dan berkas lama
+    tetap tersedia. Matikan simulasi sebelum melanjutkan demo normal.
+[ ] Klik "Belum punya berkas ini?" dan lihat bantuan dengan konteks
+    layanan/dokumen tersebut.
+
+Catatan: kemampuan kamera/format foto bergantung pada browser/perangkat.
+Tidak semua format seperti HEIC dapat dibuka langsung oleh browser.
+
+============================================================
+12. WARGA: ARSIP, HAPUS DRAF, DAN TARIK TINJAUAN
+============================================================
+
+Buat kasus terpisah untuk setiap tindakan yang menutup/menghapus urusan.
+
+[ ] Buat draf baru, isi sebagian data, kembali ke Persiapan saya, lalu
+    buka kembali untuk melanjutkan. Muat ulang untuk melihat persistensi.
+[ ] Arsipkan draf tambahan dan cari di daftar arsip.
+[ ] Pulihkan draf dari arsip.
+[ ] Buat draf kosong lain yang belum pernah dikirim, lalu hapus dengan
+    konfirmasi. Jangan gunakan draf pengajuan utama untuk langkah ini.
+[ ] Buat dan kirim permintaan tinjauan tambahan.
+[ ] Dari detail, buka bagian "Salah memilih atau tidak ingin melanjutkan
+    tinjauan?", isi alasan, centang konfirmasi, dan tarik permintaannya.
+[ ] Periksa riwayat warga dan keadaan antrean petugas sesudah penarikan.
+
+Penarikan hanya menutup tinjauan pendamping DaftarIn, bukan membatalkan
+permohonan yang sudah diajukan pada instansi sungguhan.
+
+[ ] Coba "Sudah mengajukan di instansi? Catat pengajuan" dari daftar.
+    Gunakan pengajuan dummy terpisah untuk mencoba pencatatan tanpa
+    tinjauan pendamping. Catatan ini tidak semestinya membuat pekerjaan
+    tinjauan baru pada antrean petugas.
+
+============================================================
+13. BANTUAN MANUSIA: WARGA -> ADMIN -> WARGA
+============================================================
+
+[ ] Sebagai warga, buka Bantuan atau tautan bantuan kontekstual.
+[ ] Pilih topik dan tulis pertanyaan dummy yang cukup jelas.
+[ ] Simpan/kirim permintaan bantuan.
+[ ] Buka admin > Permintaan bantuan, temukan permintaan tersebut.
+[ ] Baca konteksnya dan kirim jawaban yang menjelaskan tindakan berikutnya.
+[ ] Kembali sebagai warga, baca tanggapan pada permintaan sendiri.
+[ ] Coba tindak lanjut/buka kembali permintaan jika opsi tersebut tersedia.
+
+============================================================
+14. PETUGAS: KLARIFIKASI PANDUAN KE ADMIN
+============================================================
+
+Gunakan pengajuan tambahan yang masih aktif.
+
+[ ] Petugas membuka detail kiriman yang sedang ditangani.
+[ ] Klik "Minta klarifikasi admin".
+[ ] Jelaskan bagian panduan yang membingungkan dan kirim permintaan.
+[ ] Kembali ke detail; lihat keadaan menunggu klarifikasi dan keputusan
+    yang ditunda sampai admin memberi tanggapan.
+[ ] Admin membuka Permintaan bantuan, membaca konteks, dan menjawab.
+[ ] Petugas membaca jawaban admin lalu melanjutkan tinjauan.
+
+============================================================
+15. ADMIN: LAYANAN, PERSYARATAN, SUMBER, DAN VERSI
+============================================================
+
+Lakukan bagian ini SETELAH alur utama selesai agar perubahan persyaratan
+tidak mengacaukan demonstrasi pengajuan pertama.
+
+[ ] Buka Layanan & persyaratan > Panduan layanan.
+[ ] Pilih satu layanan dan baca versi yang sedang terbit.
+[ ] Ubah penjelasan/persyaratan atau kondisi permohonan pada editor.
+[ ] Simpan draf. Buka katalog sebagai warga dan bandingkan dengan versi
+    terbit; perubahan draf belum semestinya menggantikan panduan publik.
+[ ] Buka Sumber & versi panduan. Periksa tautan/sumber yang dirujuk,
+    isi catatan peninjauan, dan lakukan pemeriksaan sumber sesuai form.
+[ ] Kembali ke editor dan terbitkan panduan dengan persetujuan yang diminta.
+[ ] Warga membuka layanan yang sama untuk melihat perubahan versi terbit.
+[ ] Baca riwayat versi dan catatan perubahan.
+[ ] Coba memulihkan isi versi lama menjadi draf, lalu lihat perbedaannya.
+    Pemulihan isi bukan menghapus riwayat; penerbitannya menjadi versi baru.
+[ ] Buka bagian "Jeda panduan atau pulihkan isi versi lama".
+    Isi alasan yang jelas, lalu jeda layanan tersebut.
+[ ] Sebagai warga, coba mulai persiapan baru untuk layanan yang dijeda.
+    Baca arahan yang diberikan; riwayat lama tetap bisa dibaca.
+[ ] Admin aktifkan kembali layanan setelah selesai mencoba jeda.
+[ ] Buka tab Aturan pemeriksaan. Coba menambah/mengubah pengaturan aturan
+    yang tersedia dan menonaktifkan/mengaktifkan aturan contoh.
+
+Aturan pemeriksaan formulir/berkas bukan bukti OCR atau LLM telah membaca
+isi dokumen. Aturan tanpa pelaksana analisis tidak boleh dianggap lulus AI.
+
+============================================================
+16. ADMIN: AKUN PETUGAS, PINDAH TUGAS, DAN AKSES
+============================================================
+
+Gunakan kiriman tambahan yang masih aktif dan catat siapa petugas awalnya.
+
+[ ] Buka Petugas & penugasan > Akun.
+[ ] Coba cari akun berdasarkan nama/email dan filter peran/status.
+[ ] Klik Tambah petugas. Buat petugas kedua dengan email dummy dan sandi
+    yang dicatat sendiri. Ini akun tambahan buatanmu untuk demo.
+[ ] Buka tab Penugasan dan pindahkan satu pekerjaan aktif dari Budi ke
+    petugas kedua. Isi alasan perpindahan dengan jelas.
+[ ] Masuk sebagai petugas kedua dan buka pekerjaan yang baru ditugaskan.
+[ ] Sebagai petugas lama, periksa bahwa akses detail privat pekerjaan
+    tersebut tidak lagi tersedia sebagai penugasan aktifnya.
+[ ] Coba nonaktifkan petugas yang masih memiliki tugas aktif.
+    Ikuti arahan untuk memindahkan penugasan sebelum menonaktifkan.
+[ ] Setelah semua tugas dipindahkan, nonaktifkan akun petugas tambahan.
+[ ] Coba masuk memakai akun nonaktif, lalu aktifkan lagi dari admin.
+[ ] Buka Riwayat aktivitas dan cari penugasan, perubahan panduan/sumber,
+    serta keputusan petugas yang telah dibuat selama demo.
+
+Jangan menonaktifkan akun admin utama atau menghapus data utama hanya
+untuk melengkapi daftar coba ini.
+
+============================================================
+17. AKUN, TAMPILAN, NOTIFIKASI, DAN KEAMANAN
+============================================================
+
+[ ] Pada Akun saya > Profil, ubah nama/telepon dummy dan simpan.
+    Lihat identitas yang ditampilkan setelah perubahan.
+[ ] Buka tab Tampilan. Bandingkan tulisan normal/besar dan kontras tinggi.
+    Lihat dampaknya pada formulir, daftar, sidebar, dan detail pengajuan.
+[ ] Buka tab Notifikasi. Coba ubah preferensi notifikasi dalam aplikasi.
+    Gunakan kejadian baru sesudah perubahan untuk melihat pengaruhnya.
+[ ] Buka tab Keamanan. Coba ubah sandi dengan sandi lama yang benar.
+    Lakukan mendekati akhir demo dan catat sandi barunya.
+[ ] Keluar biasa dan masuk lagi memakai sandi baru.
+[ ] Jika membuka pengelolaan sesi/pemulihan akun, baca keterangan mode
+    yang tersedia. Jangan menganggap pengiriman email pemulihan nyata
+    atau pencabutan sesi server sudah aktif dalam mode demo lokal.
+[ ] Ulangi pengaturan akun yang relevan pada petugas/admin bila diperlukan.
+
+============================================================
+18. CHATBOT DAN PEMAKAIAN DI HP
+============================================================
+
+[ ] Sebagai pengunjung/warga, buka chatbot dari tombol kanan bawah.
+[ ] Coba pertanyaan umum, pertanyaan lanjutan, dan tombol arahan halaman.
+[ ] Tutup panel dan buka lagi; percakapan pada tab yang sama tetap ada.
+[ ] Muat ulang tab; riwayat percakapan mengikuti sessionStorage tab itu.
+[ ] Keluar/berpindah akun; riwayat akun sebelumnya dibersihkan.
+[ ] Masuk sebagai petugas/admin; chatbot tidak ditampilkan bagi dua peran
+    tersebut, termasuk saat membuka halaman publik dengan akun itu.
+[ ] Di HP, lihat tombol kapsul berubah menjadi tombol bulat yang kecil.
+[ ] Buka panel chat dan keyboard HP; coba tutup dan kembali ke formulir.
+[ ] Coba fitur suara/pembacaan jika tombol dan dukungan perangkat tersedia.
+
+Chatbot membantu panduan dan navigasi. Ia tidak mengirim pengajuan,
+menerbitkan dokumen, atau melakukan pemeriksaan isi berkas pada alur ini.
+Riwayat chat tidak disimpan sebagai riwayat permanen di database aplikasi.
+Penutupan tab mengakhiri sesi normal, tetapi pemulihan sesi browser bisa
+memulihkan sessionStorage; jangan jadikan penutupan tab jaminan penghapusan.
+Jika jawaban memakai panduan lokal/fallback, bedakan dengan respons AI.
+
+============================================================
+19. PENGECEKAN TAMPILAN YANG BISA KAMU LAKUKAN SAMBIL DEMO
+============================================================
+
+[ ] Buka beranda, katalog, daftar, dashboard, dokumen, detail pengajuan,
+    antrean petugas, dan pengelolaan admin pada layar lebar dan HP.
+[ ] Pastikan tulisan/nama berkas panjang tidak menjadi satu huruf per baris.
+[ ] Lihat radio pilihan kebutuhan dan kolom catatan petugas: teks harus
+    membungkus di dalam area, tidak melebar keluar layar.
+[ ] Lihat tombol lanjut/kirim yang menempel di bawah: jangan sampai
+    menutupi input, pratinjau, atau tombol chat.
+[ ] Buka/tutup menu HP dan perhatikan halaman aktif, profil akun, serta
+    tautan Kembali ke beranda pada sidebar.
+[ ] Coba tulisan besar saat mengisi form dan membaca catatan revisi.
+
+============================================================
+20. PENUTUPAN DEMO DAN BATAS VERSI SAAT INI
+============================================================
+
+Jika ingin mempertahankan hasil demo:
+[ ] Keluar biasa. Jangan bersihkan data browser/perangkat.
+
+Jika sudah selesai dan memang ingin menghapus hasilnya:
+[ ] Buka Akun saya dan gunakan "Keluar dan bersihkan perangkat".
+    Baca konfirmasi dahulu. Akun warga/petugas tambahan, draf, berkas,
+    pengajuan, serta perubahan lokal dapat hilang dari perangkat ini.
+    Pada pengembangan demo lokal, bootstrap berikutnya menyiapkan ulang
+    tiga akun contoh saat penanda resetnya sudah ikut dibersihkan.
+
+Batas yang perlu diingat ketika menilai demo:
+- Alur bisnis pada panduan ini memakai mode demo lokal, bukan bukti
+  seluruh fitur telah tersambung ke database/backend produksi.
+- Chatbot mempunyai jalur layanan AI backend bila server/konfigurasinya
+  tersedia; pemeriksaan dokumen OCR/LLM adalah integrasi berbeda.
+- Petugas meninjau kiriman warga. Kiriman ulang adalah versi baru;
+  perubahan draf yang belum dikirim tidak boleh mengubah kiriman lama.
+- Selesai tinjauan pendamping berbeda dari dokumen resmi sudah terbit.
+- Tanda terima dan hasil instansi yang dicatat warga adalah laporan warga,
+  bukan pembacaan status langsung dari sistem pemerintah.
+- Tidak perlu mengirim permohonan sungguhan atau memakai data pribadi
+  sungguhan untuk mencoba seluruh urutan ini.
+
+CATATAN HASIL COBA
+Nomor bagian/langkah: _______________________________________
+Peran dan akun: _____________________________________________
+Halaman/referensi pengajuan: _________________________________
+Tindakan yang dilakukan: ____________________________________
+Hasil yang terlihat: ________________________________________
+Yang diharapkan: ____________________________________________
+Screenshot bila ada: ________________________________________
+
+Urutan singkat putaran utama:
+Pengunjung -> daftar warga baru -> pilih KK -> kebutuhan -> data ->
+dokumen contoh terpotong -> tinjau & kirim -> penugasan bila perlu ->
+petugas minta perbaikan -> warga ganti berkas dan kirim ulang ->
+petugas selesaikan tinjauan -> warga catat pengajuan instansi ->
+warga konfirmasi hasil diterima -> lihat riwayat.
