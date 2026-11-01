@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
   Req,
 } from '@nestjs/common';
@@ -17,23 +19,73 @@ import { Response } from '../common/response/response';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { AdminListDto, ChangeAccessDto } from './admin.dto';
 import { AdminService } from './admin.service';
+import { ServicePublicationStatus } from '../generated/prisma/client';
 
 @Roles('admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly service: AdminService) {}
+
+  @Get('summary')
+  async summary() {
+    return new Response({ data: await this.service.summary() });
+  }
+
+  @Get('services')
+  async services() {
+    return new Response({ data: await this.service.services() });
+  }
+
+  @Patch('services/:id/status')
+  @HttpCode(HttpStatus.OK)
+  async updateServiceStatus(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { status: ServicePublicationStatus },
+  ) {
+    const data = await this.service.updateServiceStatus(
+      id,
+      body.status,
+      actor,
+    );
+    return new Response({ data });
+  }
+
+  @Post('assignments')
+  @HttpCode(HttpStatus.OK)
+  async assignOfficer(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body()
+    body: {
+      application_id: string;
+      officer_user_id: string;
+      reason?: string;
+    },
+  ) {
+    const data = await this.service.assignOfficer(
+      body.application_id,
+      body.officer_user_id,
+      actor,
+      body.reason,
+    );
+    return new Response({ data });
+  }
+
   @Get('users')
   async users(@Query() query: AdminListDto) {
     return new Response({ data: await this.service.users(query) });
   }
+
   @Get('agencies')
   async agencies() {
     return new Response({ data: await this.service.agencies() });
   }
+
   @Get('audit')
   async audit(@Query() query: AdminListDto) {
     return new Response({ data: await this.service.audit(query) });
   }
+
   @Patch('users/:id/access')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(204)

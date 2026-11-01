@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -138,6 +139,38 @@ export class PreparationsController {
 
     return new Response({
       data: archived,
+    });
+  }
+
+  @Post(':preparationId/restore')
+  @HttpCode(HttpStatus.OK)
+  async restore(
+    @Param('preparationId', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const restored = await this.preparationsService.restorePreparation(
+      id,
+      user.id,
+    );
+
+    return new Response({
+      data: restored,
+    });
+  }
+
+  @Delete(':preparationId')
+  @HttpCode(HttpStatus.OK)
+  async delete(
+    @Param('preparationId', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.preparationsService.deletePreparation(
+      id,
+      user.id,
+    );
+
+    return new Response({
+      data: result,
     });
   }
 

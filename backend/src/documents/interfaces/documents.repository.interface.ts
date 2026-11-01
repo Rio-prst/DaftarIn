@@ -20,7 +20,7 @@ export interface IDocumentsRepository {
   findActiveVersions(preparationId: string): Promise<DocumentVersion[]>;
   findByDocumentId(
     documentId: string,
-    preparationId: string,
+    preparationId?: string,
   ): Promise<DocumentVersion | null>;
   findVersionsByType(
     preparationId: string,

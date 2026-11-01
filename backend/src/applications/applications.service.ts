@@ -7,6 +7,7 @@ import {
 import { randomBytes } from 'node:crypto';
 import {
   ApplicationStatus,
+  Prisma,
   StatusSourceType,
   SubmissionChannel,
 } from '../generated/prisma/client';
@@ -46,6 +47,8 @@ export class ApplicationsService implements IApplicationsService {
       throw new NotFoundException('Layanan tidak ditemukan.');
     }
 
+    let snapshot: Record<string, unknown> | null = null;
+
     if (dto.preparation_id) {
       const prep = await this.repository.findPreparationById(
         dto.preparation_id,
@@ -61,6 +64,30 @@ export class ApplicationsService implements IApplicationsService {
           'Persiapan berkas tidak cocok dengan layanan yang dipilih.',
         );
       }
+
+      // Assemble immutable snapshot of preparation at the moment of submission
+      snapshot = {
+        preparation_id: prep.id,
+        preparation_reference: prep.internalReference,
+        version: prep.version,
+        data_version: prep.currentDataVersion,
+        submitted_at: (dto.submitted_at ? new Date(dto.submitted_at) : new Date()).toISOString(),
+        answers: (prep.answerVersions ?? []).map((a: any) => ({
+          question_id: a.questionId,
+          question_key: a.question?.questionKey,
+          label: a.question?.label,
+          value: a.answerJson,
+        })),
+        documents: (prep.documentVersions ?? []).map((d: any) => ({
+          id: d.id,
+          document_type: d.documentType,
+          version_number: d.versionNumber,
+          original_filename: d.originalFilename,
+          storage_key: d.storageKey,
+          file_size_bytes: d.fileSizeBytes.toString(),
+          checksum_sha256: d.checksumSha256,
+        })),
+      };
     }
 
     const year = new Date().getFullYear();
@@ -87,10 +114,13 @@ export class ApplicationsService implements IApplicationsService {
       initialEvent: {
         statusCode: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
         sourceType: StatusSourceType.CITIZEN_REPORT,
-        sourceLabel: 'Dicatat warga — belum terkonfirmasi instansi',
+        sourceLabel: 'Dicatat warga — diajukan untuk tinjauan pendamping',
         description: dto.note?.trim() || 'Pengajuan dicatat oleh warga.',
         occurredAt: submittedDate,
-        metadataJson: { channel: dto.channel },
+        metadataJson: {
+          channel: dto.channel,
+          snapshot,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -273,6 +303,147 @@ export class ApplicationsService implements IApplicationsService {
     return this.mapToDetailView(updated);
   }
 
+  async resubmitRevision(
+    id: string,
+    userId: string,
+    note?: string,
+  ): Promise<ApplicationDetailView> {
+    const record = await this.repository.findById(id, userId);
+    if (!record) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    if (record.statusSummary !== ApplicationStatus.NEEDS_CORRECTION) {
+      throw new BadRequestException(
+        'Pengajuan hanya dapat direvisi ketika status memerlukan perbaikan (needs_correction).',
+      );
+    }
+
+    let revisionSnapshot: Record<string, unknown> | null = null;
+    if (record.preparationId) {
+      const prep = await this.repository.findPreparationById(
+        record.preparationId,
+        userId,
+      );
+      if (prep) {
+        revisionSnapshot = {
+          preparation_id: prep.id,
+          version: prep.version,
+          data_version: prep.currentDataVersion,
+          resubmitted_at: new Date().toISOString(),
+          answers: (prep.answerVersions ?? []).map((a: any) => ({
+            question_id: a.questionId,
+            value: a.answerJson,
+          })),
+          documents: (prep.documentVersions ?? []).map((d: any) => ({
+            id: d.id,
+            document_type: d.documentType,
+            version_number: d.versionNumber,
+            original_filename: d.originalFilename,
+          })),
+        };
+      }
+    }
+
+    await this.repository.updateStatus(id, ApplicationStatus.VERIFICATION);
+
+    await this.repository.addStatusEvent({
+      applicationId: id,
+      actorUserId: userId,
+      statusCode: ApplicationStatus.VERIFICATION,
+      sourceType: StatusSourceType.CITIZEN_REPORT,
+      sourceLabel: 'Revisi diajukan warga',
+      description: note?.trim() || 'Warga telah mengirimkan berkas hasil perbaikan.',
+      occurredAt: new Date(),
+      metadataJson: {
+        revision_snapshot: revisionSnapshot,
+      } as unknown as Prisma.InputJsonValue,
+    });
+
+    const updated = await this.repository.findById(id, userId);
+    return this.mapToDetailView(updated!);
+  }
+
+  async withdrawApplication(
+    id: string,
+    userId: string,
+    reason?: string,
+  ): Promise<ApplicationDetailView> {
+    const record = await this.repository.findById(id, userId);
+    if (!record) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    if (
+      record.statusSummary === ApplicationStatus.COMPLETED ||
+      record.statusSummary === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN
+    ) {
+      throw new BadRequestException(
+        'Pengajuan yang telah selesai diproses tidak dapat ditarik.',
+      );
+    }
+
+    await this.repository.addStatusEvent({
+      applicationId: id,
+      actorUserId: userId,
+      statusCode: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
+      sourceType: StatusSourceType.CITIZEN_REPORT,
+      sourceLabel: 'Permohonan ditarik oleh warga',
+      description: reason?.trim() || 'Warga menarik permohonan tinjauan pendamping.',
+      occurredAt: new Date(),
+    });
+
+    const updated = await this.repository.findById(id, userId);
+    return this.mapToDetailView(updated!);
+  }
+
+  async recordOfficialSubmission(
+    id: string,
+    userId: string,
+    dto: {
+      official_number?: string;
+      channel?: string;
+      submission_date?: string;
+      receipt_number?: string;
+      note?: string;
+    },
+  ): Promise<ApplicationDetailView> {
+    const record = await this.repository.findById(id, userId);
+    if (!record) {
+      throw new NotFoundException('Pengajuan tidak ditemukan.');
+    }
+
+    const submittedDate = dto.submission_date
+      ? new Date(dto.submission_date)
+      : new Date();
+
+    const updated = await this.repository.updateOfficialSubmission(id, {
+      officialNumber: dto.official_number || dto.receipt_number,
+      channel: dto.channel,
+      submittedDate,
+      citizenNotes: dto.note,
+      statusSummary: ApplicationStatus.PROCESSING,
+    });
+
+    await this.repository.addStatusEvent({
+      applicationId: id,
+      actorUserId: userId,
+      statusCode: ApplicationStatus.PROCESSING,
+      sourceType: StatusSourceType.CITIZEN_REPORT,
+      sourceLabel: 'Pengajuan resmi dicatat warga',
+      description:
+        dto.note?.trim() ||
+        `Warga mencatat nomor pengajuan resmi instansi: ${dto.official_number || 'Tercatat'}`,
+      occurredAt: submittedDate,
+      metadataJson: {
+        receipt_number: dto.receipt_number,
+        official_channel: dto.channel,
+      },
+    });
+
+    return this.mapToDetailView(updated);
+  }
+
   // --- Helpers ---
 
   private mapChannelToEnum(
@@ -343,6 +514,18 @@ export class ApplicationsService implements IApplicationsService {
           : 'citizen_reported'
         : 'not_provided';
 
+    let snapshot: unknown = undefined;
+    for (const e of record.statusEvents ?? []) {
+      if (
+        e.metadataJson &&
+        typeof e.metadataJson === 'object' &&
+        'snapshot' in (e.metadataJson as Record<string, unknown>)
+      ) {
+        snapshot = (e.metadataJson as Record<string, unknown>).snapshot;
+        break;
+      }
+    }
+
     return {
       id: record.id,
       internal_reference: record.internalReference,
@@ -375,6 +558,7 @@ export class ApplicationsService implements IApplicationsService {
       simulation: record.sourceMode === StatusSourceType.SIMULATION,
       created_at: record.createdAt.toISOString(),
       updated_at: record.updatedAt.toISOString(),
+      snapshot,
     };
   }
 
@@ -404,6 +588,8 @@ export class ApplicationsService implements IApplicationsService {
       eventType = 'citizen_note';
     } else if (event.sourceLabel.toLowerCase().includes('dicatat warga')) {
       eventType = 'application_recorded';
+    } else if (event.sourceLabel.toLowerCase().includes('revisi')) {
+      eventType = 'revision_resubmitted';
     }
 
     return {
@@ -424,6 +610,7 @@ export class ApplicationsService implements IApplicationsService {
       note: event.description,
       simulation: event.sourceType === StatusSourceType.SIMULATION,
       correction_of_event_id: null,
+      metadata: event.metadataJson,
     };
   }
 }

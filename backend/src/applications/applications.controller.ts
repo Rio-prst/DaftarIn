@@ -138,4 +138,65 @@ export class ApplicationsController {
       data,
     });
   }
+
+  @Post(':id/resubmit-revision')
+  @HttpCode(HttpStatus.OK)
+  async resubmitRevision(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { note?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.resubmitRevision(
+      id,
+      user.id,
+      body.note,
+    );
+
+    return new Response({
+      data,
+    });
+  }
+
+  @Post(':id/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdraw(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { reason?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.withdrawApplication(
+      id,
+      user.id,
+      body.reason,
+    );
+
+    return new Response({
+      data,
+    });
+  }
+
+  @Post(':id/official-submission')
+  @HttpCode(HttpStatus.OK)
+  async recordOfficialSubmission(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body()
+    body: {
+      official_number?: string;
+      channel?: string;
+      submission_date?: string;
+      receipt_number?: string;
+      note?: string;
+    },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.applicationsService.recordOfficialSubmission(
+      id,
+      user.id,
+      body,
+    );
+
+    return new Response({
+      data,
+    });
+  }
 }

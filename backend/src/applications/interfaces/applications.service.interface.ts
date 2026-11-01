@@ -45,6 +45,7 @@ export interface ApplicationItemView {
   simulation: boolean;
   created_at: string;
   updated_at: string;
+  snapshot?: unknown;
 }
 
 export interface ApplicationDetailView extends ApplicationItemView {
@@ -68,6 +69,7 @@ export interface StatusEventView {
   note: string | null;
   simulation: boolean;
   correction_of_event_id: string | null;
+  metadata?: unknown;
 }
 
 export interface ApplicationTimelineResult {
@@ -113,5 +115,26 @@ export interface IApplicationsService {
     id: string,
     userId: string,
     preparationId: string,
+  ): Promise<ApplicationDetailView>;
+  resubmitRevision(
+    id: string,
+    userId: string,
+    note?: string,
+  ): Promise<ApplicationDetailView>;
+  withdrawApplication(
+    id: string,
+    userId: string,
+    reason?: string,
+  ): Promise<ApplicationDetailView>;
+  recordOfficialSubmission(
+    id: string,
+    userId: string,
+    dto: {
+      official_number?: string;
+      channel?: string;
+      submission_date?: string;
+      receipt_number?: string;
+      note?: string;
+    },
   ): Promise<ApplicationDetailView>;
 }

@@ -8,7 +8,7 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import FileType from 'file-type';
 import type { DocumentVersion } from '../generated/prisma/client';
 import {
@@ -77,7 +77,9 @@ export class DocumentsService implements IDocumentsService {
         documentType,
       )) + 1;
 
-    const storageKey = `users/${userId}/preparations/${preparationId}/documents/${documentType}/v${nextVersion}.${ext}`;
+    // Unique immutable storage key: prevents concurrent upload overwrites
+    const nonce = randomBytes(4).toString('hex');
+    const storageKey = `users/${userId}/preparations/${preparationId}/documents/${documentType}/v${nextVersion}_${Date.now()}_${nonce}.${ext}`;
 
     await this.storageService.uploadFile(storageKey, file.buffer, detectedMime);
 
@@ -120,6 +122,58 @@ export class DocumentsService implements IDocumentsService {
       undefined,
       displayName,
     );
+  }
+
+  async reuseDocument(
+    preparationId: string,
+    userId: string,
+    sourceDocumentId: string,
+    documentType: string,
+    userConsent: boolean,
+  ): Promise<DocumentItemView> {
+    if (!userConsent) {
+      throw new BadRequestException(
+        'Persetujuan penggunaan ulang dokumen wajib diberikan oleh pengguna.',
+      );
+    }
+
+    const prep = await this.preparationsRepository.findById(
+      preparationId,
+      userId,
+    );
+    if (!prep) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+
+    const source = await this.documentsRepository.findByDocumentId(
+      sourceDocumentId,
+    );
+    if (!source || source.userId !== userId || source.deletedAt) {
+      throw new NotFoundException(
+        'Dokumen sumber tidak ditemukan atau tidak sah.',
+      );
+    }
+
+    const nextVersion =
+      (await this.documentsRepository.getHighestVersionNumber(
+        preparationId,
+        documentType,
+      )) + 1;
+
+    const docVersion = await this.documentsRepository.createVersion({
+      preparationId,
+      userId,
+      documentType,
+      versionNumber: nextVersion,
+      storageKey: source.storageKey,
+      originalFilename: source.originalFilename,
+      detectedMimeType: source.detectedMimeType,
+      fileSizeBytes: source.fileSizeBytes,
+      checksumSha256: source.checksumSha256,
+      processingStatus: 'available',
+    });
+
+    return this.mapToItemView(docVersion);
   }
 
   async listDocuments(
@@ -165,7 +219,7 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc) {
+    if (!doc || doc.userId !== userId) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 
@@ -174,10 +228,8 @@ export class DocumentsService implements IDocumentsService {
       doc.documentType,
     );
 
-    const activeVersion = allVersions[0] ?? doc;
-
     return {
-      ...this.mapToItemView(activeVersion),
+      ...this.mapToItemView(doc),
       versions: allVersions.map((v) => this.mapToVersionInfo(v)),
     };
   }
@@ -199,11 +251,11 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc) {
+    if (!doc || doc.userId !== userId) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 
-    return this.storageService.createSignedUrl(doc.storageKey, 300);
+    return this.storageService.createSignedUrl(doc.storageKey);
   }
 
   async deleteDocument(
@@ -223,7 +275,7 @@ export class DocumentsService implements IDocumentsService {
       documentId,
       preparationId,
     );
-    if (!doc) {
+    if (!doc || doc.userId !== userId) {
       throw new NotFoundException('Dokumen tidak ditemukan.');
     }
 

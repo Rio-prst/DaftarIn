@@ -20,7 +20,11 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Response } from '../common/response/response';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
-import { UploadDocumentDto, UploadVersionDto } from './dto/upload-document.dto';
+import {
+  ReuseDocumentDto,
+  UploadDocumentDto,
+  UploadVersionDto,
+} from './dto/upload-document.dto';
 import {
   DOCUMENTS_SERVICE,
   type IDocumentsService,
@@ -50,6 +54,26 @@ export class DocumentsController {
       dto.document_type,
       dto.requirement_id,
       dto.display_name,
+    );
+
+    return new Response({
+      data: result,
+    });
+  }
+
+  @Post('reuse')
+  @HttpCode(HttpStatus.CREATED)
+  async reuse(
+    @Param('preparationId', ParseUUIDPipe) preparationId: string,
+    @Body() dto: ReuseDocumentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.documentsService.reuseDocument(
+      preparationId,
+      user.id,
+      dto.source_document_id,
+      dto.document_type,
+      dto.user_consent,
     );
 
     return new Response({

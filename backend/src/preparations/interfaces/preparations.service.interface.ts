@@ -128,6 +128,14 @@ export interface IPreparationsService {
     id: string,
     userId: string,
   ): Promise<PreparationDetailView>;
+  restorePreparation(
+    id: string,
+    userId: string,
+  ): Promise<PreparationDetailView>;
+  deletePreparation(
+    id: string,
+    userId: string,
+  ): Promise<{ message: string }>;
   getPreparationRequirements(
     id: string,
     userId: string,

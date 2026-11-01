@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client';
+import { randomUUID } from 'node:crypto';
+import { ApplicationStatus, Prisma, StatusSourceType } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   CreateOfficerEventRepositoryInput,
@@ -168,5 +169,149 @@ export class OfficerRepository implements IOfficerRepository {
 
       return event;
     });
+  }
+
+  async getSummary(officerUserId: string): Promise<{
+    total_assigned: number;
+    pending_review: number;
+    in_review: number;
+    needs_correction: number;
+    completed: number;
+  }> {
+    const activeAssignments = await this.prisma.officerAssignment.findMany({
+      where: { officerUserId, endedAt: null },
+      include: {
+        application: {
+          select: { statusSummary: true },
+        },
+      },
+    });
+
+    let pending_review = 0;
+    let in_review = 0;
+    let needs_correction = 0;
+    let completed = 0;
+
+    for (const a of activeAssignments) {
+      const s = a.application.statusSummary;
+      if (
+        s === ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED ||
+        s === ApplicationStatus.ACCEPTED
+      ) {
+        pending_review++;
+      } else if (
+        s === ApplicationStatus.VERIFICATION ||
+        s === ApplicationStatus.PROCESSING
+      ) {
+        in_review++;
+      } else if (s === ApplicationStatus.NEEDS_CORRECTION) {
+        needs_correction++;
+      } else if (
+        s === ApplicationStatus.COMPLETED ||
+        s === ApplicationStatus.RESULT_RECEIVED_BY_CITIZEN
+      ) {
+        completed++;
+      }
+    }
+
+    return {
+      total_assigned: activeAssignments.length,
+      pending_review,
+      in_review,
+      needs_correction,
+      completed,
+    };
+  }
+
+  async assignOfficer(
+    applicationId: string,
+    officerUserId: string,
+    assignerUserId: string,
+    reason?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.officerAssignment.updateMany({
+        where: {
+          applicationId,
+          endedAt: null,
+        },
+        data: {
+          endedAt: new Date(),
+          assignmentStatus: 'transferred',
+        },
+      });
+
+      const newAssignment = await tx.officerAssignment.create({
+        data: {
+          applicationId,
+          officerUserId,
+          assignmentStatus: 'active',
+          assignedAt: new Date(),
+        },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          actorUserId: assignerUserId,
+          actorRole: 'system',
+          action: 'OFFICER_ASSIGNMENT_TRANSFER',
+          objectType: 'application',
+          objectId: applicationId,
+          requestId: randomUUID(),
+          outcome: 'success',
+          metadataJson: {
+            assignedOfficerId: officerUserId,
+            reason: reason ?? 'Penugasan petugas pengajuan.',
+          },
+        },
+      });
+
+      return newAssignment;
+    });
+  }
+
+  async saveEvaluation(
+    applicationId: string,
+    officerUserId: string,
+    evaluationJson: Prisma.InputJsonValue,
+  ): Promise<StatusEventWithActor> {
+    return this.prisma.statusEvent.create({
+      data: {
+        applicationId,
+        actorUserId: officerUserId,
+        statusCode: ApplicationStatus.VERIFICATION,
+        sourceType: StatusSourceType.OFFICER,
+        sourceLabel: 'Petugas — Penilaian Berkas Sementara',
+        description: 'Petugas menyimpan penilaian sementara berkas.',
+        occurredAt: new Date(),
+        metadataJson: {
+          evaluation_draft: evaluationJson,
+        },
+      },
+      include: {
+        actor: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getLatestEvaluation(applicationId: string): Promise<Prisma.JsonValue | null> {
+    const event = await this.prisma.statusEvent.findFirst({
+      where: {
+        applicationId,
+        sourceType: StatusSourceType.OFFICER,
+      },
+      orderBy: { occurredAt: 'desc' },
+      select: { metadataJson: true },
+    });
+    if (!event || typeof event.metadataJson !== 'object' || event.metadataJson === null) {
+      return null;
+    }
+    const meta = event.metadataJson as Record<string, unknown>;
+    return (meta.evaluation_draft ?? meta.revision_request ?? null) as Prisma.JsonValue;
   }
 }

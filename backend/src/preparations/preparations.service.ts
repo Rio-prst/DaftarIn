@@ -142,6 +142,34 @@ export class PreparationsService implements IPreparationsService {
     return this.mapToDetailView(archived);
   }
 
+  async restorePreparation(
+    id: string,
+    userId: string,
+  ): Promise<PreparationDetailView> {
+    const record = await this.repository.findById(id, userId);
+
+    if (!record) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+
+    const restored = await this.repository.restore(id, userId);
+    return this.mapToDetailView(restored);
+  }
+
+  async deletePreparation(
+    id: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const record = await this.repository.findById(id, userId);
+
+    if (!record) {
+      throw new NotFoundException('Persiapan tidak ditemukan.');
+    }
+
+    await this.repository.delete(id, userId);
+    return { message: 'Draf persiapan berhasil dihapus.' };
+  }
+
   async getPreparationRequirements(
     id: string,
     userId: string,

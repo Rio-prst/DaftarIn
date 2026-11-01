@@ -21,6 +21,7 @@ import {
   type OfficerApplicationDetailView,
   type OfficerAssignmentItemView,
   type OfficerEventResultView,
+  type OfficerSummaryView,
 } from './interfaces/officer.service.interface';
 
 @Injectable()
@@ -95,6 +96,19 @@ export class OfficerService implements IOfficerService {
 
     const allowedActions = this.computeAllowedActions(app.statusSummary);
 
+    // Extract snapshot if present in status events
+    let snapshot: unknown = undefined;
+    for (const e of app.statusEvents) {
+      if (
+        e.metadataJson &&
+        typeof e.metadataJson === 'object' &&
+        'snapshot' in (e.metadataJson as Record<string, unknown>)
+      ) {
+        snapshot = (e.metadataJson as Record<string, unknown>).snapshot;
+        break;
+      }
+    }
+
     return {
       id: app.id,
       internal_reference: app.internalReference,
@@ -135,6 +149,7 @@ export class OfficerService implements IOfficerService {
           : null,
       })),
       allowed_actions: allowedActions,
+      snapshot,
     };
   }
 
@@ -159,6 +174,16 @@ export class OfficerService implements IOfficerService {
     }
 
     const statusCode = this.mapStatusToEnum(dto.status);
+
+    // Validate state transition against allowed_actions!
+    const allowedActions = this.computeAllowedActions(app.statusSummary);
+    const attemptedAction = this.mapStatusToAction(statusCode);
+
+    if (!allowedActions.includes(attemptedAction)) {
+      throw new BadRequestException(
+        `Transisi status ke '${dto.status}' (aksi: '${attemptedAction}') tidak diizinkan dari status saat ini: '${app.statusSummary.toLowerCase()}'. Aksi yang diizinkan: [${allowedActions.join(', ')}].`,
+      );
+    }
 
     if (
       statusCode === ApplicationStatus.NEEDS_CORRECTION &&
@@ -222,6 +247,70 @@ export class OfficerService implements IOfficerService {
     };
   }
 
+  async getSummary(officerUserId: string): Promise<OfficerSummaryView> {
+    return this.repository.getSummary(officerUserId);
+  }
+
+  async saveEvaluation(
+    applicationId: string,
+    officerUserId: string,
+    evaluation: unknown,
+  ): Promise<{ message: string }> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    await this.repository.saveEvaluation(
+      applicationId,
+      officerUserId,
+      evaluation as any,
+    );
+    return { message: 'Penilaian sementara berkas berhasil disimpan.' };
+  }
+
+  async getEvaluation(
+    applicationId: string,
+    officerUserId: string,
+  ): Promise<unknown> {
+    const assignment = await this.repository.findAssignment(
+      applicationId,
+      officerUserId,
+    );
+    if (!assignment) {
+      throw new ForbiddenException(
+        'Anda tidak memiliki penugasan aktif untuk pengajuan ini.',
+      );
+    }
+
+    const evaluation = await this.repository.getLatestEvaluation(applicationId);
+    return evaluation;
+  }
+
+  async assignOfficer(
+    applicationId: string,
+    targetOfficerUserId: string,
+    assignerUserId: string,
+    reason?: string,
+  ): Promise<{ message: string; assignment_id: string }> {
+    const assignment = await this.repository.assignOfficer(
+      applicationId,
+      targetOfficerUserId,
+      assignerUserId,
+      reason,
+    );
+
+    return {
+      message: 'Petugas berhasil ditugaskan ke pengajuan.',
+      assignment_id: assignment.id,
+    };
+  }
+
   private mapStatusToEnum(status: string): ApplicationStatus {
     switch (status) {
       case 'accepted':
@@ -238,6 +327,23 @@ export class OfficerService implements IOfficerService {
         throw new BadRequestException(
           `Status ${status} tidak valid untuk petugas.`,
         );
+    }
+  }
+
+  private mapStatusToAction(status: ApplicationStatus): string {
+    switch (status) {
+      case ApplicationStatus.ACCEPTED:
+        return 'accept';
+      case ApplicationStatus.VERIFICATION:
+        return 'verify';
+      case ApplicationStatus.NEEDS_CORRECTION:
+        return 'request_revision';
+      case ApplicationStatus.PROCESSING:
+        return 'process';
+      case ApplicationStatus.COMPLETED:
+        return 'complete';
+      default:
+        return 'unknown';
     }
   }
 

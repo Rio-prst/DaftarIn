@@ -21,13 +21,21 @@ import {
   type IOfficerService,
 } from './interfaces/officer.service.interface';
 
-@Roles('officer')
+@Roles('officer', 'admin')
 @Controller('officer')
 export class OfficerController {
   constructor(
     @Inject(OFFICER_SERVICE)
     private readonly officerService: IOfficerService,
   ) {}
+
+  @Get('summary')
+  async getSummary(@CurrentUser() user: AuthenticatedUser) {
+    const summary = await this.officerService.getSummary(user.id);
+    return new Response({
+      data: summary,
+    });
+  }
 
   @Get('assignments')
   async listAssignments(
@@ -69,6 +77,55 @@ export class OfficerController {
     );
     return new Response({
       data,
+    });
+  }
+
+  @Post('applications/:applicationId/evaluation')
+  @HttpCode(HttpStatus.OK)
+  async saveEvaluation(
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @Body() body: Record<string, unknown>,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.officerService.saveEvaluation(
+      applicationId,
+      user.id,
+      body,
+    );
+    return new Response({
+      data: result,
+    });
+  }
+
+  @Get('applications/:applicationId/evaluation')
+  async getEvaluation(
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const data = await this.officerService.getEvaluation(
+      applicationId,
+      user.id,
+    );
+    return new Response({
+      data,
+    });
+  }
+
+  @Post('applications/:applicationId/assign')
+  @HttpCode(HttpStatus.OK)
+  async assign(
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @Body() body: { officer_user_id: string; reason?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.officerService.assignOfficer(
+      applicationId,
+      body.officer_user_id,
+      user.id,
+      body.reason,
+    );
+    return new Response({
+      data: result,
     });
   }
 }

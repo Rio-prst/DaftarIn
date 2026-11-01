@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Notification } from '../generated/prisma/client';
 import type { ListNotificationsQueryDto } from './dto/list-notifications.query.dto';
 import {
@@ -22,12 +22,9 @@ export class NotificationsService implements INotificationsService {
     userId: string,
     query: ListNotificationsQueryDto,
   ): Promise<ListNotificationsResult> {
-    const isRead =
-      query.is_read !== undefined ? query.is_read === 'true' : undefined;
-
     const { items, total } = await this.repository.list({
       userId,
-      isRead,
+      isRead: query.is_read !== undefined ? query.is_read === 'true' : undefined,
       type: query.type,
       page: query.page,
       pageSize: query.page_size,
@@ -45,10 +42,7 @@ export class NotificationsService implements INotificationsService {
   }
 
   async markAsRead(id: string, userId: string): Promise<void> {
-    const updated = await this.repository.markAsRead(id, userId);
-    if (!updated) {
-      throw new NotFoundException('Notifikasi tidak ditemukan.');
-    }
+    await this.repository.markAsRead(id, userId);
   }
 
   async markAllAsRead(userId: string): Promise<void> {

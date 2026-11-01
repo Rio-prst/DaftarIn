@@ -1,0 +1,29 @@
+.demo-guide-topbar,.demo-guide-launcher{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 13px;border:1px solid #7d8d95;border-radius:12px;background:#fff;color:#17324d;font:inherit;font-size:14px;cursor:pointer}
+.demo-guide-topbar svg,.demo-guide-launcher svg{width:22px;height:22px;flex-shrink:0}
+.demo-guide-launcher{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:calc(94px + env(safe-area-inset-bottom));z-index:39;box-shadow:0 3px 12px #17324d12}
+body:has(.workspace-header) .demo-guide-launcher{display:none}
+.demo-guide-dialog{box-sizing:border-box;width:min(760px,calc(100vw - 24px));max-height:calc(100dvh - 32px);margin:auto;padding:26px;border:1px solid #e6e7e4;border-radius:20px;background:#faf7f2;color:#17324d;overflow:auto;overscroll-behavior:contain;font-size:18px;line-height:1.6}
+.demo-guide-dialog::backdrop{background:#17324d80}
+.demo-guide-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.demo-guide-heading h2{font-size:26px;line-height:1.25;margin:6px 0 12px}
+.demo-guide-close{flex-shrink:0;width:44px;height:44px;border:1px solid #7d8d95;border-radius:12px;background:#fff;color:#17324d;font-size:30px;cursor:pointer}
+.demo-guide-dialog p{margin:10px 0;overflow-wrap:anywhere}
+.demo-guide-mode{padding:12px 16px;border-left:3px solid #f58b75;background:#fce4da}
+.demo-guide-accounts{margin:18px 0;border-bottom:1px solid #d8dedc;padding-bottom:14px}
+.demo-guide-accounts summary{cursor:pointer;min-height:44px;font-weight:700}
+.demo-guide-roles{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.demo-guide-roles button{min-height:44px;padding:8px 14px;border:1px solid #7d8d95;border-radius:10px;background:#fff;color:#17324d;font:inherit;cursor:pointer}
+.demo-guide-roles button[aria-pressed=true]{background:#17324d;color:#fff;border-color:#17324d}
+.demo-guide-steps{list-style:none;margin:0;padding:0}
+.demo-guide-steps li{padding:16px 0;border-top:1px solid #d8dedc}
+.demo-guide-steps label{display:flex;gap:12px;align-items:flex-start;cursor:pointer;min-height:44px}
+.demo-guide-steps input{width:21px;height:21px;flex-shrink:0;margin-top:5px;accent-color:#17324d}
+.demo-guide-steps a{display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;text-underline-offset:4px;color:#17324d;font-weight:700}
+.demo-guide-footnote{color:#52616b;font-size:15px}
+.demo-guide-reset{min-height:44px;background:#fff;border:1px solid #7d8d95;border-radius:10px;padding:8px 14px;color:#17324d;font:inherit;cursor:pointer}
+@media(max-width:640px){.demo-guide-topbar{width:44px;padding:8px}.demo-guide-topbar span{display:none}.demo-guide-dialog{padding:18px;font-size:17px}.demo-guide-heading h2{font-size:23px}.demo-guide-launcher{right:16px;bottom:calc(88px + env(safe-area-inset-bottom));font-size:13px}.demo-guide-roles button{flex:1 1 40%;padding:8px}.workspace-header>.flex.gap-4{gap:6px}}
+@media(max-width:640px){
+  .demo-guide-launcher{box-sizing:border-box;width:52px;height:52px;min-height:52px;padding:0;border-radius:50%;gap:0}
+  .demo-guide-launcher span{display:none}
+  .demo-guide-launcher svg{width:24px;height:24px}
+}

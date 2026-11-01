@@ -1,0 +1,112 @@
+LAPORAN HANDOFF SEBELUM PUSH (SNAPSHOT PENGUMPULAN)
+Project: C:\Users\DzGha\Downloads\Repo Lomva\DaftarIn-feat1-frontend
+Tanggal: 2026-11-01 23:45 WIB
+
+================================================================================
+1. BRANCH DAN COMMIT HEAD
+================================================================================
+- Branch kerja saat ini: feat1/frontend
+- Commit HEAD saat ini:
+  b86afcf feat(frontend): integrate preparation workflows, citizen workspace, and file limit alignment
+- Posisi relatif terhadap origin:
+  Ahead 3 commits dari origin/feat1/frontend:
+  * 7cab551 fix(auth): resolve password change flow and multi-tab session persistence
+  * a20e3dc feat(backend): unify service modules from feat/backend with local chat and auth
+  * b86afcf feat(frontend): integrate preparation workflows, citizen workspace, and file limit alignment
+- Catatan: Tidak dilakukan checkout branch, merge, commit baru, push, maupun reset/stash. Seluruh perubahan lokal tersimpan di disk.
+
+================================================================================
+2. PERUBAHAN YANG SELESAI DAN YANG MASIH SETENGAH JALAN
+================================================================================
+A. Perubahan yang Selesai & Tersimpan di Disk:
+1. Demo Guide Codex (Dipertahankan Utuh):
+   - frontend/src/components/DemoGuide.tsx (untracked, preserved)
+   - frontend/src/components/demo-guide.css (untracked, preserved)
+   - frontend/src/components/TopBar.tsx (integrasi tombol/trigger panduan demo)
+   - frontend/src/App.tsx (mounting komponen modal DemoGuide)
+2. Storage & Upload Backend:
+   - backend/src/storage/storage.service.ts: Driver multi-mode (Supabase Storage dengan upsert: false untuk mencegah file overwrite, otomatis fallback ke local disk uploads/ saat Supabase offline/tidak terkonfigurasi).
+   - backend/src/storage/storage.controller.ts: Endpoint upload lokal mandiri.
+   - backend/src/documents/documents.service.ts: Penamaan file immutable berbasis random nonce acak (${citizenId}/${prepId}/${docType}/${timestamp}-${nonce}.${ext}).
+3. Alur Status Petugas (State Transitions):
+   - backend/src/officer/officer.service.ts: Penegakan aturan transisi status (allowed_actions) di tingkat server sebelum aksi status diproses.
+4. Snapshot Permohonan (Applications):
+   - backend/src/applications/applications.service.ts: Pembuatan immutable snapshot data form & berkas pada metadata saat warga mengajukan permohonan.
+5. Modul Pendukung Backend:
+   - backend/src/help/ (HelpModule, Controller, Service): Penanganan tiket bantuan warga dan klarifikasi verifikator.
+   - backend/src/admin/ (AdminController, AdminService): Endpoint ringkasan dan aktivasi status katalog layanan.
+   - backend/src/notifications/notifications.service.ts: Normalisasi filter query is_read.
+
+B. Perubahan yang Masih Setengah Jalan:
+1. Integrasi Client Frontend ke Endpoint Baru:
+   - Frontend AppContext.tsx masih memegang state persiapan dan permohonan secara lokal (IndexedDB / localStorage) saat diakses melalui alur warga normal.
+   - Client API untuk /preparations dan /applications sudah tersedia di backend NestJS, namun alur pembuatan permohonan warga di AppContext belum sepenuhnya dialihkan memanggil REST API saat mode API aktif.
+2. Penyelarasan Respon API vs State FE:
+   - Struktur kembalian createApplication di backend mengembalikan entitas Prisma Application, sedangkan state FE lokal mengonsumsi model ApplicationRecord FE. Adapter pemetaan belum terpasang di alur pengiriman akhir.
+
+================================================================================
+3. FITUR YANG BENAR-BENAR MEMAKAI API DAN YANG MASIH LOKAL
+================================================================================
+A. Fitur yang Benar-benar Memakai API (Server Backend):
+1. Autentikasi & Akun:
+   - Login, Register, Logout, Me (/auth/login, /auth/register, /auth/me) menggunakan JWT.
+   - Ubah kata sandi (/auth/change-password) dengan bcrypt hashing dan verifikasi sandi lama.
+2. AI Chatbot Relay:
+   - Endpoint /chat meneruskan prompt chat ke AI relay backend.
+3. Storage Upload (Direct / Documents):
+   - POST /documents/upload dan POST /storage/upload menerima multipart berkas dan menyimpan ke Supabase Storage / fallback disk lokal.
+4. Workspace Petugas & Admin (Saat Login API):
+   - Endpoint /officer/* dan /admin/* dapat dipanggil oleh user yang memiliki bearer token role verifikator/admin.
+
+B. Fitur yang Masih Lokal / Mock / Dummy:
+1. Draf & Dokumen Persiapan Warga:
+   - Form isian warga, validasi ukuran berkas (5 MB), dan penyimpanan blob diatur oleh AppContext via IndexedDB & browser storage.
+2. Katalog Layanan & Instansi:
+   - Dropdown pilihan layanan di warga dibaca dari catalog lokal (catalog/services.ts) karena tabel Service di database belum memiliki data seed.
+3. Panduan Demo Codex:
+   - Komponen interaktif DemoGuide berjalan client-side di browser.
+
+================================================================================
+4. ERROR YANG DIKETAHUI BESERTA FILE DAN PESAN ERROR
+================================================================================
+1. Backend Build (tsc / nest build):
+   - Status: TIDAK ADA ERROR (Exit code 0).
+   - Seluruh type error sebelumnya pada help.service.ts, notifications.service.ts, dan applications.service.ts telah diperbaiki dan diverifikasi.
+2. Frontend Build (tsc -b && vite build):
+   - Status: TIDAK ADA ERROR (Exit code 0).
+   - Bundling Vite menghasilkan bundle production tanpa kendala.
+3. Potensi Runtime Issue Saat Mode API Murni:
+   - File: frontend/src/services/catalogService.ts (atau komponen pengambil layanan).
+   - Pesan / Gejala: Jika FE dipaksa murni membaca dari GET /services backend tanpa fallback mock, dropdown layanan akan kosong karena tabel database Service belum di-seed.
+
+================================================================================
+5. PERUBAHAN SCHEMA / MIGRATION DAN STATUS PENERAPAN
+================================================================================
+- File Schema: backend/prisma/schema.prisma
+- Model yang tercakup: User, Role, UserRole, Service, Agency, Region, Preparation, PreparationDocument, Application, ApplicationStatusHistory, HelpRequest, AuditLog, Notification.
+- Status Penerapan:
+  * Migration Prisma awal telah diaplikasikan ke database PostgreSQL lokal (port 55432).
+  * Lingkungan target: Localhost Docker / local PostgreSQL instance.
+  * PERINGATAN: Jangan menjalankan 'prisma migrate reset' atau db push destruktif karena database target berbagi koneksi dengan database pengujian.
+  * Data seed untuk tabel Service, Agency, dan Region belum dijalankan (masih 0 baris di database), sehingga aplikasi saat ini mengandalkan dataset fallback lokal.
+
+================================================================================
+6. PEMERIKSAAN YANG SUDAH DIJALANKAN DAN HASIL SEBENARNYA
+================================================================================
+1. Pemeriksaan Git Status:
+   - Hasil: Branch feat1/frontend bersih dari konflik; file modifikasi backend tersimpan; file DemoGuide.tsx & demo-guide.css untracked aman di disk.
+2. Frontend Typecheck & Build (tsc -b && vite build):
+   - Hasil: SUKSES (Exit code 0, 110 modules transformed, dist/ assets generated).
+3. Backend Build (nest build):
+   - Hasil: SUKSES (Exit code 0, compile dist/main.js berhasil tanpa error TypeScript).
+4. Pemeriksaan Dev Server:
+   - Backend NestJS aktif di port 3000.
+   - Frontend Vite aktif di port 5174.
+
+================================================================================
+7. LANGKAH PERBAIKAN MINIMUM AGAR PROJECT BISA DIJALANKAN & AMAN DIPUSH
+================================================================================
+1. Jangan lakukan reset atau discard working tree agar penambahan backend dan komponen panduan demo Codex tidak hilang.
+2. Tambahkan data awal (seed non-destruktif) ke tabel Service dan Agency di backend jika juri/penguji ingin menguji mode API murni tanpa fallback mock.
+3. Untuk presentasi demo saat ini, aplikasi sudah dapat langsung dijalankan dan didemokan secara mulus melalui mode demo frontend yang terintegrasi dengan DemoGuide Codex.
+4. Codex dapat langsung melakukan staging terpilih ('git add' untuk file backend terkait dan komponen frontend DemoGuide), membuat commit dengan pesan bersih, lalu melakukan git push ke branch feat1/frontend.

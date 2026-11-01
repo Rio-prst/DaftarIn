@@ -1,4 +1,5 @@
 import { NotificationsBell } from "./NotificationsBell";
+import { DemoGuideButton } from "./DemoGuide";
 import { AccessibilityControl } from "./AccessibilityControl";
 import { useAuth } from "../auth/AuthContext";
 import { AccountMenu } from "./AccountMenu";
@@ -70,6 +71,7 @@ export function TopBar({ breadcrumbs, onOpenHelp, role }: TopBarProps) {
         </nav>
       </div>
       <div className="flex items-center gap-4 shrink-0">
+        <DemoGuideButton />
         <AccessibilityControl />
         <NotificationsBell />
         <button

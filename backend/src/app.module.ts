@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { OfficerModule } from './officer/officer.module';
 import { StorageModule } from './storage/storage.module';
+import { HelpModule } from './help/help.module';
 import { validateEnvironment } from './common/config/environment';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -50,6 +51,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DashboardModule,
     OfficerModule,
     AdminModule,
+    HelpModule,
   ],
   controllers: [AppController],
   providers: [

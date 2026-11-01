@@ -126,11 +126,15 @@ export interface IApplicationsRepository {
   findPreparationById(
     preparationId: string,
     userId: string,
-  ): Promise<{
-    id: string;
-    serviceId: string;
-    userId: string;
-    archivedAt: Date | null;
-    deletedAt: Date | null;
-  } | null>;
+  ): Promise<any | null>;
+  updateOfficialSubmission(
+    id: string,
+    data: {
+      officialNumber?: string | null;
+      channel?: string | null;
+      submittedDate?: Date | null;
+      citizenNotes?: string | null;
+      statusSummary?: ApplicationStatus;
+    },
+  ): Promise<ApplicationRecordWithRelations>;
 }

@@ -28,3 +28,5 @@ Thumbs.db
 # Private backend runtime data (never publish user documents or local databases)
 backend/.data/
 backend/var/
+backend/storage_files/
+backend/uploads/

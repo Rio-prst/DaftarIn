@@ -195,6 +195,35 @@ export class PreparationsRepository implements IPreparationsRepository {
     return updated;
   }
 
+  async restore(id: string, userId: string): Promise<PreparationWithRelations> {
+    const updated = await this.prisma.preparation.update({
+      where: {
+        id,
+        userId,
+      },
+      data: {
+        status: PreparationStatus.DRAFT,
+        archivedAt: null,
+      },
+      include: preparationInclude,
+    });
+
+    return updated;
+  }
+
+  async delete(id: string, userId: string): Promise<void> {
+    await this.prisma.preparation.update({
+      where: {
+        id,
+        userId,
+      },
+      data: {
+        deletedAt: new Date(),
+        archivedAt: new Date(),
+      },
+    });
+  }
+
   async findLatestPublishedGuide(serviceId: string, versionNumber?: number) {
     return this.prisma.guideVersion.findFirst({
       where: {

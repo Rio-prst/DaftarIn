@@ -35,6 +35,14 @@ export interface ListAssignmentsResult {
   };
 }
 
+export interface OfficerSummaryView {
+  total_assigned: number;
+  pending_review: number;
+  in_review: number;
+  needs_correction: number;
+  completed: number;
+}
+
 export interface OfficerApplicationTimelineItem {
   id: string;
   event_type: string;
@@ -72,6 +80,7 @@ export interface OfficerApplicationDetailView {
   current_status: string;
   timeline: OfficerApplicationTimelineItem[];
   allowed_actions: string[];
+  snapshot?: unknown;
 }
 
 export interface OfficerEventResultView {
@@ -105,4 +114,20 @@ export interface IOfficerService {
     officerUserId: string,
     dto: CreateOfficerEventDto,
   ): Promise<OfficerEventResultView>;
+  getSummary(officerUserId: string): Promise<OfficerSummaryView>;
+  saveEvaluation(
+    applicationId: string,
+    officerUserId: string,
+    evaluation: unknown,
+  ): Promise<{ message: string }>;
+  getEvaluation(
+    applicationId: string,
+    officerUserId: string,
+  ): Promise<unknown>;
+  assignOfficer(
+    applicationId: string,
+    targetOfficerUserId: string,
+    assignerUserId: string,
+    reason?: string,
+  ): Promise<{ message: string; assignment_id: string }>;
 }

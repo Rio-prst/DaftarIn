@@ -134,4 +134,23 @@ export interface IOfficerRepository {
   createOfficerEvent(
     input: CreateOfficerEventRepositoryInput,
   ): Promise<StatusEventWithActor>;
+  getSummary(officerUserId: string): Promise<{
+    total_assigned: number;
+    pending_review: number;
+    in_review: number;
+    needs_correction: number;
+    completed: number;
+  }>;
+  assignOfficer(
+    applicationId: string,
+    officerUserId: string,
+    assignerUserId: string,
+    reason?: string,
+  ): Promise<OfficerAssignment>;
+  saveEvaluation(
+    applicationId: string,
+    officerUserId: string,
+    evaluationJson: Prisma.InputJsonValue,
+  ): Promise<StatusEventWithActor>;
+  getLatestEvaluation(applicationId: string): Promise<Prisma.JsonValue | null>;
 }

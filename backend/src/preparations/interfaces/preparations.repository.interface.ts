@@ -72,6 +72,8 @@ export interface IPreparationsRepository {
     input: UpdatePreparationAnswersRepositoryInput,
   ): Promise<PreparationWithRelations>;
   archive(id: string, userId: string): Promise<PreparationWithRelations>;
+  restore(id: string, userId: string): Promise<PreparationWithRelations>;
+  delete(id: string, userId: string): Promise<void>;
   findLatestPublishedGuide(
     serviceId: string,
     versionNumber?: number,

@@ -47,6 +47,39 @@ export class ApplicationsRepository implements IApplicationsRepository {
         },
       });
 
+      // Auto-assign active officer for this agency or any active officer
+      const officerRole = await tx.userRole.findFirst({
+        where: {
+          agencyId: input.agencyId,
+          role: { roleCode: 'officer' },
+          user: { accountStatus: 'ACTIVE' },
+        },
+        select: { userId: true },
+      });
+
+      const targetOfficerId =
+        officerRole?.userId ??
+        (
+          await tx.userRole.findFirst({
+            where: {
+              role: { roleCode: 'officer' },
+              user: { accountStatus: 'ACTIVE' },
+            },
+            select: { userId: true },
+          })
+        )?.userId;
+
+      if (targetOfficerId) {
+        await tx.officerAssignment.create({
+          data: {
+            applicationId: record.id,
+            officerUserId: targetOfficerId,
+            assignmentStatus: 'active',
+            assignedAt: input.submittedDate ?? new Date(),
+          },
+        });
+      }
+
       return tx.applicationRecord.findUniqueOrThrow({
         where: { id: record.id },
         include: {
@@ -310,6 +343,46 @@ export class ApplicationsRepository implements IApplicationsRepository {
     });
   }
 
+  async updateOfficialSubmission(
+    id: string,
+    data: {
+      officialNumber?: string | null;
+      channel?: string | null;
+      submittedDate?: Date | null;
+      citizenNotes?: string | null;
+      statusSummary?: ApplicationStatus;
+    },
+  ): Promise<ApplicationRecordWithRelations> {
+    return this.prisma.applicationRecord.update({
+      where: { id },
+      data: {
+        ...(data.officialNumber !== undefined
+          ? { officialReference: data.officialNumber }
+          : {}),
+        ...(data.submittedDate ? { submittedDate: data.submittedDate } : {}),
+        ...(data.citizenNotes !== undefined
+          ? { citizenNotes: data.citizenNotes }
+          : {}),
+        ...(data.statusSummary ? { statusSummary: data.statusSummary } : {}),
+      },
+      include: {
+        service: {
+          select: { id: true, name: true, category: true, slug: true },
+        },
+        agency: {
+          select: { id: true, name: true, agencyType: true },
+        },
+        preparation: {
+          select: { id: true, internalReference: true, status: true },
+        },
+        statusEvents: {
+          orderBy: { occurredAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+  }
+
   async findServiceById(
     serviceId: string,
   ): Promise<{ id: string; agencyId: string; name: string } | null> {
@@ -326,24 +399,23 @@ export class ApplicationsRepository implements IApplicationsRepository {
   async findPreparationById(
     preparationId: string,
     userId: string,
-  ): Promise<{
-    id: string;
-    serviceId: string;
-    userId: string;
-    archivedAt: Date | null;
-    deletedAt: Date | null;
-  } | null> {
+  ) {
     return this.prisma.preparation.findFirst({
       where: {
         id: preparationId,
         userId,
       },
-      select: {
-        id: true,
-        serviceId: true,
-        userId: true,
-        archivedAt: true,
-        deletedAt: true,
+      include: {
+        answerVersions: {
+          include: {
+            question: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        documentVersions: {
+          where: { deletedAt: null },
+          orderBy: { versionNumber: 'desc' },
+        },
       },
     });
   }

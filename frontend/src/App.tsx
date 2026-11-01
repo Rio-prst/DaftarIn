@@ -1,4 +1,5 @@
 import { HelpPage } from './pages/HelpPage';
+import { DemoGuide } from './components/DemoGuide';
 import { ConnectionNotice } from './components/ConnectionNotice';
 import { lazy, Suspense } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
@@ -107,6 +108,7 @@ function Application() {
         </Routes>
         </Suspense>
         <ToastContainer />
+        <DemoGuide />
         {canUseCitizenChat && <>
           <ChatbotModal />
           <FloatingAiButton />
