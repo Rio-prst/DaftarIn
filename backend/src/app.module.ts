@@ -11,8 +11,10 @@ import { CatalogModule } from './catalog/catalog.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DocumentsModule } from './documents/documents.module';
 import { NeedsModule } from './needs/needs.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PreparationsModule } from './preparations/preparations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
@@ -36,6 +38,8 @@ import { StorageModule } from './storage/storage.module';
     PreparationsModule,
     DocumentsModule,
     ApplicationsModule,
+    NotificationsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

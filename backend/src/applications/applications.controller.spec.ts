@@ -16,9 +16,8 @@ describe('ApplicationsController', () => {
 
   const mockUser: AuthenticatedUser = {
     id: 'user-uuid-1',
-    email: 'warga@example.com',
     role: 'citizen',
-    permissions: [],
+    sessionId: 'session-uuid-1',
   };
 
   const mockDetail: ApplicationDetailView = {
@@ -170,12 +169,12 @@ describe('ApplicationsController', () => {
         source_type: 'citizen',
         source_label: 'Catatan warga',
         occurred_at: '2026-10-29T00:00:00.000Z',
-        recordedAt: '2026-10-29T00:00:00.000Z',
+        recorded_at: '2026-10-29T00:00:00.000Z',
         actor: { id: mockUser.id, name: 'Warga' },
         note: 'Diminta datang lagi besok.',
         simulation: false,
         correction_of_event_id: null,
-      } as StatusEventView;
+      };
       mockService.addCitizenNote.mockResolvedValue(mockEvent);
 
       const response = await controller.addCitizenNote(
