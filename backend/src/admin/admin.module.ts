@@ -1,3 +1,4 @@
+import { AdminWorkspaceController } from './workspace.controller';
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
 import { AdminRepository } from './admin.repository';
@@ -6,7 +7,7 @@ import { ADMIN_REPOSITORY } from './interfaces/admin.repository.interface';
 import { ADMIN_SERVICE } from './interfaces/admin.service.interface';
 
 @Module({
-  controllers: [AdminController],
+  controllers: [AdminController, AdminWorkspaceController],
   providers: [
     {
       provide: ADMIN_REPOSITORY,

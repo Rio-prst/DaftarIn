@@ -34,7 +34,7 @@ export function setStoredToken(token: string | null): void {
   }
 }
 
-async function refreshSession() {
+export async function refreshSession() {
   if (!refreshing) {
     const refresh = async () => {
       try {

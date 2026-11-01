@@ -1,3 +1,4 @@
+import { DEMO_HELPERS_ENABLED } from "../utils/demoHelpers";
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -159,13 +160,13 @@ export function LoginPage() {
           Daftar sebagai warga
         </Link>
       </p>
-      {mode === "demo" && (
+      {DEMO_HELPERS_ENABLED && (
         <details className="example-accounts">
           <summary>Coba akun contoh</summary>
-          <p>Setiap akun berisi data contoh sesuai perannya.</p>
+          <p>Pilihan ini hanya mengisi email dan sandi awal. Klik Masuk untuk login melalui sistem yang aktif. Akun server harus sudah disiapkan; gunakan sandi terbaru jika pernah diubah.</p>
           <div>
             {EXAMPLE_ACCOUNTS.map((account) => {
-              const custom = isCustomCredential(account.id);
+              const custom = mode === "demo" && isCustomCredential(account.id);
               return (
                 <button
                   type="button"

@@ -12,7 +12,7 @@ import { AUTH_SERVICE } from './interfaces/auth.service.interface';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ACCESS_SECRET') || configService.get<string>('JWT_SECRET') || 'daftarin-companion-jwt-access-secret-32-bytes-long!',
+        secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
       }),
     }),
   ],

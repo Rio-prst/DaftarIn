@@ -1,5 +1,8 @@
+import { Optional } from '@nestjs/common';
+import { PREPARATIONS_SERVICE, type IPreparationsService } from '../preparations/interfaces/preparations.service.interface';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -53,6 +56,7 @@ export class ApplicationsService implements IApplicationsService {
   constructor(
     @Inject(APPLICATIONS_REPOSITORY)
     private readonly repository: IApplicationsRepository,
+    @Optional() @Inject(PREPARATIONS_SERVICE) private readonly preparationService?: IPreparationsService,
   ) {}
 
   async createApplication(
@@ -408,6 +412,8 @@ export class ApplicationsService implements IApplicationsService {
       channel: this.mapEnumToChannel(record.submissionChannel),
       source_mode: this.mapSourceModeToString(record.sourceMode),
       current_status: record.statusSummary.toLowerCase(),
+      review_status: record.reviewStatus.toLowerCase(),
+      version: record.version,
       simulation: record.sourceMode === StatusSourceType.SIMULATION,
       created_at: record.createdAt.toISOString(),
       updated_at: record.updatedAt.toISOString(),
@@ -462,6 +468,22 @@ export class ApplicationsService implements IApplicationsService {
       correction_of_event_id: null,
     };
   }
+  private async validateSubmission(prep: any, userId: string) {
+    if (prep.archivedAt || prep.deletedAt) throw new BadRequestException('Draf sudah diarsipkan atau dihapus.');
+    if (prep.service.availability === 'PAUSED') throw new BadRequestException('Layanan sedang dijeda.');
+    if (!this.preparationService) throw new BadRequestException('Validasi persyaratan belum tersedia.');
+    const answers = new Map<string, unknown>();
+    for (const answer of prep.answerVersions) if (!answers.has(answer.questionId)) answers.set(answer.questionId, (answer.answerJson as any)?.value ?? answer.answerJson);
+    for (const question of prep.service.serviceQuestions || []) {
+      const value = answers.get(question.id);
+      if (question.isRequired && (value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length))) throw new BadRequestException('Lengkapi isian wajib: ' + question.label);
+    }
+    const result = await this.preparationService.getPreparationRequirements(prep.id, userId);
+    const missing = result.requirements.filter(item => item.required && !item.fulfilled);
+    if (missing.length) throw new BadRequestException('Lengkapi dokumen wajib: ' + missing.map(item => item.name).join(', '));
+    return result.requirements;
+  }
+
   async submitPreparation(
     preparationId: string,
     userId: string,
@@ -481,6 +503,7 @@ export class ApplicationsService implements IApplicationsService {
       );
     }
 
+    const requiredSlots = await this.validateSubmission(prep, userId);
     const user = await this.repository.findUserForSubmission(userId);
 
     let applicantSnapshot: any = {
@@ -561,7 +584,8 @@ export class ApplicationsService implements IApplicationsService {
     }
     const documentsSnapshot = Array.from(latestDocsMap.values());
 
-    let app = prep.applicationRecords?.[0];
+    let app = prep.applicationRecords?.find((record: any) => record.reviewStatus !== 'DRAFT_PREPARATION');
+    if (app) throw new ConflictException('Draf ini sudah dikirim. Buka pengajuan terkait untuk melihat status atau mengirim revisi.');
     if (!app) {
       const year = new Date().getFullYear();
       const randomHex = randomBytes(4).toString('hex').toUpperCase();
@@ -607,7 +631,7 @@ export class ApplicationsService implements IApplicationsService {
       applicantSnapshotJson: applicantSnapshot,
       answersSnapshotJson: answersSnapshot,
       documentsSnapshotJson: documentsSnapshot,
-      requiredSlotsJson: [],
+      requiredSlotsJson: requiredSlots,
       citizenNote: dto.citizen_note ?? null,
       changesSummary: null,
       consentVersion: dto.consent_version ?? 'v1.0',
@@ -641,6 +665,9 @@ export class ApplicationsService implements IApplicationsService {
       throw new NotFoundException('Draf persiapan tidak ditemukan.');
     }
 
+    const requiredSlots = await this.validateSubmission(prep, userId);
+    if (app.reviewStatus !== CompanionReviewStatus.REVISION_REQUESTED) throw new BadRequestException('Perbaikan hanya dapat dikirim setelah petugas meminta revisi.');
+    assertValidReviewTransition(app.reviewStatus, CompanionReviewStatus.SUBMITTED);
     const answersMap = new Map<string, any>();
     for (const a of prep.answerVersions) {
       if (!answersMap.has(a.questionId)) {
@@ -670,12 +697,17 @@ export class ApplicationsService implements IApplicationsService {
     }
 
     const user = await this.repository.findUserForSubmission(userId);
-    const applicantSnapshot = {
-      subject_type: 'myself',
-      user_id: user.id,
-      display_name: user.displayName,
-      email: user.email,
+    const previousVersion = await this.repository.findLatestSubmissionVersion(applicationId);
+    const previous = previousVersion ? await this.repository.findSubmissionSnapshotByVersion(applicationId, previousVersion) : null;
+    const applicantSnapshot: any = previous?.applicantSnapshotJson || {
+      subject_type: 'myself', user_id: user.id, display_name: user.displayName, email: user.email,
     };
+    if (applicantSnapshot.subject_type === 'family_member') {
+      const member = await this.repository.findFamilyMember(applicantSnapshot.family_member_id, userId);
+      if (!member) throw new BadRequestException('Anggota keluarga pada kiriman ini sudah tidak tersedia. Minta bantuan petugas.');
+      applicantSnapshot.full_name = member.fullName;
+      applicantSnapshot.nik = member.nik;
+    }
 
     const serviceSnapshot = {
       id: prep.service.id,
@@ -699,7 +731,7 @@ export class ApplicationsService implements IApplicationsService {
       applicantSnapshotJson: applicantSnapshot,
       answersSnapshotJson: Array.from(answersMap.values()),
       documentsSnapshotJson: Array.from(docsMap.values()),
-      requiredSlotsJson: [],
+      requiredSlotsJson: requiredSlots,
       citizenNote: dto.citizen_note ?? null,
       changesSummary: dto.changes_summary,
       consentVersion: dto.consent_version ?? 'v1.0',

@@ -968,7 +968,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const [preparations, setPreparations] = useState<PreparationRecord[]>(() =>
-    loadOrMigratePreparations(user, services, adminRules),
+    isApiMode ? [] : loadOrMigratePreparations(user, services, adminRules),
   );
 
   const [activePrepId, setActivePrepId] = useState<string>(() => {
@@ -988,7 +988,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (prevUserIdRef.current !== user.id) {
       prevUserIdRef.current = user.id;
-      const nextPreps = loadOrMigratePreparations(user, services, adminRules);
+      const nextPreps = isApiMode ? [] : loadOrMigratePreparations(user, services, adminRules);
       setPreparations(nextPreps);
       const storedActive = readStored<string>(
         "daftarin:" + user.id + ":active-prep-id:v1",
@@ -1015,6 +1015,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     services.find((service) => service.id === selected.id) || services[0];
 
   const [records, setRecords] = useState<ApplicationRecord[]>(() => {
+    if (isApiMode) return [];
     const stored = readStored<ApplicationRecord[]>("daftarin:applications:v1", []);
     return stored.map((rec) => {
       const merged: ApplicationRecord = rec;
@@ -1124,7 +1125,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   useEffect(() => {
-    if (deviceClearing.current) return;
+    if (isApiMode || deviceClearing.current) return;
     const values: [string, unknown][] = [
       ["daftarin:services:v1", services],
       ["daftarin:applications:v1", records],
@@ -1163,6 +1164,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const sync = (event: StorageEvent) => {
+      if (isApiMode) return;
       if (event.key === "daftarin:applications:v1")
         setRecords(readStored<ApplicationRecord[]>(event.key, []));
       if (event.key === "daftarin:services:v1")
@@ -3277,6 +3279,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             const subRes = await applicationsApi.submitPreparation(prepServerId, {
               citizen_note: citizenNote,
               consent_version: "v1.0",
+              consent_confirmed: true,
             });
             if (subRes?.data) {
               serverAppId = subRes.data.application_id || subRes.data.id;
@@ -3696,6 +3699,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
               changes_summary: changesText,
               citizen_note: citizenNote,
               consent_version: "v1.0",
+              consent_confirmed: true,
             });
           }
 

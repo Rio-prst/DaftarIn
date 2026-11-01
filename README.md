@@ -1,103 +1,102 @@
-# DaftarIn
+# DaftarIn — Iseng Daftar
 
-DaftarIn adalah website pendamping pengurusan layanan pemerintah yang membantu warga memahami persyaratan, menyiapkan berkas, memeriksa dokumen dengan bantuan AI, serta mencatat dan memantau pengajuan sesuai sumber pembaruan yang tersedia. Pengalaman utama berbentuk halaman interaktif, dengan chatbot sebagai bantuan opsional.
+Tanggal dokumentasi pengumpulan: **1 November 2026**.
 
-> **Tahu syaratnya, jelas langkahnya, terpantau prosesnya.**
+DaftarIn adalah website pendamping persiapan dokumen kependudukan. Warga dapat membaca persyaratan, menyiapkan data dan berkas, serta menindaklanjuti tinjauan petugas sebelum menggunakan kanal resmi instansi.
 
-## Tech Stack
+## Website
 
-| Komponen | Teknologi | Tanggung jawab |
+**Buka aplikasi:** https://daftarin-dusky.vercel.app
+
+API aplikasi sudah terhubung menurut pembaruan pengembang. **Chatbot AI sementara belum tersambung.** Untuk percobaan lokal, gunakan mode demo di bawah tanpa API atau chatbot.
+
+## Tech stack
+
+| Bagian | Teknologi |
+| --- | --- |
+| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Backend | NestJS, TypeScript, Zod |
+| Database | PostgreSQL / Supabase, Prisma |
+| Penyimpanan dokumen | Supabase Storage; IndexedDB pada demo lokal |
+
+## Menjalankan demo lokal
+
+Demo ini tidak membutuhkan backend, project Supabase, Redis, atau key AI.
+
+### 1. Siapkan alat
+
+- Instal [Node.js](https://nodejs.org/en/download), minimal versi 22.12.
+- Instal [Git](https://git-scm.com/downloads).
+- Buka terminal baru, lalu instal pnpm:
+
+```sh
+npm install -g pnpm
+```
+
+### 2. Clone dan instal
+
+```sh
+git clone https://github.com/Rio-prst/DaftarIn.git
+cd DaftarIn/frontend
+pnpm install
+```
+
+### 3. Aktifkan demo
+
+Buat file **frontend/.env.local**:
+
+```env
+VITE_AUTH_MODE=demo
+VITE_DEMO_HELPERS=true
+```
+
+### 4. Jalankan
+
+```sh
+pnpm dev -- --host 127.0.0.1
+```
+
+Buka alamat yang dicetak terminal, biasanya **http://127.0.0.1:5173**. Jika port sudah dipakai, gunakan alamat pengganti yang ditampilkan.
+
+## Akun contoh
+
+| Peran | Email | Sandi awal |
 | --- | --- | --- |
-| Frontend | React + Vite + Tailwind CSS | UI dan halaman aplikasi |
-| Backend | NestJS | API dan business logic |
-| Database | Supabase (PostgreSQL) + Prisma | User, role, layanan, pengajuan, audit log |
-| Authentication | Custom auth di NestJS | Registrasi, login, logout, session/token |
-| File storage | Supabase Storage | Menyimpan dokumen warga secara privat |
-| Background jobs | Redis + BullMQ | OCR dan pemeriksaan AI di background |
+| Warga | warga@daftarin.test | DaftarIn2026! |
+| Petugas | petugas@daftarin.test | DaftarIn2026! |
+| Admin | admin@daftarin.test | DaftarIn2026! |
 
-Catatan: database tetap dikelola di **Supabase** (PostgreSQL), sedangkan **Prisma** digunakan sebagai ORM untuk mengaksesnya.
+Akun di atas digunakan untuk **demo lokal**. Jika sandi sudah diubah pada browser tersebut, gunakan sandi terbaru. Bisa juga mencoba daftar akun warga baru menggunakan tombol **Isi data contoh**.
 
-## Struktur Repo
+## Urutan mencoba
 
-```
-DaftarIn/
-├─ frontend/            # React + Vite + Tailwind CSS
-├─ backend/             # NestJS API (standalone)
-│  ├─ docs/PRD.md       # Source of truth produk
-│  ├─ src/              # Kode aplikasi
-│  └─ package.json
-├─ .gitignore
-├─ .nvmrc
-└─ README.md
-```
+1. Buka beranda, katalog, dan detail persyaratan layanan.
+2. Masuk sebagai warga atau daftar warga baru. Catat akun yang digunakan.
+3. Pilih layanan dan kondisi -> isi data -> muat/unggah dokumen contoh -> tinjau dan kirim.
+4. Keluar biasa, lalu masuk sebagai petugas. Buka kiriman warga dan berikan catatan perbaikan. Admin dapat memeriksa penugasan bila diperlukan.
+5. Kembali ke akun warga yang sama. Baca catatan, perbaiki dokumen, lalu **kirim ulang**.
+6. Petugas meninjau ulang dan menyelesaikan tinjauan pendamping.
+7. Warga membaca langkah selanjutnya dan mencoba pencatatan tanda terima serta hasil menggunakan data fiktif.
+8. Coba menu admin, bantuan, profil, keluarga, ukuran tulisan, dan kontras.
 
-`frontend/` dan `backend/` dikelola sebagai project terpisah: masing-masing memiliki `node_modules`, lockfile, environment, dan proses deploy sendiri.
+Tombol **Panduan demo** menyediakan petunjuk per peran. Tombol data/berkas contoh membantu pengisian; persetujuan dan pengiriman tetap dilakukan sendiri.
 
-## Cara Menjalankan
+Gunakan browser/profil dan alamat lokal yang sama saat berpindah peran. Data demo tersimpan di browser dan tidak tersinkron ke perangkat lain. Jangan pilih **Keluar dan bersihkan perangkat** sebelum selesai mencoba.
 
-### Prasyarat
+## Progres saat ini
 
-- Node.js 22+
-- pnpm
-- Git
-- Project Supabase (PostgreSQL)
-- Redis (untuk BullMQ)
+- Landing page, katalog, pendaftaran/login, persiapan bertahap, serta ruang warga/petugas/admin sudah dikerjakan.
+- Alur demo persiapan -> tinjauan -> koreksi -> tindak lanjut dapat dicoba dengan data fiktif.
+- API aplikasi sudah terhubung menurut pembaruan pengembang; verifikasi menyeluruh produksi belum dinyatakan selesai.
+- **Chatbot AI sementara belum tersambung dan tidak termasuk percobaan lokal ini.**
 
-### 1. Clone
+DaftarIn mendampingi persiapan dan tinjauan, bukan menerbitkan dokumen pemerintah. Gunakan data contoh, bukan NIK/KTP asli.
 
-```bash
-git clone <url-repo>
-cd DaftarIn
+## Struktur repo
+
+```text
+frontend/  Halaman dan alur aplikasi
+backend/   Modul API dan database
 ```
 
-### 2. Install backend
-
-```bash
-cd backend
-pnpm install
-```
-
-### 3. Konfigurasi environment
-
-Salin `backend/.env.example` menjadi `backend/.env` (file contoh dibuat pada tahap konfigurasi backend), lalu isi kredensial Supabase, Redis, dan variabel lain yang dibutuhkan.
-
-### 4. Siapkan database
-
-Perintah ini tersedia setelah konfigurasi Prisma dibuat.
-
-```bash
-cd backend
-pnpm prisma:generate
-pnpm prisma:migrate
-```
-
-### 5. Jalankan backend
-
-```bash
-cd backend
-pnpm start:dev
-```
-
-Backend berjalan di `http://localhost:3000`.
-
-### 6. Jalankan frontend
-
-```bash
-cd frontend
-pnpm install
-npm run dev
-```
-
-Frontend berjalan di `http://localhost:5173`. Panduan dan batas demo tersedia di [frontend/README.md](frontend/README.md).
-
-## Progress Saat Ini
-
-Status mengacu pada prioritas implementasi di PRD (bagian 21). Backend sudah di-scaffold dan dependensinya sudah dideklarasikan; fitur produk belum diimplementasikan.
-
-- [x] **Spesifikasi produk** — PRD v1.0 selesai (`backend/docs/PRD.md`)
-- [x] **Fondasi backend** — scaffold NestJS 11 + daftar dependensi (`backend/package.json`)
-- [ ] **P0 — Inti** — landing page, katalog/panduan bersumber, pertanyaan kebutuhan, autentikasi, dashboard, persiapan, unggah dokumen, pemeriksaan AI, hasil/revisi, kanal resmi, pencatatan pengajuan
-- [ ] **P0 — Kejujuran pelacakan** — linimasa bersumber, pemisahan nomor persiapan dan nomor resmi, mode simulasi berlabel
-- [ ] **P0 — Pengelolaan** — panduan/aturan berversi, pembatasan akses, akun petugas simulasi
-- [ ] **P1 — Pendamping** — chatbot kontekstual, notifikasi dalam aplikasi, pengingat pilihan warga
-- [ ] **P2 — Pengembangan** — email/push, integrasi resmi, perluasan wilayah/layanan, analitik agregat
+Konfigurasi server untuk pengembang tersedia terpisah di [dokumentasi backend](backend/README.md). Penilai tidak perlu menjalankannya untuk mencoba demo lokal.

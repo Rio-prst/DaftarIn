@@ -71,6 +71,7 @@ export class OfficerService implements IOfficerService {
         name: item.application.user.displayName,
       },
       current_status: item.application.statusSummary.toLowerCase(),
+      review_status: item.application.reviewStatus.toLowerCase(),
       assigned_at: item.assignedAt.toISOString(),
     }));
 
@@ -105,6 +106,8 @@ export class OfficerService implements IOfficerService {
     }
 
     const allowedActions = this.computeAllowedActions(app.statusSummary);
+    const snapshot = await this.repository.findLatestSubmissionSnapshot(applicationId);
+    const review = snapshot?.submissionReviews?.[0];
 
     return {
       id: app.id,
@@ -146,6 +149,21 @@ export class OfficerService implements IOfficerService {
           : null,
       })),
       allowed_actions: allowedActions,
+      review_status: app.reviewStatus.toLowerCase(),
+      snapshot: snapshot ? {
+        id: snapshot.id, application_id: applicationId,
+        preparation_id: snapshot.preparationId, version_number: snapshot.versionNumber,
+        submitted_at: snapshot.submittedAt.toISOString(), service: snapshot.serviceSnapshotJson,
+        applicant: snapshot.applicantSnapshotJson, answers: snapshot.answersSnapshotJson,
+        documents: snapshot.documentsSnapshotJson, required_slots: snapshot.requiredSlotsJson,
+        reviews: [],
+      } : null,
+      evaluation: {
+        overall_notes: review?.overallNotes || '',
+        items: (review?.itemAssessments || []).map((item: any) => ({
+          item_id: item.itemId, item_type: item.itemType, verdict: item.verdict, note: item.note,
+        })),
+      },
     };
   }
 
@@ -392,6 +410,17 @@ export class OfficerService implements IOfficerService {
         'Versi pengajuan telah diperbarui oleh pemohon (VERSION_CONFLICT). Muat ulang pengajuan.',
       );
     }
+
+    const expected = new Set(['FORM_DATA:form_data', ...(Array.isArray(snapshot.documentsSnapshotJson) ? snapshot.documentsSnapshotJson.map((doc: any) => 'DOCUMENT:' + doc.document_version_id) : [])]);
+    const seen = new Set<string>();
+    for (const item of dto.items) {
+      const key = item.item_type + ':' + item.item_id;
+      if (!expected.has(key) || seen.has(key)) throw new BadRequestException('Item penilaian tidak sesuai kiriman atau duplikat.');
+      seen.add(key);
+      if (item.verdict !== 'SESUAI' && item.note.trim().length < 5) throw new BadRequestException('Catatan perbaikan wajib dijelaskan pada setiap bagian bermasalah.');
+    }
+    if (seen.size !== expected.size) throw new BadRequestException('Nilai data pemohon dan seluruh berkas kiriman.');
+    if (!dto.overall_notes || dto.overall_notes.trim().length < 5) throw new BadRequestException('Ringkasan tinjauan wajib diisi minimal 5 karakter.');
 
     if (dto.decision === 'approved_for_submission') {
       const hasIssues = dto.items.some((i) => i.verdict !== 'SESUAI');

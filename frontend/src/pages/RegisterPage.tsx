@@ -1,3 +1,4 @@
+import { DEMO_HELPERS_ENABLED } from "../utils/demoHelpers";
 import { PhotoPreparationDialog } from "../components/PhotoPreparationDialog";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -79,7 +80,7 @@ export function RegisterPage() {
     setErrors((previous) => ({ ...previous, photo: "" }));
   };
   const example = () => {
-    setStage(2);
+    setStage(1);
     const unique = Date.now().toString();
     setFields({
       name: "Warga Contoh",
@@ -96,7 +97,7 @@ export function RegisterPage() {
       sample: true,
     });
     setPreview("/images/ktp-contoh.svg");
-    setConsent(true);
+    setConsent(false);
     setErrors({});
     setError("");
   };
@@ -202,9 +203,9 @@ export function RegisterPage() {
       intro="Simpan persiapan berkas dan ikuti perkembangan pengajuanmu."
       wide
     >
-      {mode === "demo" && (
+      {DEMO_HELPERS_ENABLED && (
         <div className="sample-registration">
-          <p>Gunakan data dan foto contoh untuk mencoba pendaftaran.</p>
+          <p>Format: nama lengkap, email aktif, dan sandi minimal 8 karakter. Gunakan data fiktif saat mencoba; baca dan centang persetujuan sendiri. Foto dan NIK hanya diminta jika kolomnya tersedia.</p>
           <button type="button" className="text-link" onClick={example}>
             Isi data contoh
           </button>

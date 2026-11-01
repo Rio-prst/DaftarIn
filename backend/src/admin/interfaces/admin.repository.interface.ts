@@ -153,6 +153,7 @@ export interface IAdminRepository {
   createOfficerAssignment(
     applicationId: string,
     officerUserId: string,
+    expectedVersion?: number,
   ): Promise<OfficerAssignment>;
 
   recordAuditEvent(input: RecordAuditEventInput): Promise<AuditEvent>;

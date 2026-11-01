@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ServiceUnavailableException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -31,17 +32,14 @@ export class StorageService implements IStorageService {
 
     this.localBaseDir = path.resolve(process.cwd(), 'storage_files');
 
-    this.client =
-      supabaseUrl && supabaseServiceKey
-        ? createClient(supabaseUrl, supabaseServiceKey, {
-            auth: {
-              persistSession: false,
-              autoRefreshToken: false,
-            },
-          })
-        : null;
+    let client: ReturnType<typeof createClient> | null = null;
+    if (supabaseUrl && supabaseServiceKey) {
+      try { client = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } }); }
+      catch { this.logger.warn('Konfigurasi Storage belum valid; layanan dokumen belum tersedia.'); }
+    }
+    this.client = client;
 
-    if (!this.client) {
+    if (!this.client && this.configService.get<string>('NODE_ENV') !== 'production') {
       this.logger.log(
         `Supabase Storage tidak terkonfigurasi. Menggunakan penyimpanan berkas lokal di: ${this.localBaseDir}`,
       );
@@ -85,6 +83,7 @@ export class StorageService implements IStorageService {
       return;
     }
 
+    this.ensureLocalStorageAllowed();
     // Local Disk Fallback (deterministic & safe for local dev)
     const filePath = this.resolveLocalPath(storageKey);
     const parentDir = path.dirname(filePath);
@@ -132,6 +131,7 @@ export class StorageService implements IStorageService {
       return data.signedUrl;
     }
 
+    this.ensureLocalStorageAllowed();
     // Local fallback signed/direct URL through the storage raw endpoint
     return `/api/storage/raw?key=${encodeURIComponent(storageKey)}`;
   }
@@ -154,6 +154,7 @@ export class StorageService implements IStorageService {
       return;
     }
 
+    this.ensureLocalStorageAllowed();
     const filePath = this.resolveLocalPath(storageKey);
     if (fs.existsSync(filePath)) {
       try {
@@ -167,6 +168,9 @@ export class StorageService implements IStorageService {
     }
   }
 
+  private ensureLocalStorageAllowed() {
+    if (this.configService.get<string>('NODE_ENV') === 'production') throw new ServiceUnavailableException('Penyimpanan dokumen belum dikonfigurasi.');
+  }
   getLocalFile(storageKey: string): { buffer: Buffer; filePath: string } {
     if (this.client)
       throw new NotFoundException('Penyimpanan lokal tidak aktif.');

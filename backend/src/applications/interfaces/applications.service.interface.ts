@@ -17,6 +17,7 @@ export interface ApplicationChannelView {
 }
 
 export interface ApplicationItemView {
+  version?: number;
   id: string;
   internal_reference: string;
   service_id: string;
