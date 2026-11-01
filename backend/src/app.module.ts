@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ApplicationsModule } from './applications/applications.module';
 import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -34,6 +35,7 @@ import { StorageModule } from './storage/storage.module';
     NeedsModule,
     PreparationsModule,
     DocumentsModule,
+    ApplicationsModule,
   ],
   controllers: [AppController],
   providers: [
