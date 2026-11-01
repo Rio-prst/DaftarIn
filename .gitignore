@@ -30,3 +30,8 @@ backend/.data/
 backend/var/
 backend/storage_files/
 backend/uploads/
+
+# Removed private deployment/development notes must not be re-added.
+/ENV-DEPLOYMENT.txt
+/ENV-DEVELOPMENT.txt
+/env-development.txt
