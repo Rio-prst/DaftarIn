@@ -87,7 +87,7 @@ describe('AuthRepository integration', () => {
     prisma = new PrismaService(configService);
     await prisma.$connect();
     repository = new AuthRepository(prisma);
-  });
+  }, 30_000);
 
   beforeEach(async () => {
     await cleanTestUsers();
@@ -99,7 +99,7 @@ describe('AuthRepository integration', () => {
     if (prisma) {
       await prisma.$disconnect();
     }
-  });
+  }, 30_000);
 
   it('creates a citizen user and finds it by email', async () => {
     const user = await createUser('create');
