@@ -1,3 +1,25 @@
+## Pembaruan demo dan chatbot lokal — 2 November 2026
+
+- Demo frontend tetap tersedia tanpa backend/database/Redis.
+- Chatbot pada backend lokal yang sedang aktif sudah diperiksa: status HTTP 200, pertanyaan umum HTTP 201, `source: ai`.
+- README menjelaskan dua terminal, env FE/BE, proxy lokal, akun contoh, dan cara membedakan jawaban AI dari fallback lokal.
+- Kendala deployment: backend Vercel terakhir masih HTTP 500 `FUNCTION_INVOCATION_FAILED`; menunggu runtime logs.
+- Integrasi API bisnis masih sedang dikerjakan pada branch terpisah. Jangan menyamakan mode demo dengan data server atau menyatakan deployment backend sudah berhasil.
+
+# Status terbaru — 2 November 2026
+
+- Frontend deployment: https://daftarin-dusky.vercel.app
+- Backend deployment: https://daftar-api-eta.vercel.app/api
+- Backend Vercel belum berhasil menyala pada pemeriksaan terakhir: `/api/health` dan `/api/chat/status` menghasilkan HTTP 500 `FUNCTION_INVOCATION_FAILED`. Runtime logs belum diterima; akar masalah belum terkonfirmasi.
+- Login API/chatbot dan alur server online belum dapat dinyatakan berhasil.
+- Integrasi API masih dikerjakan pada branch `feat/api-integration-demo-preserved`; pekerjaan yang belum selesai tidak boleh dianggap sudah masuk main atau deployment.
+- Mode demo lokal dipertahankan sebagai jalur review mandiri, menggunakan data fiktif di browser tanpa backend, Supabase, atau Redis.
+- README utama, frontend, dan backend menyediakan link deployment, instalasi alat, pemisahan env, dan langkah clone/install/run.
+
+Catatan di bawah adalah riwayat pekerjaan, bukan klaim keadaan deployment saat ini.
+
+---
+
 # Progres frontend DaftarIn
 
 ## Chatbot AI live — 1 November 2026

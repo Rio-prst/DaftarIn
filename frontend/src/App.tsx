@@ -1,3 +1,4 @@
+import { ApiCatalog, ApiCitizenHome, ApiPreparation, ApiTrackingDetail, ApiOfficialEntry, ApiOfficer } from "./pages/ApiWorkspace";
 import { HelpPage } from './pages/HelpPage';
 import { DemoGuide } from './components/DemoGuide';
 import { ConnectionNotice } from './components/ConnectionNotice';
@@ -37,7 +38,7 @@ const OfficerOverviewPage=lazy(()=>import('./pages/OfficerWorkspacePage').then(m
 const OfficerHistoryPage=lazy(()=>import('./pages/OfficerWorkspacePage').then(module=>({default:module.OfficerHistoryPage})));
 
 function Application() {
-  const { user } = useAuth();
+  const { user, mode } = useAuth();
   const canUseCitizenChat = !user || user.role === "warga";
   return (
     <AppContextProvider key={user?.id || "guest"}>
@@ -58,10 +59,10 @@ function Application() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/bantuan" element={<HelpPage />} />
-          <Route path="/katalog" element={<CatalogPage />} />
-          <Route path="/kebutuhan" element={<NeedsPage />} />
-          <Route path="/panduan" element={<ServiceDetailPage />} />
-          <Route path="/layanan/:id" element={<ServiceDetailPage />} />
+          <Route path="/katalog" element={mode === "api" ? <ApiCatalog /> : <CatalogPage />} />
+          <Route path="/kebutuhan" element={mode === "api" ? <ApiCatalog /> : <NeedsPage />} />
+          <Route path="/panduan" element={mode === "api" ? <ApiCatalog /> : <ServiceDetailPage />} />
+          <Route path="/layanan/:id" element={mode === "api" ? <ApiCatalog /> : <ServiceDetailPage />} />
           <Route path="/masuk" element={<LoginPage />} />
           <Route path="/daftar" element={<RegisterPage />} />
           <Route path="/lupa-sandi" element={<PasswordRecoveryPage />} />
@@ -71,37 +72,38 @@ function Application() {
           </Route>
           <Route element={<RequireAuth roles={["warga"]} />}>
             <Route path="/keluarga" element={<FamilyPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/persiapan" element={<PreparationListPage />} />
+            <Route path="/dashboard" element={mode === "api" ? <ApiCitizenHome /> : <DashboardPage />} />
+            <Route path="/persiapan" element={mode === "api" ? <ApiCitizenHome /> : <PreparationListPage />} />
             <Route
               path="/persiapan/kebutuhan"
-              element={<PreparationNeedPage />}
+              element={mode === "api" ? <ApiPreparation /> : <PreparationNeedPage />}
             />
-            <Route path="/persiapan/data" element={<PreparationDataPage />} />
+            <Route path="/persiapan/data" element={mode === "api" ? <ApiPreparation /> : <PreparationDataPage />} />
             <Route
               path="/persiapan/dokumen"
-              element={<PreparationDocsPage />}
+              element={mode === "api" ? <ApiPreparation /> : <PreparationDocsPage />}
             />
             <Route
               path="/persiapan/pemeriksaan"
-              element={<PreparationInspectionPage />}
+              element={mode === "api" ? <ApiPreparation /> : <PreparationInspectionPage />}
             />
             <Route
               path="/persiapan/ringkasan"
-              element={<PreparationSummaryPage />}
+              element={mode === "api" ? <ApiPreparation /> : <PreparationSummaryPage />}
             />
-            <Route path="/pelacakan" element={<TrackingPage />} />
-            <Route path="/pelacakan/:id" element={<TrackingPage />} />
+            <Route path="/pelacakan" element={mode === "api" ? <ApiCitizenHome /> : <TrackingPage />} />
+            <Route path="/pelacakan/catat" element={mode === "api" ? <ApiOfficialEntry /> : <TrackingPage />} />
+            <Route path="/pelacakan/:id" element={mode === "api" ? <ApiTrackingDetail /> : <TrackingPage />} />
           </Route>
           <Route element={<RequireAuth roles={["petugas"]} />}>
-            <Route path="/petugas" element={<OfficerPage />} />
-            <Route path="/petugas/ringkasan" element={<OfficerOverviewPage />} />
-            <Route path="/petugas/riwayat" element={<OfficerHistoryPage />} />
-            <Route path="/petugas/riwayat/:id" element={<OfficerPage />} />
-            <Route path="/petugas/:id" element={<OfficerPage />} />
+            <Route path="/petugas" element={mode === "api" ? <ApiOfficer /> : <OfficerPage />} />
+            <Route path="/petugas/ringkasan" element={mode === "api" ? <ApiOfficer /> : <OfficerOverviewPage />} />
+            <Route path="/petugas/riwayat" element={mode === "api" ? <ApiOfficer /> : <OfficerHistoryPage />} />
+            <Route path="/petugas/riwayat/:id" element={mode === "api" ? <ApiOfficer /> : <OfficerPage />} />
+            <Route path="/petugas/:id" element={mode === "api" ? <ApiOfficer /> : <OfficerPage />} />
           </Route>
           <Route element={<RequireAuth roles={["admin"]} />}>
-            {['/admin','/admin/layanan','/admin/petugas','/admin/sumber','/admin/aktivitas','/admin/bantuan'].map(path=><Route key={path} path={path} element={<AdminPage />} />)}
+            {['/admin','/admin/akun','/admin/layanan','/admin/petugas','/admin/sumber','/admin/aktivitas','/admin/bantuan'].map(path=><Route key={path} path={path} element={<AdminPage />} />)}
           </Route>
           <Route path="/akses-ditolak" element={<AccessDeniedPage />} />
           <Route path="*" element={<NotFoundPage />} />

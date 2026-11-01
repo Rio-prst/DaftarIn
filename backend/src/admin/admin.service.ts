@@ -301,6 +301,7 @@ export class AdminService implements IAdminService {
     const assignment = await this.repository.createOfficerAssignment(
       dto.application_id,
       dto.officer_user_id,
+      dto.expected_version,
     );
 
     await this.repository.recordAuditEvent({

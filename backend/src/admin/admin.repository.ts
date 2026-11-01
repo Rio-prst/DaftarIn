@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import {
   GuideVersionStatus,
   Prisma,
@@ -318,18 +318,16 @@ export class AdminRepository implements IAdminRepository {
     });
   }
 
-  async createOfficerAssignment(applicationId: string, officerUserId: string) {
-    await this.prisma.officerAssignment.updateMany({
-      where: { applicationId, assignmentStatus: 'ACTIVE' },
-      data: { assignmentStatus: 'REVOKED', endedAt: new Date() },
-    });
-
-    return this.prisma.officerAssignment.create({
-      data: {
-        applicationId,
-        officerUserId,
-        assignmentStatus: 'ACTIVE',
-      },
+  async createOfficerAssignment(applicationId: string, officerUserId: string, expectedVersion?: number) {
+    return this.prisma.$transaction(async tx => {
+      const officer = await tx.user.findFirst({ where: { id: officerUserId, deletedAt: null, accountStatus: 'ACTIVE', userRoles: { some: { isActive: true, role: { roleCode: 'officer' } } } } });
+      if (!officer) throw new BadRequestException('Pilih petugas aktif yang memiliki peran sesuai.');
+      const app = await tx.applicationRecord.findUnique({ where: { id: applicationId } });
+      if (!app || !app.preparationId || ['WITHDRAWN', 'REVIEW_COMPLETED'].includes(app.reviewStatus)) throw new BadRequestException('Permintaan ini tidak dapat ditugaskan.');
+      const updated = await tx.applicationRecord.updateMany({ where: { id: applicationId, version: expectedVersion ?? app.version }, data: { version: { increment: 1 } } });
+      if (!updated.count) throw new ConflictException('Penugasan berubah. Muat ulang daftar.');
+      await tx.officerAssignment.updateMany({ where: { applicationId, assignmentStatus: 'ACTIVE' }, data: { assignmentStatus: 'REVOKED', endedAt: new Date() } });
+      return tx.officerAssignment.create({ data: { applicationId, officerUserId, assignmentStatus: 'ACTIVE' } });
     });
   }
 

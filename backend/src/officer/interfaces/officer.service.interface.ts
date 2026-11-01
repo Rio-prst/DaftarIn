@@ -7,6 +7,7 @@ import type { CreateOfficerEscalationDto } from '../dto/create-escalation.dto';
 export const OFFICER_SERVICE = Symbol('OFFICER_SERVICE');
 
 export interface OfficerAssignmentItemView {
+  review_status?: string;
   id: string;
   application_id: string;
   internal_reference: string;
@@ -54,6 +55,9 @@ export interface OfficerApplicationTimelineItem {
 }
 
 export interface OfficerApplicationDetailView {
+  snapshot?: unknown;
+  evaluation?: unknown;
+  review_status?: string;
   id: string;
   internal_reference: string;
   official_application_number: string | null;

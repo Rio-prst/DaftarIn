@@ -1,13 +1,14 @@
+import { DEMO_HELPERS_ENABLED } from "../utils/demoHelpers";
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PreparationLayout } from "../components/PreparationLayout";
 import { useApp } from "../context/AppContext";
 import { getSelectedConditionOption } from "../types/preparation";
-import { useAuth } from "../auth/AuthContext";
+
 import { FamilyContext } from "../components/FamilyContext";
 
 export const PreparationDataPage: React.FC = () => {
-  const { mode } = useAuth();
+
   const navigate = useNavigate();
   const [params] = useSearchParams();
 
@@ -196,7 +197,7 @@ export const PreparationDataPage: React.FC = () => {
             </p>
           </div>
 
-          {mode === "demo" && (
+          {DEMO_HELPERS_ENABLED && (
             <button
               type="button"
               className="h-[40px] px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#17324D] font-semibold text-xs sm:text-sm border border-blue-200 transition-all flex items-center gap-1.5 active:scale-97"

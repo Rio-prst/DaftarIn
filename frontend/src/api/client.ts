@@ -11,7 +11,7 @@ import type {
   StatusEvent,
 } from "../types/api";
 
-import { ApiError, API_BASE_URL, getStoredToken } from "./transport";
+import { ApiError, API_BASE_URL, getStoredToken, refreshSession } from "./transport";
 export { API_BASE_URL } from "./transport";
 export { serverAuth as authApi } from "../auth/serverAuth";
 
@@ -27,10 +27,22 @@ export const api: AxiosInstance = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = getStoredToken();
-  if (token && !config.headers.Authorization) {
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+});
+
+api.interceptors.response.use(response => response, async error => {
+  if (!axios.isAxiosError(error)) throw error;
+  const config = error.config as (NonNullable<typeof error.config> & { sessionRetried?: boolean }) | undefined;
+  if (error.response?.status === 401 && config && !config.sessionRetried && !config.url?.startsWith('/auth/')) {
+    config.sessionRetried = true;
+    await refreshSession();
+    return api.request(config);
+  }
+  const body = error.response?.data as { error?: { message?: string; request_id?: string } } | undefined;
+  throw new ApiError(error.response?.status || 0, body?.error?.message || (error.response ? 'Permintaan belum berhasil. Coba lagi.' : 'Tidak dapat terhubung ke server.'), body?.error?.request_id);
 });
 
 export async function requestSafe<T>(
@@ -204,6 +216,7 @@ export const applicationsApi = {
       channel?: string;
       citizen_note?: string;
       consent_version?: string;
+      consent_confirmed?: boolean;
     },
   ): Promise<ApiResponse<any>> => {
     return (await api.post(`/preparations/${preparationId}/submissions`, payload)).data;
@@ -214,6 +227,7 @@ export const applicationsApi = {
       changes_summary: string;
       citizen_note?: string;
       consent_version?: string;
+      consent_confirmed?: boolean;
     },
   ): Promise<ApiResponse<any>> => {
     return (await api.post(`/applications/${id}/resubmissions`, payload)).data;

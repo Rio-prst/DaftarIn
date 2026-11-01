@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import {
   ApplicationStatus,
   AssessmentItemType,
@@ -205,26 +205,12 @@ export class OfficerRepository implements IOfficerRepository {
     });
   }
 
-  async findApplicationDocument(
-    applicationId: string,
-    documentId: string,
-  ): Promise<DocumentVersion | null> {
-    const app = await this.prisma.applicationRecord.findUnique({
-      where: { id: applicationId },
-      select: { preparationId: true },
-    });
-
-    if (!app?.preparationId) {
-      return null;
-    }
-
-    return this.prisma.documentVersion.findFirst({
-      where: {
-        id: documentId,
-        preparationId: app.preparationId,
-        deletedAt: null,
-      },
-    });
+  async findApplicationDocument(applicationId: string, documentId: string): Promise<DocumentVersion | null> {
+    const snapshot = await this.prisma.submissionSnapshot.findFirst({ where: { applicationId }, orderBy: { versionNumber: 'desc' } });
+    if (!snapshot || !Array.isArray(snapshot.documentsSnapshotJson)) return null;
+    const allowed = snapshot.documentsSnapshotJson.some((item: any) => item.document_version_id === documentId);
+    if (!allowed) return null;
+    return this.prisma.documentVersion.findFirst({ where: { id: documentId, preparationId: snapshot.preparationId } });
   }
 
   async findLatestSubmissionSnapshot(applicationId: string) {
@@ -243,8 +229,24 @@ export class OfficerRepository implements IOfficerRepository {
     });
   }
 
+  private async lockReview(tx: Prisma.TransactionClient, snapshotId: string, officerId: string, deciding: boolean) {
+    const selected = await tx.submissionSnapshot.findUnique({ where: { id: snapshotId } });
+    if (!selected) throw new ConflictException('Kiriman tidak ditemukan.');
+    await tx.$queryRaw`SELECT id FROM application_records WHERE id = ${selected.applicationId}::uuid FOR UPDATE`;
+    const app = await tx.applicationRecord.findUniqueOrThrow({ where: { id: selected.applicationId } });
+    const assigned = await tx.officerAssignment.findFirst({ where: { applicationId: app.id, officerUserId: officerId, assignmentStatus: 'ACTIVE', endedAt: null } });
+    if (!assigned) throw new ForbiddenException('Penugasan sudah berubah.');
+    const latest = await tx.submissionSnapshot.findFirst({ where: { applicationId: app.id }, orderBy: { versionNumber: 'desc' } });
+    if (latest?.id !== snapshotId) throw new ConflictException('Ada kiriman baru. Muat ulang tinjauan.');
+    if (!['SUBMITTED', 'IN_REVIEW'].includes(app.reviewStatus)) throw new BadRequestException('Tinjauan tidak dapat diubah pada status ini.');
+    if (deciding && app.reviewStatus !== 'IN_REVIEW') throw new BadRequestException('Mulai tinjauan sebelum mengirim keputusan.');
+    if (deciding && await tx.officerEscalation.findFirst({ where: { applicationId: app.id, status: 'OPEN' } })) throw new BadRequestException('Tunggu jawaban klarifikasi admin sebelum memutuskan.');
+    if (!deciding && app.reviewStatus === 'SUBMITTED') await tx.applicationRecord.update({ where: { id: app.id }, data: { reviewStatus: 'IN_REVIEW', version: { increment: 1 } } });
+  }
+
   async saveEvaluationDraft(input: SaveEvaluationDraftInput) {
     return this.prisma.$transaction(async (tx) => {
+      await this.lockReview(tx, input.submissionSnapshotId, input.officerUserId, false);
       let review = await tx.submissionReview.findFirst({
         where: {
           submissionSnapshotId: input.submissionSnapshotId,
@@ -295,6 +297,7 @@ export class OfficerRepository implements IOfficerRepository {
 
   async submitDecision(input: SubmitDecisionInput) {
     return this.prisma.$transaction(async (tx) => {
+      await this.lockReview(tx, input.submissionSnapshotId, input.officerUserId, true);
       const isApproved = input.decision === 'approved_for_submission';
       const subReviewStatus = isApproved
         ? SubmissionReviewStatus.COMPLETED

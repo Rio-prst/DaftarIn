@@ -270,7 +270,7 @@ export class ApplicationsRepository implements IApplicationsRepository {
       },
       include: {
         service: {
-          include: { agency: true, region: true },
+          include: { agency: true, region: true, serviceQuestions: { where: { isActive: true } } },
         },
         guideVersion: true,
         answerVersions: {

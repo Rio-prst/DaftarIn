@@ -1,3 +1,4 @@
+import { ApiAdminWorkspace } from "./ApiAdminWorkspace";
 import { HelpPage } from './HelpPage';
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
@@ -14,17 +15,14 @@ import { getServiceConditionConfig, type ServiceConditionConfig } from "../types
 import { mockAuth, roleLabels } from "../auth/mockAuth";
 import type { Account } from "../auth/types";
 import { useAuth } from "../auth/AuthContext";
-import { ServerAdminPage } from "./ServerAdminPage";
+
 import { AdminReviewAssignments } from '../components/AdminReviewAssignments';
 type Draft = { service: ServiceDetail; savedAt: string };
 type ServiceVersion = { service: ServiceDetail; preservedAt: string };
 export function AdminPage() {
   const { mode } = useAuth();
   const { pathname } = useLocation();
-  if (mode === 'api') {
-    if (['/admin', '/admin/petugas', '/admin/aktivitas'].includes(pathname)) return <ServerAdminPage key={pathname} initialTab={pathname === '/admin/aktivitas' ? 'riwayat' : 'akun'} />;
-    return <WorkspaceLayout title="Pengelolaan layanan"><p>Pengelolaan panduan dan penugasan belum terhubung ke API pada lingkungan ini.</p><Link className="button-secondary mt-4" to="/admin/petugas">Buka akun & petugas</Link></WorkspaceLayout>;
-  }
+  if (mode === 'api') return <ApiAdminWorkspace />;
   if (pathname === '/admin/bantuan') return <HelpPage />;
   if (pathname === '/admin') return <AdminOverviewPage />;
   if (pathname === '/admin/sumber') return <AdminSourcesPage />;
