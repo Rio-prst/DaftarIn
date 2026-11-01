@@ -1,3 +1,4 @@
+import { PhotoPreparationDialog } from "../components/PhotoPreparationDialog";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -22,9 +23,11 @@ const empty: Fields = {
   confirm: "",
 };
 export function RegisterPage() {
-  const { user, register } = useAuth();
+  const { user, register, mode } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [stage, setStage] = useState(1);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [fields, setFields] = useState(empty);
   const [photo, setPhoto] = useState<IdentityPhoto | null>(null);
   const [preview, setPreview] = useState("");
@@ -51,6 +54,10 @@ export function RegisterPage() {
   };
   const choosePhoto = (file?: File) => {
     if (!file) return;
+    if (file.type.startsWith("image/") && file.size > 5 * 1024 * 1024) {
+      setPendingPhoto(file);
+      return;
+    }
     const valid =
       ["image/jpeg", "image/png"].includes(file.type) &&
       /\.(jpg|jpeg|png)$/i.test(file.name);
@@ -72,6 +79,7 @@ export function RegisterPage() {
     setErrors((previous) => ({ ...previous, photo: "" }));
   };
   const example = () => {
+    setStage(2);
     const unique = Date.now().toString();
     setFields({
       name: "Warga Contoh",
@@ -88,21 +96,32 @@ export function RegisterPage() {
       sample: true,
     });
     setPreview("/images/ktp-contoh.svg");
+    setConsent(true);
     setErrors({});
     setError("");
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (stage === 1) {
+      const next: Record<string, string> = {};
+      if (!fields.name.trim()) next.name = "Isi nama lengkap sesuai identitas.";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
+        next.email = "Isi alamat email yang benar.";
+      setErrors(next);
+      if (!Object.keys(next).length) setStage(2);
+      return;
+    }
     const nextErrors: Record<string, string> = {};
-    if (fields.name.trim().length < 3)
-      nextErrors.name = "Isi nama lengkap, minimal 3 karakter.";
-    if (!/^\d{16}$/.test(fields.nik))
+    if (fields.name.trim().length < 1)
+      nextErrors.name = "Isi nama lengkap sesuai identitas.";
+    if (mode === "demo" && !/^\d{16}$/.test(fields.nik))
       nextErrors.nik = "NIK harus berisi 16 angka.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
       nextErrors.email = "Isi alamat email yang benar.";
-    if (!/^\+?\d{10,15}$/.test(fields.phone))
+    if (mode === "demo" && !/^\+?\d{10,15}$/.test(fields.phone))
       nextErrors.phone = "Isi nomor telepon 10–15 angka.";
-    if (!photo) nextErrors.photo = "Pilih foto KTP atau gunakan foto contoh.";
+    if (mode === "demo" && !photo)
+      nextErrors.photo = "Pilih foto KTP atau gunakan foto contoh.";
     if (fields.password.length < 8)
       nextErrors.password = "Gunakan minimal 8 karakter.";
     if (fields.confirm !== fields.password || !fields.confirm)
@@ -121,10 +140,19 @@ export function RegisterPage() {
     }
     setBusy(true);
     try {
-      const account = await register({ ...fields, identityPhoto: photo! });
-      navigate(permittedReturnPath(params.get("next"), account.role), {
-        replace: true,
-      });
+      const result = await register({ ...fields, identityPhoto: photo! });
+      navigate(
+        result.signedIn
+          ? permittedReturnPath(params.get("next"), result.account.role)
+          : "/masuk?registered=1&email=" +
+              encodeURIComponent(fields.email) +
+              (params.get("next")
+                ? "&next=" + encodeURIComponent(params.get("next")!)
+                : ""),
+        {
+          replace: true,
+        },
+      );
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Akun belum berhasil dibuat.",
@@ -174,131 +202,176 @@ export function RegisterPage() {
       intro="Simpan persiapan berkas dan ikuti perkembangan pengajuanmu."
       wide
     >
-      <div className="sample-registration">
-        <p>Gunakan data dan foto contoh untuk mencoba pendaftaran.</p>
-        <button type="button" className="text-link" onClick={example}>
-          Isi data contoh
-        </button>
-      </div>
+      {mode === "demo" && (
+        <div className="sample-registration">
+          <p>Gunakan data dan foto contoh untuk mencoba pendaftaran.</p>
+          <button type="button" className="text-link" onClick={example}>
+            Isi data contoh
+          </button>
+        </div>
+      )}
+      <p className="text-sm mt-4" role="status">
+        Langkah {stage} dari 2 ·{" "}
+        {stage === 1 ? "Nama dan akun" : "Identitas dan keamanan"}
+      </p>
+      <Link
+        className="text-link inline-flex items-center min-h-[44px]"
+        to="/bantuan"
+      >
+        Tidak punya email atau dibantu keluarga? Lihat panduan pendampingan →
+      </Link>
+      {pendingPhoto && (
+        <PhotoPreparationDialog
+          file={pendingPhoto}
+          onClose={() => setPendingPhoto(null)}
+          onReady={(file) => {
+            setPendingPhoto(null);
+            choosePhoto(file);
+          }}
+        />
+      )}
       <form className="auth-form" onSubmit={submit} noValidate>
         {error && (
           <p className="form-error" role="alert">
             {error}
           </p>
         )}
-        <fieldset>
-          <legend>Data diri</legend>
+        <fieldset hidden={stage !== 1}>
+          <legend>Data akun</legend>
           <div className="form-grid">
             {input("name", "Nama lengkap", "text", "name")}
-            {input("nik", "NIK (16 angka)")}
             {input("email", "Email", "email", "email")}
-            {input("phone", "Nomor telepon", "tel", "tel")}
           </div>
         </fieldset>
-        <fieldset>
-          <legend>Foto KTP</legend>
-          <p className="field-hint">
-            JPG atau PNG, maksimal 5 MB. Pastikan tulisan dan seluruh sisi kartu
-            terlihat.
+        {stage === 1 && (
+          <button type="submit" className="button-primary">
+            Lanjutkan data identitas
+          </button>
+        )}
+        <div hidden={stage !== 2} className="space-y-5">
+          <p>
+            {fields.name} · {fields.email}
           </p>
-          <div className="identity-upload">
-            {preview && (
-              <img src={preview} alt="Pratinjau foto KTP yang dipilih" />
-            )}
-            <div>
-              <input
-                id="register-photo"
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={(event) => choosePhoto(event.target.files?.[0])}
-                aria-invalid={!!errors.photo}
-                aria-describedby="register-photo-hint"
-              />
-              {photo && <p className="selected-file">{photo.name}</p>}
-              <button
-                type="button"
-                className="text-link"
-                onClick={() => {
-                  setPhoto({
-                    name: "ktp-contoh.svg",
-                    type: "image/svg+xml",
-                    size: 0,
-                    sample: true,
-                  });
-                  setPreview("/images/ktp-contoh.svg");
-                  setErrors((previous) => ({ ...previous, photo: "" }));
-                }}
-              >
-                Gunakan foto contoh
-              </button>
-              <p
-                id="register-photo-hint"
-                className={errors.photo ? "field-error" : "field-hint"}
-              >
-                {errors.photo ||
-                  "Foto hanya dipratinjau selama pendaftaran. Pada versi contoh ini, yang disimpan hanya keterangan file."}
-              </p>
+          <button
+            type="button"
+            className="text-link min-h-[44px]"
+            onClick={() => setStage(1)}
+          >
+            Ubah data akun
+          </button>
+          {mode === "demo" && (
+            <div className="form-grid">
+              {input("nik", "NIK (16 angka)")}
+              {input("phone", "Nomor telepon", "tel", "tel")}
             </div>
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend>Keamanan akun</legend>
-          <div className="form-grid">
-            <PasswordField
-              id="register-password"
-              label="Kata sandi"
-              value={fields.password}
-              onChange={(value) => change("password", value)}
-              autoComplete="new-password"
-              hint="Gunakan minimal 8 karakter."
-              error={errors.password}
-            />
-            <PasswordField
-              id="register-confirm"
-              label="Ulangi kata sandi"
-              value={fields.confirm}
-              onChange={(value) => change("confirm", value)}
-              autoComplete="new-password"
-              error={errors.confirm}
-            />
-          </div>
-        </fieldset>
-        <div>
-          <label className="consent-field">
-            <input
-              id="register-consent"
-              type="checkbox"
-              checked={consent}
-              onChange={(event) => setConsent(event.target.checked)}
-              aria-invalid={!!errors.consent}
-              aria-describedby={errors.consent ? "consent-error" : undefined}
-            />
-            <span>
-              Saya menyetujui penggunaan data untuk pendaftaran akun sesuai{" "}
-              <Link
-                to="/privasi"
-                className="text-link"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                kebijakan privasi
-              </Link>
-              .
-            </span>
-          </label>
-          {errors.consent && (
-            <p id="consent-error" className="field-error">
-              {errors.consent}
-            </p>
           )}
+          {mode === "demo" && (
+            <fieldset>
+              <legend>Foto KTP</legend>
+              <p className="field-hint">
+                JPG atau PNG, maksimal 5 MB. Pastikan tulisan dan seluruh sisi
+                kartu terlihat.
+              </p>
+              <div className="identity-upload">
+                {preview && (
+                  <img src={preview} alt="Pratinjau foto KTP yang dipilih" />
+                )}
+                <div>
+                  <input
+                    id="register-photo"
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    onChange={(event) => choosePhoto(event.target.files?.[0])}
+                    aria-invalid={!!errors.photo}
+                    aria-describedby="register-photo-hint"
+                  />
+                  {photo && <p className="selected-file">{photo.name}</p>}
+                  <button
+                    type="button"
+                    className="text-link"
+                    onClick={() => {
+                      setPhoto({
+                        name: "ktp-contoh.svg",
+                        type: "image/svg+xml",
+                        size: 0,
+                        sample: true,
+                      });
+                      setPreview("/images/ktp-contoh.svg");
+                      setErrors((previous) => ({ ...previous, photo: "" }));
+                    }}
+                  >
+                    Gunakan foto contoh
+                  </button>
+                  <p
+                    id="register-photo-hint"
+                    className={errors.photo ? "field-error" : "field-hint"}
+                  >
+                    {errors.photo ||
+                      "Foto hanya dipratinjau selama pendaftaran. Pada versi contoh ini, yang disimpan hanya keterangan file."}
+                  </p>
+                </div>
+              </div>
+            </fieldset>
+          )}
+          <fieldset>
+            <legend>Keamanan akun</legend>
+            <div className="form-grid">
+              <PasswordField
+                id="register-password"
+                label="Kata sandi"
+                value={fields.password}
+                onChange={(value) => change("password", value)}
+                autoComplete="new-password"
+                hint="Gunakan minimal 8 karakter."
+                error={errors.password}
+              />
+              <PasswordField
+                id="register-confirm"
+                label="Ulangi kata sandi"
+                value={fields.confirm}
+                onChange={(value) => change("confirm", value)}
+                autoComplete="new-password"
+                error={errors.confirm}
+              />
+            </div>
+          </fieldset>
+          <div>
+            <label className="consent-field">
+              <input
+                id="register-consent"
+                type="checkbox"
+                checked={consent}
+                onChange={(event) => setConsent(event.target.checked)}
+                aria-invalid={!!errors.consent}
+                aria-describedby={errors.consent ? "consent-error" : undefined}
+              />
+              <span>
+                Saya menyetujui penggunaan data untuk pendaftaran akun sesuai{" "}
+                <Link
+                  to="/privasi"
+                  className="text-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  kebijakan privasi
+                </Link>
+                .
+              </span>
+            </label>
+            {errors.consent && (
+              <p id="consent-error" className="field-error">
+                {errors.consent}
+              </p>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={busy}
+            className="button-primary auth-submit"
+          >
+            {busy ? "Sedang membuat akun…" : "Buat akun"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={busy}
-          className="button-primary auth-submit"
-        >
-          {busy ? "Sedang membuat akun…" : "Buat akun"}
-        </button>
       </form>
       <p className="auth-switch">
         Sudah punya akun?{" "}

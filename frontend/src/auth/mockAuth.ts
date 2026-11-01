@@ -51,20 +51,20 @@ const publicAccount = ({
 }: StoredAccount): Account => account;
 function readAccounts(): StoredAccount[] {
   try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(ACCOUNTS_KEY) || "null",
-    );
-    if (Array.isArray(parsed))
-      return parsed.filter(
-        (item) =>
-          item &&
-          typeof item.id === "string" &&
-          typeof item.email === "string" &&
-          typeof item.nik === "string" &&
-          typeof item.name === "string" &&
-          typeof item.phone === "string" &&
-          ["warga", "petugas", "admin"].includes(item.role),
-      );
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const filtered = parsed.filter(
+          (item) =>
+            item &&
+            typeof item.id === "string" &&
+            typeof item.email === "string" &&
+            ["warga", "petugas", "admin"].includes(item.role),
+        );
+        if (filtered.length > 0) return filtered;
+      }
+    }
   } catch {
     /* A damaged fixture must not prevent the sign-in screen from opening. */
   }
@@ -208,6 +208,10 @@ export const mockAuth = {
     requireAdmin();
     return readAccounts().map(publicAccount);
   },
+  reviewOfficers() {
+    if (!this.currentUser()) return [];
+    return readAccounts().filter(account => account.role === 'petugas' && account.active !== false).map(({id, name}) => ({id, name}));
+  },
   async createOfficer(input: {
     name: string;
     email: string;
@@ -253,10 +257,35 @@ export const mockAuth = {
       ),
     );
   },
+  async changePassword(currentPassword: string, newPassword: string) {
+    const current = this.currentUser();
+    if (!current) throw new Error("Silakan masuk kembali.");
+    const accounts = readAccounts();
+    const account = accounts.find((item) => item.id === current.id);
+    const matches = account?.credential
+      ? (await derive(currentPassword, account.credential.salt)) ===
+        account.credential.digest
+      : Boolean(account && currentPassword === EXAMPLE_PASSWORD);
+    if (!matches) throw new Error("Kata sandi saat ini tidak sesuai.");
+    if (
+      newPassword.length < 8 ||
+      new TextEncoder().encode(newPassword).length > 72
+    )
+      throw new Error("Gunakan kata sandi 8–72 karakter atau byte UTF-8.");
+    if (newPassword === currentPassword)
+      throw new Error("Gunakan kata sandi baru yang berbeda.");
+    const nextCredential = await credential(newPassword);
+    writeAccounts(
+      accounts.map((item) =>
+        item.id === current.id ? { ...item, credential: nextCredential } : item,
+      ),
+    );
+    sessionStorage.removeItem(SESSION_KEY);
+  },
   updateProfile(input: { name: string; phone: string }) {
     const current = this.currentUser();
     if (!current) throw new Error("Silakan masuk kembali.");
-    if (input.name.trim().length < 3 || !/^\+?\d{10,15}$/.test(input.phone))
+    if (input.name.trim().length < 1 || !/^\+?\d{10,15}$/.test(input.phone))
       throw new Error("Isi nama dan nomor telepon yang benar.");
     const accounts = readAccounts().map((account) =>
       account.id === current.id
