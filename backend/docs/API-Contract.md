@@ -1,3 +1,7 @@
+# Status implementasi
+
+Kontrak berikut juga memuat rancangan fitur. Untuk endpoint yang benar-benar aktif per 1 November 2026, gunakan [IMPLEMENTED-API.md](IMPLEMENTED-API.md). Base API aktif adalah `/api`; modul bisnis yang masih direncanakan tidak boleh dianggap tersedia hanya karena tercantum pada dokumen ini.
+
 # API Contract — JejakMasWowo
 
 > **Dokumen kontrak BE ↔ FE**  
@@ -43,15 +47,15 @@ API mendukung alur utama:
 
 ## 2. Konvensi API
 
-### 2.1 Base URL dan versi
+### 2.1 Base URL
 
 Base URL untuk lingkungan deployment ditentukan saat implementasi:
 
 ```text
-https://{api-host}/api/v1
+https://{api-host}/api
 ```
 
-Semua path dalam dokumen ini relatif terhadap `/api/v1`.
+Semua path dalam dokumen ini relatif terhadap `/api`.
 
 ### 2.2 Format
 
@@ -605,7 +609,7 @@ Jangan menyertakan dokumen, nomor identitas lengkap, atau rincian sensitif pada 
 
 ## 5. Matriks endpoint
 
-Prefix semua endpoint: `/api/v1`.
+Prefix semua endpoint: `/api`.
 
 | Modul | Method | Endpoint | Akses | Tujuan |
 |---|---|---|---|---|
@@ -704,12 +708,14 @@ Response `201`:
       "roles": ["citizen"],
       "status": "active"
     },
-    "verification_required": true
+    "verification_required": false
   }
 }
 ```
 
 Validasi: email valid, password memenuhi kebijakan keamanan, email unik. Password tidak pernah dikembalikan. Jangan menerima `role`, `is_admin`, atau `is_officer` dari request.
+
+Catatan baseline: verifikasi email ditunda. Registrasi membuat akun `active` dengan `email_verified: false` dan `verification_required: false`. Saat verifikasi email diaktifkan, kontrak ini berubah menjadi `verification_required: true`.
 
 ### 6.2 `POST /auth/login`
 

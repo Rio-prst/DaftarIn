@@ -6,16 +6,20 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "account:create-admin": "node scripts/create-admin.cjs --create-admin",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "test": "jest",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --testRegex \"\\.integration-spec\\.ts$\"",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -24,7 +28,7 @@
   "dependencies": {
     "@nestjs/bullmq": "^11.0.5",
     "@nestjs/common": "^11.0.1",
-    "@nestjs/config": "^12.0.1",
+    "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
@@ -93,6 +97,12 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^(\\..*)\\.js$": "$1"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@nestjs/config)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

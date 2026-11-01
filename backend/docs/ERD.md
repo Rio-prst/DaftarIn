@@ -211,6 +211,16 @@ erDiagram
         datetime valid_until
         boolean is_active
     }
+    REFRESH_SESSIONS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash UK
+        datetime expires_at
+        datetime revoked_at
+        uuid replaced_by_session_id
+        datetime created_at
+        datetime last_used_at
+    }
     CONSENT_RECORDS {
         uuid id PK
         uuid user_id FK
@@ -397,6 +407,7 @@ erDiagram
     ROLES ||--o{ USER_ROLES : assigned
     AGENCIES o|--o{ USER_ROLES : scope
     REGIONS o|--o{ USER_ROLES : scope
+    USERS ||--o{ REFRESH_SESSIONS : owns
     USERS ||--o{ CONSENT_RECORDS : consents
     USERS ||--o{ PREPARATIONS : owns
     SERVICES ||--o{ PREPARATIONS : selected_for
@@ -449,9 +460,10 @@ erDiagram
 
 | Entitas | Fungsi | Catatan |
 |---|---|---|
-| `USERS` | Akun warga, petugas, dan admin | Metode autentikasi masih perlu diputuskan |
+| `USERS` | Akun warga, petugas, dan admin | Auth custom: access JWT + refresh session; registrasi publik selalu role warga |
 | `ROLES` | Definisi peran | Minimal warga, petugas, admin |
 | `USER_ROLES` | Penugasan peran dengan cakupan | Akun publik tidak boleh memilih peran petugas/admin sendiri |
+| `REFRESH_SESSIONS` | Sesi refresh token yang dapat dicabut dan dirotasi | Simpan hash token, bukan token mentah; satu user dapat memiliki banyak sesi |
 | `CONSENT_RECORDS` | Riwayat persetujuan penggunaan data | Catat tujuan dan versi pemberitahuan yang disetujui |
 | `AUDIT_EVENTS` | Jejak aksi penting | Hindari isi dokumen atau identitas lengkap dalam metadata |
 
@@ -492,8 +504,8 @@ erDiagram
 
 Ini adalah rekomendasi implementasi, bukan detail yang dinyatakan eksplisit oleh PRD.
 
-- Unique: `REGIONS.code`, `SERVICES.slug`, `(service_id, version_number)` pada `GUIDE_VERSIONS` dan `REQUIREMENT_RULE_VERSIONS`, `(preparation_id, question_id, data_version)` sesuai strategi versi, `(preparation_id, document_type, version_number)`, serta `ROLES.role_code`.
-- Index: `SERVICES(publication_status, region_id, category)`, `OFFICIAL_SOURCES(review_status, last_checked_at)`, `PREPARATIONS(user_id, status, updated_at)`, `DOCUMENT_VERSIONS(preparation_id, document_type)`, `INSPECTION_RUNS(preparation_id, status, created_at)`, `FINDINGS(inspection_run_id, resolution_status)`, `APPLICATION_RECORDS(user_id, updated_at)`, `STATUS_EVENTS(application_id, occurred_at)`, `OFFICER_ASSIGNMENTS(officer_user_id, assignment_status)`, `NOTIFICATIONS(user_id, read_at, created_at)`, dan `AUDIT_EVENTS(actor_user_id, created_at)`.
+- Unique: `REGIONS.code`, `SERVICES.slug`, `(service_id, version_number)` pada `GUIDE_VERSIONS` dan `REQUIREMENT_RULE_VERSIONS`, `(preparation_id, question_id, data_version)` sesuai strategi versi, `(preparation_id, document_type, version_number)`, `ROLES.role_code`, serta `REFRESH_SESSIONS.token_hash`.
+- Index: `SERVICES(publication_status, region_id, category)`, `OFFICIAL_SOURCES(review_status, last_checked_at)`, `PREPARATIONS(user_id, status, updated_at)`, `DOCUMENT_VERSIONS(preparation_id, document_type)`, `INSPECTION_RUNS(preparation_id, status, created_at)`, `FINDINGS(inspection_run_id, resolution_status)`, `APPLICATION_RECORDS(user_id, updated_at)`, `STATUS_EVENTS(application_id, occurred_at)`, `OFFICER_ASSIGNMENTS(officer_user_id, assignment_status)`, `NOTIFICATIONS(user_id, read_at, created_at)`, `REFRESH_SESSIONS(user_id, expires_at)`, dan `AUDIT_EVENTS(actor_user_id, created_at)`.
 - Check constraints: nilai `file_size_bytes` positif; versi lebih besar dari nol; `occurred_at`/`recorded_at` valid; status dan sumber dibatasi enum yang disepakati.
 - Foreign key: tetapkan kebijakan `RESTRICT`, `CASCADE`, atau `SET NULL` per relasi setelah aturan retensi dan penghapusan disepakati. Hindari cascade yang tanpa sengaja menghapus jejak audit atau riwayat pemeriksaan.
 
@@ -513,7 +525,7 @@ preparation_status:
   ready_initial_check | inspection_incomplete | recheck_required | archived
 
 inspection_status:
-  queued | processing | completed | failed | cancelled | superseded
+  queued | running | completed | failed | cancelled
 
 finding_severity:
   info | warning | blocking

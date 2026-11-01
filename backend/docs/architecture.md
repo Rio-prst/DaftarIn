@@ -31,7 +31,7 @@ Baseline adalah **modular monolith** NestJS. Pemisahan proses worker dilakukan h
 | Keputusan | Alasan | Konsekuensi |
 |---|---|---|
 | Modular monolith di `backend/` | Tim kecil, domain masih erat, deploy sederhana | Batas modul harus disiplin; jangan akses repository modul lain |
-| REST JSON dengan prefix `/api/v1` | Sesuai kontrak API dan mudah diuji | Perubahan breaking harus lewat versi baru |
+| REST JSON dengan prefix `/api` | Sesuai kontrak API dan mudah diuji | Tidak ada versioning lewat path; perubahan breaking harus ditangani secara kompatibel atau mekanisme lain |
 | Zod + `nestjs-zod` | Satu sumber tipe dan validasi, tanpa `class-validator` | DTO dibuat dengan `createZodDto`; schema Zod menjadi kontrak runtime |
 | Auth custom di NestJS | Kebutuhan cookie, rotasi refresh, dan audit lebih terkontrol | Tidak memakai Supabase Auth/JWT; sesi disimpan di tabel sendiri |
 | Access JWT + refresh token opaque | Access singkat, refresh dapat dicabut dan dirotasi | Perlu tabel sesi, hash token, dan perlindungan CSRF |
@@ -84,7 +84,10 @@ backend/
 ├── src/
 │   ├── main.ts
 │   ├── app.module.ts
+│   ├── app.controller.ts       # hello + /health
+│   ├── app.service.ts          # scaffold hello (dipakai oleh /)
 │   ├── common/
+│   │   ├── response/           # Response<T> helper global
 │   │   ├── decorators/          # @Public, @Roles, @CurrentUser, @IdempotencyKey
 │   │   ├── guards/              # JwtAuthGuard, RolesGuard
 │   │   ├── filters/             # global exception filter, Prisma error mapping
@@ -92,12 +95,12 @@ backend/
 │   │   ├── errors/              # AppError, error codes
 │   │   ├── types/               # AuthenticatedUser, pagination, request context
 │   │   └── utils/               # hashing, cursor, date
-│   ├── infra/
-│   │   ├── prisma/              # PrismaModule, PrismaService
-│   │   ├── storage/             # SupabaseStorageService, signed URL
-│   │   ├── queue/               # BullMQ root config dan nama queue
-│   │   ├── ai/                  # antarmuka OCR/LLM dan adapter provider
-│   │   └── config/              # env schema Zod dan typed config
+│   ├── prisma/
+│   │   ├── prisma.module.ts
+│   │   └── prisma.service.ts
+│   ├── storage/                 # SupabaseStorageService, signed URL
+│   ├── queue/                   # BullMQ root config dan nama queue
+│   ├── ai/                      # antarmuka OCR/LLM dan adapter provider
 │   ├── auth/
 │   ├── account/
 │   ├── catalog/
@@ -111,8 +114,7 @@ backend/
 │   ├── assistant/
 │   ├── admin/
 │   ├── audit/
-│   ├── dashboard/
-│   └── health/
+│   └── dashboard/
 ├── prisma/
 │   ├── schema.prisma
 │   ├── migrations/
@@ -126,7 +128,7 @@ backend/
 │   ├── Bussines-Rules.md
 │   ├── domain-context.md
 │   └── architecture.md
-├── prisma7.config.ts
+├── prisma.config.ts
 ├── .env.example
 ├── package.json
 └── tsconfig.json
@@ -149,24 +151,22 @@ src/<module>/
 ├── dto/
 │   ├── create-<entity>.dto.ts       # schema Zod + createZodDto
 │   ├── update-<entity>.dto.ts
-│   └── <entity>-response.dto.ts
+│   └── delete-<entity>.dto.ts
 ├── interfaces/
-│   ├── <entity>.repository.ts       # kontrak + Symbol token
-│   └── <domain>.service.ts          # kontrak lintas modul
+│   ├── auth.repository.interface.ts # kontrak repository + Symbol token
+│   └── auth.service.interface.ts    # kontrak service
 ├── <entity>.repository.ts
 ├── <domain>.service.ts
 ├── <domain>.controller.ts
-├── <domain>.routes.ts
-├── <module>.module.ts
-├── <domain>.service.spec.ts
-├── <domain>.controller.spec.ts
-└── <entity>.repository.integration-spec.ts
+└── <module>.module.ts
 ```
 
 Aturan:
 
-- Interface diberi prefix `I`, misalnya `IPreparationRepository`.
-- Token DI memakai `Symbol`, bukan string: `export const PREPARATION_REPOSITORY = Symbol('PREPARATION_REPOSITORY')`.
+- `dto/` hanya untuk validation payload (`create`, `update`, `delete`); tidak ada DTO response.
+- Response global memakai `src/common/response/response.ts` dengan pola `new Response(...)` ketika sudah dipakai di controller.
+- Interface diberi prefix `I`, misalnya `IAuthRepository`.
+- Token DI memakai `Symbol`, bukan string: `export const AUTH_REPOSITORY = Symbol('AUTH_REPOSITORY')`.
 - Implementasi memakai nama domain langsung, bukan suffix `Impl`.
 - Satu controller per kelompok route; route admin boleh berada di modul pemilik domain dengan path `/admin/...`.
 - Modul mengekspor service yang memang dibutuhkan modul lain. Repository tidak diekspor lintas modul.
@@ -182,7 +182,10 @@ Aturan:
 | Controller | Parsing request, guard/decorator, memanggil service, memetakan hasil ke response | Query Prisma, aturan bisnis, akses storage langsung |
 | Service | Aturan bisnis, transaksi, otorisasi kepemilikan, orkestrasi repository/queue | Mengetahui `Request`/`Response` Express, menulis SQL mentah |
 | Repository | Query Prisma, mapping record, filter kepemilikan, update bersyarat versi | Memanggil service lain, mengirim email, mengakses storage |
-| Infra | Koneksi teknis dan adapter | Aturan domain |
+| Prisma | Koneksi, connection pool, adapter database | Aturan domain |
+| Storage | Akses file dan signed URL | Aturan bisnis |
+| Queue | Job orchestrator dan retry | Aturan domain tanpa service |
+| AI | Adapter provider dan validasi output | Menulis atau mengubah data domain |
 | Guard | Autentikasi dan role | Kepemilikan resource yang butuh data DB |
 | Filter/Interceptor | Format error, request id, envelope, logging aman | Perubahan status domain |
 
@@ -215,7 +218,7 @@ Service adalah tempat keputusan seperti:
 | `admin` | Administrasi pengguna, role, petugas, audit | `UserRole`, `User` | `/admin/users/*`, `/admin/officers/*`, `/admin/audit*` |
 | `audit` | Pencatatan peristiwa produk/keamanan | `AuditEvent` | Tidak ada endpoint publik |
 | `dashboard` | Agregasi baca untuk beranda | Tidak memiliki tabel | `/dashboard` |
-| `health` | Liveness/readiness | Tidak memiliki tabel | `/health`, `/health/ready` |
+Health endpoint tidak berada di modul domain. Ia hidup di `AppController` dan didaftarkan di `AppModule hanya sebagai kebutuhan bootstrap.
 
 Pemilik data:
 
@@ -241,6 +244,8 @@ Pemilik data:
 6. Access token dikirim sebagai cookie `httpOnly`; refresh token juga cookie `httpOnly`.
 7. Refresh merotasi token: sesi lama dicabut, sesi baru dibuat. Reuse token lama ditolak.
 8. Logout mencabut sesi refresh dan menghapus cookie.
+
+Catatan baseline: verifikasi email ditunda. Registrasi membuat `User.accountStatus = ACTIVE`, `emailVerifiedAt = null`, dan response `verification_required: false`. Kolom `emailVerifiedAt`, enum `PENDING_VERIFICATION`, dan tabel `RefreshSession` tetap dipertahankan agar verifikasi email dapat ditambahkan nanti tanpa mengubah alur auth inti.
 
 JWT hanya memuat `sub`, `role`, `session_id`, dan waktu. Jangan menaruh email, nama, dokumen, atau data sensitif di JWT.
 
@@ -296,7 +301,7 @@ Jika input berubah saat pemeriksaan berjalan, hasil tetap disimpan sebagai histo
 
 ### 10.1 Konvensi
 
-- Base path: `/api/v1`.
+- Base path: `/api`.
 - Swagger: `/api/docs`.
 - JSON memakai `snake_case`.
 - ID berupa UUID.
@@ -333,9 +338,9 @@ Jika input berubah saat pemeriksaan berjalan, hasil tetap disimpan sebagai histo
 - Semua body, query, dan param divalidasi dengan Zod.
 - DTO memakai `createZodDto(schema)` dari `nestjs-zod`.
 - `ZodValidationPipe` dipasang global lewat `APP_PIPE`; jangan membuat pipe Zod custom yang duplikatif.
-- `ZodSerializerInterceptor` dipakai untuk response DTO agar field yang tidak disengaja tidak ikut terkirim.
+- `ZodSerializerInterceptor` dipakai jika response perlu dipetakan eksplisit, tetapi tidak lagi memakai file DTO response.
 - Schema memakai `.strict()` untuk body agar field asing ditolak.
-- Schema environment juga memakai Zod dan divalidasi saat bootstrap; aplikasi gagal start jika env wajib tidak ada.
+- Response shape berada di `src/common/response/response.ts`, bukan di DTO tiap modul.
 
 Contoh pola:
 
@@ -383,7 +388,7 @@ Jangan menambahkan status baru di kode tanpa memperbarui ERD, kontrak API, dan a
 
 ### 11.1 Prisma 7
 
-- Konfigurasi di `prisma7.config.ts`.
+- Konfigurasi di `prisma.config.ts`.
 - Generator:
 
 ```prisma
@@ -395,7 +400,7 @@ generator client {
 ```
 
 - `moduleFormat = "cjs"` diperlukan karena backend memakai CommonJS.
-- `PrismaService` membuat `PrismaClient` dengan `PrismaPg` dan `DATABASE_URL`.
+- `src/prisma/prisma.service.ts` membuat `PrismaClient` dengan `PrismaPg` dan `DATABASE_URL`.
 - Jangan memakai `prisma-client-js` lama atau mengandalkan `node_modules/.prisma`.
 - `prisma generate` dijalankan setelah schema tersedia. Jangan menaruh `postinstall` generate sebelum schema ada.
 
@@ -403,7 +408,7 @@ generator client {
 
 - Gunakan Supabase **Session Pooler** port `5432` dengan `sslmode=require`.
 - Hindari transaction pooler port `6543` untuk baseline karena interaksi dengan migrasi dan transaksi perlu diuji lebih dulu.
-- `DIRECT_URL` hanya dipakai jika migrasi memerlukannya; jangan menganggap sama dengan `DATABASE_URL`.
+- `DIRECT_URL` dipakai Prisma CLI untuk `prisma migrate` / `prisma db push`; runtime tetap memakai `DATABASE_URL`.
 - Kredensial hanya di `.env`; `.env` tidak di-commit.
 
 ### 11.3 Aturan repository
@@ -458,7 +463,7 @@ generator client {
 ### 12.3 Otorisasi
 
 - `JwtAuthGuard` dipasang global; endpoint publik diberi `@Public()`.
-- `RolesGuard` memeriksa role dari token dan data role aktif.
+- `RolesGuard` memeriksa role dari access token; role aktif divalidasi saat sesi dibuat/dirotasi.
 - Service memeriksa kepemilikan untuk setiap GET/PATCH/DELETE resource privat.
 - Petugas hanya dapat membuka pengajuan dengan `OfficerAssignment` aktif.
 - Admin tidak otomatis boleh membaca isi dokumen pribadi; akses admin ke konten harus eksplisit dan diaudit.
@@ -495,13 +500,14 @@ generator client {
 
 ## 13. Konfigurasi environment
 
-Semua env divalidasi Zod saat bootstrap. Contoh nama variabel:
+Env dibaca dari `.env` atau environment platform. Tidak divalidasi Zod pada bootstrap. Contoh nama variabel:
 
 | Variabel | Wajib | Keterangan |
 |---|---|---|
 | `NODE_ENV` | Ya | `development`, `test`, `production` |
 | `PORT` | Tidak | Default `3000` |
 | `DATABASE_URL` | Ya | Supabase Session Pooler 5432, `sslmode=require` |
+| `DIRECT_URL` | Ya | Direct connection untuk Prisma CLI (`migrate` / `db push`) |
 | `DATABASE_URL_TEST` | Untuk test | Database test terpisah |
 | `SUPABASE_URL` | Ya | URL project |
 | `SUPABASE_SERVICE_ROLE_KEY` | Ya | Hanya server, jangan pernah dikirim ke frontend |
@@ -631,7 +637,7 @@ pnpm test:e2e
 pnpm build
 ```
 
-Script `test:integration` perlu ditambahkan ke `package.json` saat setup Prisma/test selesai.
+Script `test:integration` tersedia di `package.json` dan menjalankan file `*integration-spec.ts` terhadap database test.
 
 ---
 
@@ -699,7 +705,7 @@ Sebuah modul dianggap selesai jika:
 
 - `API-Contract.md` masih memakai ilustrasi bearer; implementasi memakai cookie.
 - PRD masih memuat nama lama produk di sebagian teks; nama teknis yang dipakai adalah DaftarIn.
-- ERD belum memuat tabel idempotensi dan `RefreshSession`.
+- ERD belum memuat tabel idempotensi.
 - Nama file `Bussines-Rules.md` dipertahankan agar tautan dokumen tidak rusak.
 
 ---
