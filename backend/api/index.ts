@@ -14,12 +14,11 @@ import { setupSwagger } from '../src/setup-swagger';
 const server = express();
 let isReady = false;
 
-server.get('/', (_req, res) => {
-  res.redirect('/api/docs');
-});
-
-server.get('/api', (_req, res) => {
-  res.redirect('/api/docs');
+server.use((req, res, next) => {
+  if (req.path === '/' || req.url === '/' || req.url === '' || req.url === '/api' || req.path === '/api') {
+    return res.redirect('/api/docs');
+  }
+  next();
 });
 
 async function bootstrap(): Promise<void> {
@@ -59,6 +58,10 @@ export default async function handler(
   const matchedPath = (req.headers['x-matched-path'] ?? req.headers['x-forwarded-uri']) as string | undefined;
   if (matchedPath) {
     req.url = matchedPath;
+  }
+  if (req.url === '/' || req.url === '' || req.url === '/api') {
+    res.redirect('/api/docs');
+    return;
   }
   server(req, res);
 }
