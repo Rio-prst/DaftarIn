@@ -1,10 +1,13 @@
 # Backend DaftarIn
 
+Tanggal dokumentasi pengumpulan: **1 November 2026**.
+
+
 NestJS + TypeScript + Prisma/PostgreSQL untuk auth/akun, katalog, persiapan/dokumen, kiriman/revisi, petugas, keluarga, bantuan, notifikasi, admin, dan audit. Storage server memakai Supabase Storage; chatbot memakai relay server. **Modul tersedia pada source, tetapi integrasi frontend ke seluruh API belum selesai dan belum dinyatakan siap produksi.**
 
 Untuk mencoba alur UI tanpa konfigurasi database, gunakan [demo frontend](../frontend/README.md).
 
-## Status deployment — 2 November 2026
+## Status deployment — snapshot 1 November 2026
 
 Alamat API: https://daftar-api-eta.vercel.app/api
 

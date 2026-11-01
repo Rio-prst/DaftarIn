@@ -1,5 +1,8 @@
 # Frontend DaftarIn
 
+Tanggal dokumentasi pengumpulan: **1 November 2026**.
+
+
 React + TypeScript + Vite + Tailwind CSS untuk pendamping persiapan dokumen kependudukan. **Integrasi API belum penuh; gunakan mode demo lokal untuk mencoba alur secara mandiri.**
 
 ## Deployment dan status
@@ -55,7 +58,7 @@ Demo menyimpan akun/data bisnis di browser melalui localStorage dan IndexedDB. R
 
 Formulir demo dapat dipakai bersama chatbot nyata tanpa mengubah mode menjadi API. Jalankan backend di port 3000 dengan env privat `CHAT_AI_*` yang valid, lalu FE di port 5173 dengan `VITE_AUTH_MODE=demo` dan `VITE_API_URL=/api`. Jangan arahkan FE lokal ke backend Vercel yang masih error.
 
-Lihat [setup lengkap dua terminal, konfigurasi provider, dan pemeriksaan sumber jawaban](../README.md#demo-lokal-lengkap-dengan-chatbot-ai). Chatbot lokal telah memberi respons `source: ai` pada pemeriksaan 2 November 2026. Formulir bisnis tetap demo browser dan akun contoh tetap akun lokal; ini tidak membuktikan integrasi API bisnis penuh.
+Lihat [setup lengkap dua terminal, konfigurasi provider, dan pemeriksaan sumber jawaban](../README.md#demo-lokal-lengkap-dengan-chatbot-ai). Chatbot lokal telah memberi respons `source: ai` pada pemeriksaan tambahan lokal. Formulir bisnis tetap demo browser dan akun contoh tetap akun lokal; ini tidak membuktikan integrasi API bisnis penuh.
 
 ## Mode API
 

@@ -1,5 +1,8 @@
 # DaftarIn — Iseng Daftar
 
+Tanggal dokumentasi pengumpulan: **1 November 2026**.
+
+
 DaftarIn adalah website pendamping persiapan dokumen kependudukan: warga membaca persyaratan, melengkapi data dan berkas, serta menindaklanjuti catatan petugas sebelum memakai kanal resmi instansi. Chatbot membantu penjelasan dan navigasi; penerbitan dokumen tetap menjadi kewenangan instansi.
 
 > **Status: prototipe demo; integrasi API belum penuh.** Ketersediaan endpoint backend tidak berarti semua tombol frontend sudah memakai server. Untuk penilaian alur secara mandiri, gunakan mode demo lokal di bawah.
@@ -158,7 +161,7 @@ Buka **http://127.0.0.1:5173**. Vite meneruskan `/api` ke backend **http://127.0
 - Buka **http://127.0.0.1:3000/api/chat/status**. `configured: true` berarti konfigurasi provider terbaca, belum membuktikan key/model berhasil dipanggil.
 - Buka tombol **Tanya asisten** di frontend, kirim pertanyaan umum tanpa data pribadi, dan periksa label sumber jawaban.
 - Jawaban berlabel **AI** berasal dari provider. **Panduan lokal** berarti layanan AI tidak berhasil dihubungi; jangan menganggap fallback sebagai keberhasilan integrasi AI.
-- Pada pemeriksaan 2 November 2026 terhadap server lokal yang sedang aktif, status mendapat HTTP 200 dan satu pertanyaan contoh mendapat HTTP 201 dengan `source: ai`. Ini bukti pada lingkungan tersebut, bukan jaminan konfigurasi clone baru atau deployment online sama.
+- Pada pemeriksaan tambahan terhadap server lokal yang sedang aktif, status mendapat HTTP 200 dan satu pertanyaan contoh mendapat HTTP 201 dengan `source: ai`. Ini bukti pada lingkungan tersebut, bukan jaminan konfigurasi clone baru atau deployment online sama.
 - Lanjutkan urutan demo warga -> petugas -> admin di atas memakai akun contoh lokal. Formulir dan data bisnis demo tetap tersimpan di browser; hanya pertanyaan chatbot yang dikirim ke backend/provider.
 - Chatbot muncul untuk pengunjung/warga, bukan petugas/admin. Gunakan akun warga atau keluar biasa untuk mencobanya.
 
@@ -198,7 +201,7 @@ Seluruh `VITE_*` bersifat publik. Jangan menaruh password database, key AI, Supa
 
 ## Progres saat ini
 
-Diperbarui 2 November 2026: **backend pada deployment Vercel belum berhasil menyala**. Ini berbeda dari keberhasilan kompilasi kode lokal. Integrasi API belum lengkap dan penyebab error hosting masih menunggu runtime logs. Gunakan mode demo lokal untuk mencoba alur secara mandiri.
+Snapshot pengumpulan 1 November 2026: **backend pada deployment Vercel belum berhasil menyala**. Ini berbeda dari keberhasilan kompilasi kode lokal. Integrasi API belum lengkap dan penyebab error hosting masih menunggu runtime logs. Gunakan mode demo lokal untuk mencoba alur secara mandiri.
 
 - Halaman landing, katalog, autentikasi, persiapan bertahap, serta ruang warga/petugas/admin telah dikerjakan.
 - Demo alur warga -> tinjauan -> koreksi -> tindak lanjut tersedia dengan data contoh lokal.
