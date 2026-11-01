@@ -15,6 +15,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { DocumentsModule } from './documents/documents.module';
 import { NeedsModule } from './needs/needs.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { OfficerModule } from './officer/officer.module';
 import { PreparationsModule } from './preparations/preparations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
@@ -40,6 +41,7 @@ import { StorageModule } from './storage/storage.module';
     ApplicationsModule,
     NotificationsModule,
     DashboardModule,
+    OfficerModule,
   ],
   controllers: [AppController],
   providers: [
