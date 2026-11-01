@@ -38,11 +38,7 @@ export class AdminController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: { status: ServicePublicationStatus },
   ) {
-    const data = await this.service.updateServiceStatus(
-      id,
-      body.status,
-      actor,
-    );
+    const data = await this.service.updateServiceStatus(id, body.status, actor);
     return new Response({ data });
   }
 

@@ -35,6 +35,7 @@ describe('StorageService', () => {
         return '';
       }),
       get: jest.fn((key: string) => {
+        if (key === 'SUPABASE_URL') return 'https://test.supabase.co';
         if (key === 'SUPABASE_SERVICE_ROLE_KEY') return 'secret-service-key';
         if (key === 'SUPABASE_STORAGE_BUCKET') return 'test-documents';
         return undefined;
