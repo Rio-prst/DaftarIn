@@ -17,7 +17,7 @@ Chatbot pendamping hanya untuk pengunjung tanpa login dan akun warga. Tombol mel
 
 ## Akses chatbot melayang — 1 November 2026
 
-Chatbot pendamping dapat dibuka langsung dari tombol kanan bawah pada halaman publik maupun akun warga, petugas, dan admin. Desktop memakai kapsul bertuliskan Tanya asisten; lebar <=640 px memakai lingkaran 52 px dengan label aksesibel yang sama. Pada persiapan, posisi naik mengikuti tinggi aktual bilah aksi bawah, termasuk saat teks membesar. Dialog tetap memakai penguncian/pengembalian fokus. Halaman bantuan tetap untuk panduan dan permintaan bantuan manusia; tombol chat duplikat di dalam halaman itu dihapus. Tidak mengubah provider, hak akses data, atau fungsi pengiriman chatbot.
+Chatbot pendamping dapat dibuka langsung dari tombol kanan bawah pada halaman publik dan akun warga. Akun petugas dan admin tidak menampilkan chatbot. Desktop memakai kapsul bertuliskan Tanya asisten; lebar <=640 px memakai lingkaran 52 px dengan label aksesibel yang sama. Pada persiapan, posisi naik mengikuti tinggi aktual bilah aksi bawah, termasuk saat teks membesar. Dialog tetap memakai penguncian/pengembalian fokus. Halaman bantuan tetap untuk panduan dan permintaan bantuan manusia; tombol chat duplikat di dalam halaman itu dihapus. Tidak mengubah provider, hak akses data, atau fungsi pengiriman chatbot.
 
 
 ## Logo terpilih — 1 November 2026
@@ -27,14 +27,14 @@ Pemilik memilih konsep 02: simbol folder dengan ruang negatif berupa pintu, navy
 
 ## Arah visual disetujui — 1 November 2026
 
-Struktur tegas dan suasana hangat sesuai contoh HTML navy–coral yang dipilih pemilik. Palet dasar putih hangat/navy dengan coral/peach sebagai aksen; status tetap semantik. Tipografi sistem 18/20 px, tombol utama 48–50 px, ilustrasi SVG terbatas pada konteks yang membantu. Tema berlaku juga untuk petugas/admin dengan aksen lebih sedikit. [Rincian penerapan](LAPORAN-UI-NAVY-CORAL-2026-11-01.txt).
+Struktur tegas dan suasana hangat sesuai contoh HTML navy–coral yang dipilih pemilik. Palet dasar putih hangat/navy dengan coral/peach sebagai aksen; status tetap semantik. Tipografi sistem 18/20 px, tombol utama 48–50 px, ilustrasi SVG terbatas pada konteks yang membantu. Tema berlaku juga untuk petugas/admin dengan aksen lebih sedikit.
 
 
 ## Pembaruan 1 November 2026 — persona dan chatbot
 
 Chatbot adalah pendamping panduan dan navigasi; kini memakai relay server dengan `CHAT_AI_*`, terpisah dari AI/OCR pemeriksaan berkas. Kegagalan provider memakai panduan lokal yang ditandai. Tidak ada tools kirim/ubah status atau akses otomatis ke KTP. Tinjauan manusia tetap bisa berjalan tanpa AI.
 
-Bantuan manusia dipisah dari chatbot. Deklarasi pendamping tidak dianggap verifikasi kuasa resmi. Penarikan tinjauan menyimpan sejarah dan tidak membatalkan urusan instansi. Pemulihan panduan wajib melalui draf dan publikasi versi baru. Bersihkan perangkat hanya menghapus salinan lokal. Detail perubahan dan batas backend ada di [LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt](LAPORAN-PERBAIKAN-PERSONA-DAN-CHATBOT-2026-11-01.txt).
+Bantuan manusia dipisah dari chatbot. Deklarasi pendamping tidak dianggap verifikasi kuasa resmi. Penarikan tinjauan menyimpan sejarah dan tidak membatalkan urusan instansi. Pemulihan panduan wajib melalui draf dan publikasi versi baru. Bersihkan perangkat hanya menghapus salinan lokal. Konfigurasi chatbot aktif dijelaskan di [CHATBOT.md](CHATBOT.md).
 
 
 Diperbarui 31 Oktober 2026 berdasarkan arahan pemilik produk.
