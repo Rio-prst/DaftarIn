@@ -53,12 +53,23 @@ export default async function handler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!isReady) {
-    await bootstrap();
+  try {
+    if (!isReady) {
+      await bootstrap();
+    }
+    const matchedPath = (req.headers['x-matched-path'] ??
+      req.headers['x-forwarded-uri']) as string | undefined;
+    if (matchedPath) {
+      req.url = matchedPath;
+    }
+    server(req, res);
+  } catch (error: any) {
+    console.error('Serverless bootstrap error:', error);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_BOOTSTRAP_ERROR',
+        message: error?.message ?? 'Gagal menginisialisasi server.',
+      },
+    });
   }
-  const matchedPath = (req.headers['x-matched-path'] ?? req.headers['x-forwarded-uri']) as string | undefined;
-  if (matchedPath) {
-    req.url = matchedPath;
-  }
-  server(req, res);
 }
