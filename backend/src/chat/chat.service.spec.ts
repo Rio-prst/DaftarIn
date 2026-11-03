@@ -18,6 +18,60 @@ describe('ChatService relay', () => {
     } as unknown as ConfigService);
   };
   afterEach(() => jest.restoreAllMocks());
+  it('reads server process.env through the real Nest ConfigService', () => {
+    const environment = jest.replaceProperty(process, 'env', {
+      CHAT_AI_PROVIDER: 'openai_compatible',
+      CHAT_AI_API_KEY: 'server-test-key',
+      CHAT_AI_MODEL: 'server-test-model',
+      AI_PROVIDER: 'disabled',
+    });
+    try {
+      expect(new ChatService(new ConfigService()).status()).toEqual({
+        configured: true,
+        missing: [],
+      });
+    } finally {
+      environment.restore();
+    }
+  });
+  it('normalizes provider names and whitespace', () => {
+    expect(
+      create({ CHAT_AI_PROVIDER: ' OpenAI_Compatible \n' }).status(),
+    ).toEqual({
+      configured: true,
+      missing: [],
+    });
+  });
+  it('reads the legacy server environment without exposing secrets', () => {
+    const service = create({
+      CHAT_AI_PROVIDER: '',
+      CHAT_AI_API_KEY: '',
+      CHAT_AI_MODEL: '',
+      VITE_AI_PROVIDER: 'openai',
+      VITE_OPENAI_API_KEY: 'legacy-private-key',
+      VITE_OPENAI_MODEL: 'legacy-model',
+    });
+    expect(service.status()).toEqual({ configured: true, missing: [] });
+    expect(JSON.stringify(service.status())).not.toContain(
+      'legacy-private-key',
+    );
+  });
+  it('reports missing fields without secret values', () => {
+    expect(
+      create({ CHAT_AI_API_KEY: ' ', CHAT_AI_MODEL: '' }).status(),
+    ).toEqual({
+      configured: false,
+      missing: ['api_key', 'model'],
+    });
+  });
+  it('preserves an explicit disabled provider over legacy settings', () => {
+    expect(
+      create({
+        CHAT_AI_PROVIDER: 'disabled',
+        VITE_AI_PROVIDER: 'openai',
+      }).status().configured,
+    ).toBe(false);
+  });
   it('does not call a provider while configuration is disabled', async () => {
     const fetch = jest.spyOn(global, 'fetch');
     await expect(

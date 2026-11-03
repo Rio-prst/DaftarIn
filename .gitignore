@@ -35,3 +35,10 @@ backend/uploads/
 /ENV-DEPLOYMENT.txt
 /ENV-DEVELOPMENT.txt
 /env-development.txt
+
+# Only maintained public documentation belongs in the frontend repository.
+/frontend/docs/*
+!/frontend/docs/API-Contract.md
+!/frontend/docs/PRODUCT-DECISIONS.md
+!/frontend/docs/PANDUAN-DEMO-LENGKAP-2026-11-01.txt
+!/frontend/docs/CHATBOT.md

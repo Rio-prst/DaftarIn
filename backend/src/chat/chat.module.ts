@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { Public } from '../common/decorators/public.decorator';
 import { Response } from '../common/response/response';
 import { retrieveAdmindukKnowledge } from './knowledge';
+import { readChatConfiguration } from './chat.config';
 
 const schema = z
   .object({
@@ -42,25 +43,21 @@ class ProviderAccessError extends Error {}
 export class ChatService {
   constructor(private readonly config: ConfigService) {}
   private configuration() {
-    const requested = this.config.get<string>('CHAT_AI_PROVIDER', 'disabled');
-    const provider = requested === 'openai' ? 'openai_compatible' : requested;
-    const key =
-      (provider === 'gemini'
-        ? this.config.get<string>('CHAT_GEMINI_API_KEY')
-        : undefined) || this.config.get<string>('CHAT_AI_API_KEY', '');
-    const model =
-      (provider === 'gemini'
-        ? this.config.get<string>('CHAT_GEMINI_MODEL')
-        : undefined) || this.config.get<string>('CHAT_AI_MODEL', '');
-    return { provider, key: key.trim(), model: model.trim() };
+    return readChatConfiguration(this.config);
   }
   status() {
     const { provider, key, model } = this.configuration();
+    const missing = [
+      ...(['gemini', 'openai_compatible'].includes(provider)
+        ? []
+        : ['provider']),
+      ...(key ? [] : ['api_key']),
+      ...(model ? [] : ['model']),
+    ];
     return {
-      configured:
-        ['gemini', 'openai_compatible'].includes(provider) &&
-        Boolean(key) &&
-        Boolean(model),
+      configured: missing.length === 0,
+      // Presence only: never expose credentials, their length, or upstream errors.
+      missing,
     };
   }
   async ask(dto: ChatDto) {
@@ -70,16 +67,18 @@ export class ChatService {
       );
     const query = redact(dto.query),
       context = retrieveAdmindukKnowledge(query, dto.serviceId);
-    const { provider, key, model: primaryModel } = this.configuration();
+    const {
+      provider,
+      key,
+      model: primaryModel,
+      baseUrl: base,
+      fallbackModel: fallback,
+    } = this.configuration();
     const model = primaryModel;
     if (!['gemini', 'openai_compatible'].includes(provider || ''))
       throw new ServiceUnavailableException(
         'Konfigurasi provider chatbot belum sesuai.',
       );
-    const base = this.config.get<string>(
-      'CHAT_AI_BASE_URL',
-      'https://api.openai.com/v1',
-    );
     let target: URL;
     try {
       target = new URL(
@@ -112,10 +111,6 @@ export class ChatService {
       role: item.sender === 'user' ? 'user' : 'assistant',
       content: redact(item.text),
     }));
-    const fallback =
-      provider === 'openai_compatible'
-        ? this.config.get<string>('CHAT_AI_FALLBACK_MODEL', '').trim()
-        : '';
     const models = [...new Set([primaryModel, fallback].filter(Boolean))];
     for (let attempt = 0; attempt < models.length; attempt++) {
       const model = models[attempt];
