@@ -1,3 +1,5 @@
+import { normalizeApiBaseUrl } from './baseUrl';
+
 export class ApiError extends Error {
   readonly status: number;
   readonly requestId?: string;
@@ -8,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
 let refreshing: Promise<void> | null = null;
 
 const TOKEN_KEY = "daftarin:access_token";
