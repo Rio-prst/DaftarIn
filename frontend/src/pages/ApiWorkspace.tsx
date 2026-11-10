@@ -11,6 +11,7 @@ import { useAuth } from "../auth/AuthContext";
 import { WorkspaceLayout } from "../components/WorkspaceLayout";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
+import { DocumentReadabilityCheck } from "../components/DocumentReadabilityCheck";
 import {
   serverRequest as request,
   serverList,
@@ -248,7 +249,14 @@ export function ApiCatalog() {
   const params = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useSearchParams();
+  const query = filters.get("q") ?? "";
+  const setQuery = (value: string) => {
+    const next = new URLSearchParams(filters);
+    if (value) next.set("q", value);
+    else next.delete("q");
+    setFilters(next, { replace: true });
+  };
   const [region, setRegion] = useState("");
   const list = useServerResource("catalog", () =>
     serverList<Service>("/services"),
@@ -411,6 +419,11 @@ export function ApiCatalog() {
         </div>
       </div>
       <Loading resource={list} />
+      {list.data && !rows.length && (
+        <p className="plain-panel mt-5" role="status">
+          Belum ada layanan yang cocok. Coba kata kunci atau wilayah lain.
+        </p>
+      )}
       <div className="grid gap-4 md:grid-cols-2 mt-5">
         {rows.map((item) => (
           <Link
@@ -876,6 +889,11 @@ export function ApiPreparation() {
                             >
                               Hapus
                             </button>
+                            <DocumentReadabilityCheck
+                              key={doc.id}
+                              preparationId={id}
+                              documentId={doc.id}
+                            />
                           </>
                         )}
                         <div className="form-field mt-4">

@@ -4,18 +4,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
 
 const services = [
   {
     id: 3,
+    searchTerm: "Akta Kelahiran",
     label: "Akta Kelahiran Baru",
     description:
-      "Pencatatan kelahiran baru dan penerbitan akta resmi tanpa denda.",
+      "Panduan menyiapkan berkas pencatatan kelahiran dan penerbitan akta.",
     icon: "child_care",
     badge: "Panduan persyaratan",
   },
   {
     id: 1,
+    searchTerm: "Kartu Keluarga",
     label: "Pembaruan Kartu Keluarga (KK)",
     description:
       "Perbarui susunan anggota keluarga, pisah KK, atau tambah anak baru.",
@@ -24,6 +27,7 @@ const services = [
   },
   {
     id: 2,
+    searchTerm: "KTP",
     label: "Penerbitan KTP Elektronik",
     description:
       "Panduan penerbitan KTP-el baru usia 17 tahun, penggantian rusak, atau hilang.",
@@ -32,9 +36,10 @@ const services = [
   },
   {
     id: 4,
+    searchTerm: "Pindah",
     label: "Pindah Domisili (SKPWNI)",
     description:
-      "Persiapan surat pindah antar kelurahan, kabupaten, atau provinsi tanpa pengantar RT/RW.",
+      "Panduan menyiapkan berkas pindah domisili sesuai wilayah tujuan.",
     icon: "moving",
     badge: "Panduan pindah domisili",
   },
@@ -76,6 +81,7 @@ export function LandingPage() {
   const [selectedTab, setSelectedTab] = useState<number>(3); // Default: Akta Kelahiran
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useAuth();
   const { services: guideServices, setSelectedService } = useApp();
   const selectedGuide = guideServices.find(
     (service) => service.id === selectedTab,
@@ -98,6 +104,11 @@ export function LandingPage() {
   };
 
   const handleStartService = (serviceId: number) => {
+    if (mode === "api") {
+      const service = services.find((item) => item.id === serviceId);
+      navigate(service ? "/katalog?q=" + encodeURIComponent(service.searchTerm) : "/katalog");
+      return;
+    }
     const selected = guideServices.find((item) => item.id === serviceId);
     if (selected) setSelectedService(selected);
     navigate(`/layanan/${serviceId}`);
@@ -146,8 +157,9 @@ export function LandingPage() {
 
                 {/* Subhead Ramah Lansia (Teks 16-18px) */}
                 <p className="text-base sm:text-[18px] text-[#52616B] leading-relaxed max-w-xl">
-                  Pahami persyaratan, lengkapi data, dan siapkan berkas untuk
-                  ditinjau sebelum mengurusnya melalui kanal resmi instansi.
+                  Bingung berkas apa yang perlu dibawa? Temukan persyaratan
+                  sesuai kebutuhan, cek kelengkapan, dan minta tinjauan sebelum
+                  mengajukan lewat kanal resmi instansi.
                 </p>
 
                 {/* Search & Actions Bar: Sempurna 1 Garis Sejajar h-[52px] */}
@@ -168,7 +180,7 @@ export function LandingPage() {
                       type="search"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Cari syarat berkas (Akta, KK, KTP)..."
+                      placeholder="Cari layanan, mis. KK"
                       className="min-w-0 w-full text-sm sm:text-base font-normal outline-none text-[#17324D] placeholder:text-slate-400 bg-transparent"
                     />
                     <button
@@ -206,7 +218,7 @@ export function LandingPage() {
                     <span className="material-symbols-outlined text-[18px] text-[#17324D]">
                       lock
                     </span>
-                    <span>Data demo tersimpan di perangkat ini</span>
+                    <span>{mode === "demo" ? "Data demo tersimpan di perangkat ini" : "Draf tersimpan di akun Anda"}</span>
                   </span>
                 </div>
               </div>

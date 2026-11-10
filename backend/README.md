@@ -86,11 +86,21 @@ pnpm demo:bootstrap
 
 Akun yang dituju: `warga@daftarin.test`, `petugas@daftarin.test`, `admin@daftarin.test`; sandi awal `DaftarIn2026!` untuk akun baru. Jika sandi berubah, gunakan sandi terbaru. Percobaan pembuatan akun cloud terakhir belum berhasil karena `SELF_SIGNED_CERT_IN_CHAIN`; jangan mengklaim ketiga akun online telah dibuat.
 
+## Cek keterbacaan berkas lokal
+
+1. Jalankan backend development dengan PostgreSQL lokal yang sudah dimigrasi. Jalankan frontend dengan `VITE_AUTH_MODE=api` dan `VITE_API_URL=/api` jika backend berjalan di port 3000.
+2. Masuk sebagai warga server, mulai persiapan, lalu unggah PDF, JPG, atau PNG pada langkah **Dokumen**.
+3. Tekan **Cek keterbacaan berkas**. Backend memeriksa kepemilikan versi berkas dan mengembalikan skor OCR serta saran. Hasil tampil untuk versi yang diperiksa dan tidak mengubah status tinjauan.
+
+OCR memakai Tesseract.js bahasa Indonesia. Saat pertama dijalankan, siapkan akses unduh model atau arahkan `DOCUMENT_OCR_LANG_PATH` ke folder lokal berisi `ind.traineddata.gz`. Untuk PDF, pasang Poppler agar `pdftoppm` tersedia di PATH, atau set `PDFTOPPM_PATH` ke executable. Pemeriksaan PDF mencakup halaman pertama.
+
+Saran dasar selalu tersedia ketika OCR berhasil. Untuk mencoba pemilihan saran oleh LLM, aktifkan `DOCUMENT_CHECK_LLM=true` dan konfigurasi provider chat OpenAI-compatible. Hanya skor, cakupan, dan sinyal keterbacaan yang dikirim. Berkas, teks OCR, dan identitas warga tetap di server. Bila model gagal, aplikasi kembali ke saran dasar.
+
 ## Status implementasi
 
 - Source backend mencakup lifecycle tinjauan pendamping dan pengelolaan dokumen.
 - Jalur frontend ke API masih perlu penyelesaian/verifikasi per fitur.
-- Belum ada klaim alur lengkap cloud telah diuji atau pemeriksaan isi berkas OCR/LLM telah aktif.
+- Cek keterbacaan OCR tersedia pada backend development. Aktivasi pada hosting membutuhkan dukungan runtime dan verifikasi terpisah.
 - Selesai tinjauan pendamping berbeda dari dokumen resmi sudah terbit.
 - Migration/schema database hosting dan seed akun harus dipastikan terpisah dari keberhasilan build.
 - Tidak ada integrasi langsung ke SIAK atau sistem penerbitan pemerintah yang diklaim.

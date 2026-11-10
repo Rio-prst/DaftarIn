@@ -5,13 +5,16 @@ import { StorageModule } from '../storage/storage.module';
 import { DocumentsController } from './documents.controller';
 import { DocumentsRepository } from './documents.repository';
 import { DocumentsService } from './documents.service';
+import { DocumentCheckController } from './document-check.controller';
+import { DocumentCheckService } from './document-check.service';
 import { DOCUMENTS_REPOSITORY } from './interfaces/documents.repository.interface';
 import { DOCUMENTS_SERVICE } from './interfaces/documents.service.interface';
 
 @Module({
   imports: [PrismaModule, StorageModule, PreparationsModule],
-  controllers: [DocumentsController],
+  controllers: [DocumentsController, DocumentCheckController],
   providers: [
+    DocumentCheckService,
     {
       provide: DOCUMENTS_REPOSITORY,
       useClass: DocumentsRepository,

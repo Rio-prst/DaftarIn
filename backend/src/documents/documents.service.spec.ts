@@ -53,6 +53,7 @@ describe('DocumentsService', () => {
     };
 
     storageService = {
+      downloadFile: jest.fn(),
       uploadFile: jest.fn().mockResolvedValue(undefined),
       createSignedUrl: jest
         .fn()

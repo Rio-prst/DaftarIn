@@ -6,6 +6,7 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   prisma: true
+  tesseract.js: false
   unrs-resolver: true
 minimumReleaseAgeExclude:
   - bullmq@6.5.1

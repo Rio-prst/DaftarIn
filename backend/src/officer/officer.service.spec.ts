@@ -123,6 +123,7 @@ describe('OfficerService', () => {
     };
 
     mockStorageService = {
+      downloadFile: jest.fn(),
       createSignedUrl: jest.fn(),
       uploadFile: jest.fn(),
       deleteFile: jest.fn(),
