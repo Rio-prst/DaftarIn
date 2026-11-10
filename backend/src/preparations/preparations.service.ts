@@ -312,7 +312,7 @@ export class PreparationsService implements IPreparationsService {
     const readiness = isStale
       ? 'stale'
       : latestInspection !== null
-        ? this.mapInspectionToReadiness(latestInspection.status)
+        ? this.mapInspectionToReadiness(latestInspection.status, record.status)
         : 'not_assessed';
 
     return {
@@ -348,7 +348,7 @@ export class PreparationsService implements IPreparationsService {
     const readiness = isStale
       ? 'stale'
       : latestInspection !== null
-        ? this.mapInspectionToReadiness(latestInspection.status)
+        ? this.mapInspectionToReadiness(latestInspection.status, record.status)
         : 'not_assessed';
 
     const currentAnswers = record.answerVersions.filter(
@@ -444,9 +444,21 @@ export class PreparationsService implements IPreparationsService {
     }
   }
 
-  private mapInspectionToReadiness(status: string): string {
+  private mapInspectionToReadiness(
+    status: string,
+    prepStatus?: PreparationStatus,
+  ): string {
     switch (status) {
       case 'COMPLETED':
+        if (prepStatus === PreparationStatus.NEEDS_COMPLETION) {
+          return 'needs_completion';
+        }
+        if (prepStatus === PreparationStatus.NEEDS_CONFIRMATION) {
+          return 'needs_review';
+        }
+        if (prepStatus === PreparationStatus.INSPECTION_INCOMPLETE) {
+          return 'inspection_incomplete';
+        }
         return 'ready_initial_check';
       case 'QUEUED':
       case 'RUNNING':

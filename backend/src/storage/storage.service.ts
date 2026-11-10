@@ -22,7 +22,11 @@ export class StorageService implements IStorageService {
   constructor(private readonly configService: ConfigService) {
     let supabaseUrl = this.configService.get<string>('SUPABASE_URL');
     if (!supabaseUrl && typeof this.configService.getOrThrow === 'function') {
-      try { supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL'); } catch {}
+      try {
+        supabaseUrl = this.configService.getOrThrow<string>('SUPABASE_URL');
+      } catch {
+        // ignore missing key
+      }
     }
     const supabaseServiceKey = this.configService.get<string>(
       'SUPABASE_SERVICE_ROLE_KEY',
@@ -34,12 +38,22 @@ export class StorageService implements IStorageService {
 
     let client: ReturnType<typeof createClient> | null = null;
     if (supabaseUrl && supabaseServiceKey) {
-      try { client = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false, autoRefreshToken: false } }); }
-      catch { this.logger.warn('Konfigurasi Storage belum valid; layanan dokumen belum tersedia.'); }
+      try {
+        client = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+      } catch {
+        this.logger.warn(
+          'Konfigurasi Storage belum valid; layanan dokumen belum tersedia.',
+        );
+      }
     }
     this.client = client;
 
-    if (!this.client && this.configService.get<string>('NODE_ENV') !== 'production') {
+    if (
+      !this.client &&
+      this.configService.get<string>('NODE_ENV') !== 'production'
+    ) {
       this.logger.log(
         `Supabase Storage tidak terkonfigurasi. Menggunakan penyimpanan berkas lokal di: ${this.localBaseDir}`,
       );
@@ -99,10 +113,10 @@ export class StorageService implements IStorageService {
 
     try {
       fs.writeFileSync(filePath, buffer, { flag: 'wx' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.logger.error(
         `Gagal menulis berkas lokal: ${storageKey}`,
-        err.message,
+        err instanceof Error ? err.message : String(err),
       );
       throw new InternalServerErrorException(
         'Gagal menyimpan berkas ke penyimpanan lokal.',
@@ -136,6 +150,29 @@ export class StorageService implements IStorageService {
     return `/api/storage/raw?key=${encodeURIComponent(storageKey)}`;
   }
 
+  async downloadFile(storageKey: string): Promise<Buffer> {
+    if (this.client) {
+      const { data, error } = await this.client.storage
+        .from(this.bucket)
+        .download(storageKey);
+
+      if (error || !data) {
+        this.logger.error(
+          `Failed to download file from storageKey: ${storageKey}`,
+          error?.message,
+        );
+        throw new InternalServerErrorException(
+          'Gagal mengunduh berkas dari storage.',
+        );
+      }
+
+      return Buffer.from(await data.arrayBuffer());
+    }
+
+    this.ensureLocalStorageAllowed();
+    return this.getLocalFile(storageKey).buffer;
+  }
+
   async deleteFile(storageKey: string): Promise<void> {
     if (this.client) {
       const { error } = await this.client.storage
@@ -159,17 +196,20 @@ export class StorageService implements IStorageService {
     if (fs.existsSync(filePath)) {
       try {
         fs.unlinkSync(filePath);
-      } catch (err: any) {
+      } catch (err: unknown) {
         this.logger.error(
           `Gagal menghapus berkas lokal: ${storageKey}`,
-          err.message,
+          err instanceof Error ? err.message : String(err),
         );
       }
     }
   }
 
   private ensureLocalStorageAllowed() {
-    if (this.configService.get<string>('NODE_ENV') === 'production') throw new ServiceUnavailableException('Penyimpanan dokumen belum dikonfigurasi.');
+    if (this.configService.get<string>('NODE_ENV') === 'production')
+      throw new ServiceUnavailableException(
+        'Penyimpanan dokumen belum dikonfigurasi.',
+      );
   }
   getLocalFile(storageKey: string): { buffer: Buffer; filePath: string } {
     if (this.client)

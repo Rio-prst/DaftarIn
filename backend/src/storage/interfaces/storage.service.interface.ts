@@ -10,5 +10,6 @@ export interface IStorageService {
     storageKey: string,
     expiresInSeconds?: number,
   ): Promise<string>;
+  downloadFile(storageKey: string): Promise<Buffer>;
   deleteFile(storageKey: string): Promise<void>;
 }

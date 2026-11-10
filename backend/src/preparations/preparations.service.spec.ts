@@ -41,7 +41,7 @@ function makeMockPreparation(
       category: 'Kependudukan',
       summary: 'Ringkasan uji',
       publicationStatus: 'PUBLISHED',
-      availability: 'ACTIVE' as any,
+      availability: 'ACTIVE',
       pausedReason: null,
       publishedAt: new Date(),
       createdAt: new Date(),
@@ -122,6 +122,7 @@ describe('PreparationsService', () => {
       restore: jest.fn(),
       delete: jest.fn(),
       countSubmissions: jest.fn(),
+      markRecheckRequired: jest.fn().mockResolvedValue(undefined),
     };
 
     service = new PreparationsService(repository);

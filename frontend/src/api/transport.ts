@@ -72,11 +72,18 @@ export async function refreshSession() {
 
 export async function request<T>(
   path: string,
-  options: { method?: string; body?: unknown } = {},
+  options: {
+    method?: string;
+    body?: unknown;
+    timeoutMs?: number;
+    headers?: Record<string, string>;
+  } = {},
   retry = true,
 ): Promise<T> {
   const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), 15000);
+  const timeoutMs =
+    options.timeoutMs ?? (path.includes('/inspections') ? 45000 : 15000);
+  const timeout = setTimeout(() => abort.abort(), timeoutMs);
   const token = getStoredToken();
 
   try {
@@ -89,6 +96,7 @@ export async function request<T>(
         headers: {
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers ?? {}),
           ...(options.body === undefined
             ? {}
             : { "Content-Type": "application/json" }),

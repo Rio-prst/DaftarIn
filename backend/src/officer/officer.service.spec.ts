@@ -45,7 +45,7 @@ describe('OfficerService', () => {
       submissionChannel: 'ONLINE_PORTAL',
       sourceMode: 'CITIZEN_REPORT',
       statusSummary: ApplicationStatus.CITIZEN_RECORDED_UNCONFIRMED,
-      reviewStatus: 'SUBMITTED' as any,
+      reviewStatus: 'SUBMITTED',
       citizenNotes: null,
       version: 1,
       createdAt: new Date('2026-10-28T08:00:00Z'),
@@ -125,6 +125,7 @@ describe('OfficerService', () => {
     mockStorageService = {
       createSignedUrl: jest.fn(),
       uploadFile: jest.fn(),
+      downloadFile: jest.fn().mockResolvedValue(Buffer.from('test')),
       deleteFile: jest.fn(),
     };
 

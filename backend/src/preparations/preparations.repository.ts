@@ -281,6 +281,18 @@ export class PreparationsRepository implements IPreparationsRepository {
     });
   }
 
+  async markRecheckRequired(id: string): Promise<void> {
+    await this.prisma.preparation.updateMany({
+      where: {
+        id,
+        status: { not: PreparationStatus.ARCHIVED },
+      },
+      data: {
+        status: PreparationStatus.RECHECK_REQUIRED,
+      },
+    });
+  }
+
   async delete(id: string, userId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await tx.answerVersion.deleteMany({ where: { preparationId: id } });
