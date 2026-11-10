@@ -1,5 +1,6 @@
 import { useFamilyMembers } from "../family/members";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import type { Finding, InspectionRun } from "../types/api";
 import {
   Link,
   useLocation,
@@ -74,6 +75,9 @@ type Prep = {
   documents: FileRecord[];
   is_archived: boolean;
   status: string;
+  readiness?: string;
+  latest_inspection_id?: string | null;
+  active_inspection_id?: string | null;
 };
 type Assessment = {
   item_type: "FORM_DATA" | "DOCUMENT";
@@ -694,7 +698,9 @@ export function ApiPreparation() {
       ? 1
       : pathname.endsWith("dokumen")
         ? 2
-        : 3;
+        : pathname.endsWith("validasi")
+          ? 3
+          : 4;
   const resource = useServerResource("prep:" + id, async () => {
     if (!id) return null;
     const prep = await request<Prep>(`/preparations/${id}`);
@@ -707,16 +713,38 @@ export function ApiPreparation() {
       ),
       request<FileRecord[]>(`/preparations/${id}/documents`),
     ]);
+    let latestRun: InspectionRun | null = null;
+    let findings: Finding[] = [];
+    if (prep.latest_inspection_id) {
+      try {
+        latestRun = await request<InspectionRun>(
+          `/preparations/${id}/inspections/${prep.latest_inspection_id}`,
+        );
+        const findingsRes = await request<{ data?: Finding[] } | Finding[]>(
+          `/preparations/${id}/inspections/${prep.latest_inspection_id}/findings`,
+        );
+        findings = Array.isArray(findingsRes)
+          ? findingsRes
+          : findingsRes.data ?? [];
+      } catch {
+        // ignore if not found
+      }
+    }
     return {
       prep,
       questions: questions.questions,
       requirements: requirements.requirements,
       docs,
+      latestRun,
+      findings,
     };
   });
   const action = useServerAction(resource.refresh);
   const [answers, setAnswers] = useState<Record<string, Answer["value"]>>({});
   const [consent, setConsent] = useState(false);
+  const [correctionValues, setCorrectionValues] = useState<
+    Record<string, string>
+  >({});
   useEffect(() => {
     if (resource.data) {
       setAnswers(
@@ -730,8 +758,8 @@ export function ApiPreparation() {
       setConsent(false);
     }
   }, [resource.data]);
-  const names = ["Kebutuhan", "Data", "Dokumen", "Tinjau & kirim"];
-  const paths = ["kebutuhan", "data", "dokumen", "ringkasan"];
+  const names = ["Kebutuhan", "Data", "Dokumen", "Validasi", "Tinjau & kirim"];
+  const paths = ["kebutuhan", "data", "dokumen", "validasi", "ringkasan"];
   const link = (index: number) =>
     `/persiapan/${paths[index]}?prep=${id}${applicationId ? "&application=" + applicationId : ""}`;
   const save = async () => {
@@ -940,11 +968,200 @@ export function ApiPreparation() {
                     </p>
                   )}
                   <Link className="button-primary" to={link(3)}>
-                    Lanjut ke rangkuman
+                    Lanjut ke validasi berkas →
                   </Link>
                 </>
               )}
               {stage === 3 && (
+                <div className="plain-panel my-4 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-3">
+                    <div>
+                      <h2 className="panel-title mb-1">
+                        Pemeriksaan Awal Dokumen (AI &amp; Validasi)
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        Status kesiapan:{" "}
+                        <strong className="capitalize">
+                          {resource.data.prep.readiness ?? resource.data.prep.status}
+                        </strong>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="button-primary"
+                      disabled={action.busy}
+                      onClick={() =>
+                        action.run(async () => {
+                          await request(`/preparations/${id}/inspections`, {
+                            method: "POST",
+                            body: {
+                              expected_data_version:
+                                resource.data!.prep.data_version,
+                            },
+                            headers: {
+                              "Idempotency-Key": `inspect-${id}-${resource.data!.prep.data_version}-${Date.now()}`,
+                            },
+                          });
+                        }, "Pemeriksaan dokumen selesai dijalankan.")
+                      }
+                    >
+                      {action.busy
+                        ? "Sedang memeriksa..."
+                        : "Jalankan Pemeriksaan AI/OCR"}
+                    </button>
+                  </div>
+
+                  {resource.data.latestRun ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-sm">
+                            Hasil:{" "}
+                            {resource.data.latestRun.summary?.title ??
+                              resource.data.latestRun.status}
+                          </span>
+                          <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 font-medium">
+                            {resource.data.latestRun.status}
+                          </span>
+                        </div>
+                        {resource.data.latestRun.summary && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {resource.data.latestRun.summary.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-700">
+                          <div>
+                            Diproses:{" "}
+                            <strong>
+                              {resource.data.latestRun.summary
+                                ?.documents_processed ?? 0}
+                            </strong>
+                          </div>
+                          <div>
+                            Temuan wajib:{" "}
+                            <strong>
+                              {resource.data.latestRun.summary
+                                ?.must_fix_count ?? 0}
+                            </strong>
+                          </div>
+                          <div>
+                            Perlu konfirmasi:{" "}
+                            <strong>
+                              {resource.data.latestRun.summary
+                                ?.needs_confirmation_count ?? 0}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h3 className="font-medium text-sm mt-4">
+                        Daftar Temuan Pemeriksaan (
+                        {resource.data.findings.length})
+                      </h3>
+
+                      {resource.data.findings.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">
+                          Tidak ada temuan masalah pada berkas. Dokumen siap
+                          diajukan.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {resource.data.findings.map((f) => (
+                            <div
+                              key={f.id}
+                              className={`p-3.5 rounded-lg border text-xs space-y-2 ${
+                                f.action_level === "must_fix"
+                                  ? "bg-red-50/60 border-red-200 text-red-950"
+                                  : f.action_level === "needs_confirmation"
+                                    ? "bg-yellow-50/60 border-yellow-200 text-yellow-950"
+                                    : "bg-blue-50/60 border-blue-200 text-blue-950"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold">{f.title}</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[11px] font-medium uppercase ${
+                                    f.action_level === "must_fix"
+                                      ? "bg-red-200 text-red-800"
+                                      : f.action_level === "needs_confirmation"
+                                        ? "bg-yellow-200 text-yellow-800"
+                                        : "bg-blue-200 text-blue-800"
+                                  }`}
+                                >
+                                  {f.action_level} · {f.status}
+                                </span>
+                              </div>
+                              <p className="text-gray-700">{f.explanation}</p>
+                              {f.evidence?.quoted_text && (
+                                <p className="italic text-gray-600 bg-white/70 p-2 rounded border border-gray-200">
+                                  Teks terbaca: &ldquo;
+                                  {f.evidence.quoted_text}&rdquo;
+                                </p>
+                              )}
+                              {f.status === "open" && (
+                                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200/60">
+                                  <input
+                                    type="text"
+                                    placeholder="Isikan nilai koreksi atau konfirmasi..."
+                                    className="text-xs p-1.5 border rounded flex-1 min-w-[180px]"
+                                    value={correctionValues[f.id] ?? ""}
+                                    onChange={(e) =>
+                                      setCorrectionValues((prev) => ({
+                                        ...prev,
+                                        [f.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    className="button-secondary text-xs py-1 px-3"
+                                    disabled={
+                                      action.busy ||
+                                      !correctionValues[f.id]?.trim()
+                                    }
+                                    onClick={() =>
+                                      action.run(async () => {
+                                        await request(
+                                          `/preparations/${id}/findings/${f.id}/corrections`,
+                                          {
+                                            method: "POST",
+                                            body: {
+                                              corrected_value:
+                                                correctionValues[f.id].trim(),
+                                            },
+                                          },
+                                        );
+                                      }, "Koreksi temuan berhasil dicatat.")
+                                    }
+                                  >
+                                    Koreksi
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-lg text-xs text-blue-900">
+                      Dokumen belum diperiksa secara otomatis. Tekan tombol{" "}
+                      <strong>Jalankan Pemeriksaan AI/OCR</strong> untuk memulai
+                      verifikasi awal dokumen dan kesesuaian data formulir.
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-200">
+                    <Link className="button-primary" to={link(4)}>
+                      Lanjut ke Tinjau &amp; kirim →
+                    </Link>
+                    <Link className="button-secondary" to={link(2)}>
+                      ← Kembali ke dokumen
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {stage === 4 && (
                 <form
                   className="plain-panel auth-form"
                   onSubmit={(event) => {

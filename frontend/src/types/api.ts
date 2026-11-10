@@ -154,11 +154,31 @@ export interface DocumentItem {
 export type InspectionStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 export type InspectionResult = 'needs_completion' | 'needs_review' | 'ready_initial_check' | 'incomplete';
 
+export interface InspectionSummary {
+  title: string;
+  description: string;
+  open_findings_count: number;
+  must_fix_count: number;
+  needs_confirmation_count: number;
+  informational_count: number;
+  documents_processed: number;
+  documents_failed: number;
+  documents_skipped: number;
+}
+
+export interface InspectionFailure {
+  code: string;
+  message: string;
+  retryable: boolean;
+}
+
 export interface InspectionRun {
   id: string;
   preparation_id: string;
   status: InspectionStatus;
   result: InspectionResult | null;
+  summary?: InspectionSummary | null;
+  limitations?: string[];
   input_snapshot: {
     data_version: number;
     document_versions: Array<{ document_id: string; version: number }>;
@@ -170,9 +190,11 @@ export interface InspectionRun {
     percent: number;
     message: string;
   };
+  is_current_for_active_input?: boolean;
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+  failure?: InspectionFailure | null;
 }
 
 export type FindingCategory =
@@ -195,7 +217,7 @@ export interface Finding {
   status: FindingStatus;
   title: string;
   explanation: string;
-  document_id: string;
+  document_id: string | null;
   document_version: number;
   evidence: {
     page: number;

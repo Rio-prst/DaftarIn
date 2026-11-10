@@ -164,7 +164,10 @@ export const inspectionsApi = {
       await api.post(
         `/preparations/${preparationId}/inspections`,
         { expected_data_version: expectedDataVersion },
-        { headers: { "Idempotency-Key": idempotencyKey } },
+        {
+          headers: { "Idempotency-Key": idempotencyKey },
+          timeout: 45000,
+        },
       )
     ).data;
   },
