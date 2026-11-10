@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
@@ -36,6 +37,7 @@ const DEFAULT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 
 @Injectable()
 export class DocumentsService implements IDocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
   private readonly maxUploadBytes: number;
 
   constructor(
@@ -100,6 +102,11 @@ export class DocumentsService implements IDocumentsService {
       await this.storageService.deleteFile(storageKey).catch(() => undefined);
       throw error;
     }
+
+    await this.markRecheckRequired(
+      preparationId,
+      Boolean(prep.inspectionRuns?.length),
+    );
 
     return this.mapToItemView(docVersion, displayName, requirementId);
   }
@@ -238,12 +245,31 @@ export class DocumentsService implements IDocumentsService {
       preparationId,
       doc.documentType,
     );
+    await this.markRecheckRequired(
+      preparationId,
+      Boolean(prep.inspectionRuns?.length),
+    );
 
     return {
       document_id: documentId,
       deletion_status: 'pending',
       message: 'Penghapusan dokumen berhasil diproses.',
     };
+  }
+
+  private async markRecheckRequired(
+    preparationId: string,
+    hasInspection: boolean,
+  ): Promise<void> {
+    if (!hasInspection) return;
+    try {
+      await this.preparationsRepository.markRecheckRequired(preparationId);
+    } catch (error) {
+      this.logger.warn(
+        `Gagal menandai persiapan perlu pemeriksaan ulang: ${preparationId}`,
+        error instanceof Error ? error.message : undefined,
+      );
+    }
   }
 
   private async validateAndInspectFile(file?: Express.Multer.File) {

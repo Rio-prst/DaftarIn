@@ -21,6 +21,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DocumentsModule } from './documents/documents.module';
+import { InspectionsModule } from './inspections/inspections.module';
 import { NeedsModule } from './needs/needs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OfficerModule } from './officer/officer.module';
@@ -32,7 +33,11 @@ import { StorageModule } from './storage/storage.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [path.resolve(__dirname, '../.env'), path.resolve(process.cwd(), '.env'), path.resolve(process.cwd(), 'backend/.env')],
+      envFilePath: [
+        path.resolve(__dirname, '../.env'),
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), 'backend/.env'),
+      ],
     }),
     ThrottlerModule.forRoot([
       {
@@ -50,6 +55,7 @@ import { StorageModule } from './storage/storage.module';
     NeedsModule,
     PreparationsModule,
     DocumentsModule,
+    InspectionsModule,
     ApplicationsModule,
     NotificationsModule,
     DashboardModule,

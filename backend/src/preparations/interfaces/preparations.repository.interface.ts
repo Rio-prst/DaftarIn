@@ -89,4 +89,5 @@ export interface IPreparationsRepository {
   restore(id: string, userId: string): Promise<PreparationWithRelations>;
   delete(id: string, userId: string): Promise<void>;
   countSubmissions(id: string): Promise<number>;
+  markRecheckRequired(id: string): Promise<void>;
 }

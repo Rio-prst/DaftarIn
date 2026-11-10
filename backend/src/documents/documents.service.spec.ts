@@ -57,6 +57,7 @@ describe('DocumentsService', () => {
       createSignedUrl: jest
         .fn()
         .mockResolvedValue('https://example.com/signed-url'),
+      downloadFile: jest.fn().mockResolvedValue(Buffer.from('test')),
       deleteFile: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -72,6 +73,7 @@ describe('DocumentsService', () => {
       restore: jest.fn(),
       delete: jest.fn(),
       countSubmissions: jest.fn(),
+      markRecheckRequired: jest.fn().mockResolvedValue(undefined),
     };
 
     const configService = {
