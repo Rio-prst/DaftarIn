@@ -2,13 +2,21 @@
 
 Tanggal dokumentasi pengumpulan: **1 November 2026**.
 
-DaftarIn adalah website pendamping persiapan dokumen kependudukan. Warga dapat membaca persyaratan, menyiapkan data dan berkas, serta menindaklanjuti tinjauan petugas sebelum menggunakan kanal resmi instansi.
+Warga sering baru mengetahui berkasnya belum lengkap saat hendak mengajukan layanan kependudukan. DaftarIn membantu warga menemukan persyaratan sesuai kebutuhan, menyiapkan berkas, dan melacak tinjauan pendamping sebelum mengajukan lewat kanal resmi instansi.
+
+Alurnya dimulai dari katalog layanan, dilanjutkan dengan draf dan unggah berkas, cek keterbacaan, lalu tinjauan petugas. Warga dapat menanggapi catatan perbaikan dan mencatat tanda terima dari instansi secara terpisah.
 
 ## Website
 
 **Buka aplikasi:** https://daftarin-dusky.vercel.app
 
-API aplikasi sudah terhubung menurut pembaruan pengembang. **Chatbot AI sementara belum tersambung.** Untuk percobaan lokal, gunakan mode demo di bawah tanpa API atau chatbot.
+Untuk penilaian, gunakan mode demo lokal di bawah. Mode API lokal juga tersedia untuk mencoba penyimpanan server dan OCR. Akses browser ke API produksi masih perlu diverifikasi.
+
+## Bukti halaman FDS
+
+1. [Beranda](docs/fds/beranda.png) — penjelasan tujuan dan pintu masuk pencarian layanan.
+2. [Katalog](docs/fds/katalog.png) — hasil pencarian layanan yang diambil dari API lokal.
+3. [Cek keterbacaan di HP](docs/fds/cek-berkas-mobile.png) — hasil OCR pada berkas contoh.
 
 ## Tech stack
 
@@ -87,8 +95,8 @@ Gunakan browser/profil dan alamat lokal yang sama saat berpindah peran. Data dem
 
 - Landing page, katalog, pendaftaran/login, persiapan bertahap, serta ruang warga/petugas/admin sudah dikerjakan.
 - Alur demo persiapan -> tinjauan -> koreksi -> tindak lanjut dapat dicoba dengan data fiktif.
-- API aplikasi sudah terhubung menurut pembaruan pengembang; verifikasi menyeluruh produksi belum dinyatakan selesai.
-- **Chatbot AI sementara belum tersambung dan tidak termasuk percobaan lokal ini.**
+- Mode API lokal menyediakan unggah berkas dan cek keterbacaan OCR untuk JPG/PNG serta halaman pertama PDF. Saran berbasis LLM dapat diaktifkan di backend. Cek keterbacaan tidak memblokir alur manual.
+- Chatbot dan OCR bukan syarat untuk mencoba demo tanpa API. Cara menjalankan OCR tersedia di [dokumentasi backend](backend/README.md#cek-keterbacaan-berkas-lokal).
 
 DaftarIn mendampingi persiapan dan tinjauan, bukan menerbitkan dokumen pemerintah. Gunakan data contoh, bukan NIK/KTP asli.
 

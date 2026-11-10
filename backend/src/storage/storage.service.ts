@@ -136,6 +136,18 @@ export class StorageService implements IStorageService {
     return `/api/storage/raw?key=${encodeURIComponent(storageKey)}`;
   }
 
+  async downloadFile(storageKey: string): Promise<Buffer> {
+    if (this.client) {
+      const { data, error } = await this.client.storage.from(this.bucket).download(storageKey);
+      if (error || !data) throw new NotFoundException('Berkas tidak dapat dibaca.');
+      return Buffer.from(await data.arrayBuffer());
+    }
+    this.ensureLocalStorageAllowed();
+    return fs.promises.readFile(this.resolveLocalPath(storageKey)).catch(() => {
+      throw new NotFoundException('Berkas tidak dapat dibaca.');
+    });
+  }
+
   async deleteFile(storageKey: string): Promise<void> {
     if (this.client) {
       const { error } = await this.client.storage
