@@ -19,7 +19,7 @@ import { readChatConfiguration } from './chat.config';
 const schema = z
   .object({
     query: z.string().trim().min(1).max(1000),
-    serviceId: z.number().int().min(1).max(6).optional(),
+    serviceId: z.union([z.number().int().min(1).max(6), z.uuid()]).nullish(),
     history: z
       .array(
         z

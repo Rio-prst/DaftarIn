@@ -345,7 +345,7 @@ const STOPWORDS = new Set([
  */
 export function retrieveAdmindukKnowledge(
   userQuery: string,
-  activeServiceId?: number,
+  activeServiceId?: number | string | null,
 ): RagResult {
   const queryClean = userQuery.toLowerCase().trim();
   const tokens = queryClean
