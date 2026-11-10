@@ -114,6 +114,8 @@ export class ChatService {
     const models = [...new Set([primaryModel, fallback].filter(Boolean))];
     for (let attempt = 0; attempt < models.length; attempt++) {
       const model = models[attempt];
+      const startedAt = Date.now();
+      let upstreamStatus: number | undefined;
       const controller = new AbortController(),
         timer = setTimeout(() => controller.abort(), 10000);
       try {
@@ -157,6 +159,7 @@ export class ChatService {
           },
           body: JSON.stringify(body),
         });
+        upstreamStatus = response.status;
         if (response.status === 401 || response.status === 403)
           throw new ProviderAccessError();
         if (!response.ok) throw new Error('provider_unavailable');
@@ -180,6 +183,13 @@ export class ChatService {
                 .replace(/\s*```$/, ''),
             ),
           );
+        console.info('[chat] provider attempt ok', {
+          provider,
+          targetHost: target.hostname,
+          model,
+          attempt,
+          durationMs: Date.now() - startedAt,
+        });
         return {
           text: parsed.answer,
           actionSteps: parsed.actionSteps || [],
@@ -190,6 +200,15 @@ export class ChatService {
           usedFallback: attempt > 0,
         };
       } catch (error) {
+        console.warn('[chat] provider attempt failed', {
+          provider,
+          targetHost: target.hostname,
+          model,
+          attempt,
+          upstreamStatus,
+          durationMs: Date.now() - startedAt,
+          errorName: error instanceof Error ? error.name : 'unknown',
+        });
         if (
           error instanceof ProviderAccessError ||
           attempt === models.length - 1
