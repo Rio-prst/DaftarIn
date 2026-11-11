@@ -168,6 +168,7 @@ export const mockAuth = {
     if (
       !input.name.trim() ||
       !/^\d{16}$/.test(input.nik) ||
+      !/^\d{16}$/.test(input.familyCardNumber ?? "") ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email) ||
       input.password.trim().length < 8 ||
       !input.identityPhoto?.name
@@ -189,6 +190,7 @@ export const mockAuth = {
       name: input.name.trim(),
       email: input.email.trim().toLowerCase(),
       nik: input.nik,
+      familyCardNumber: input.familyCardNumber,
       phone: input.phone,
       role: "warga",
       identityStatus: "pending",

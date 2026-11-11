@@ -190,11 +190,11 @@ function Feedback({ error, notice }: { error?: string; notice?: string }) {
 function Loading({
   resource,
 }: {
-  resource: { loading: boolean; error: string; refresh: () => void };
+  resource: { data?: unknown; loading: boolean; error: string; refresh: () => void };
 }) {
   return (
     <>
-      {resource.loading && (
+      {resource.loading && resource.data === undefined && (
         <p role="status" aria-live="polite">
           Memuat data…
         </p>
@@ -254,6 +254,15 @@ const legacyCatalogSlugs: Readonly<Record<string, string>> = {
   "2": "penerbitan-ktp-el",
   "3": "pencatatan-kelahiran",
   "4": "perpindahan-penduduk",
+};
+
+const demoDocumentBySlot: Readonly<Record<string, string>> = {
+  kk: "contoh-berkas.pdf",
+  kk_lama: "contoh-berkas.pdf",
+  ktp: "ktp-contoh.png",
+  ktp_pemohon: "ktp-contoh.png",
+  ktp_kepala_keluarga: "ktp-contoh.png",
+  ktp_rusak: "ktp-contoh.png",
 };
 
 export function ApiCatalog() {
@@ -719,7 +728,6 @@ export function ApiPreparation() {
   const { pathname } = useLocation();
   const id = params.get("prep");
   const applicationId = params.get("application");
-  const family = useFamilyMembers();
   const { user } = useAuth();
   const stage = pathname.endsWith("kebutuhan")
     ? 0
@@ -730,46 +738,43 @@ export function ApiPreparation() {
         : pathname.endsWith("validasi") || pathname.endsWith("pemeriksaan")
           ? 3
           : 4;
-  const resource = useServerResource("prep:" + id, async () => {
-    if (!id) return null;
-    const prep = await request<Prep>(`/preparations/${id}`);
-    const [questions, requirements, docs] = await Promise.all([
-      request<{ questions: Question[] }>(
-        `/services/${prep.service_id}/questions`,
-      ),
+  const family = useFamilyMembers(stage === 4 && !applicationId);
+  const resource = useServerResource(id ? "prep:" + id : null, async () => {
+    const [prep, requirements] = await Promise.all([
+      request<Prep>(`/preparations/${id}`),
       request<{ requirements: Requirement[] }>(
         `/preparations/${id}/requirements`,
       ),
-      request<FileRecord[]>(`/preparations/${id}/documents`),
     ]);
-    let latestRun: InspectionRun | null = null;
-    let findings: Finding[] = [];
-    let inspectionError = "";
-    if (prep.latest_inspection_id) {
-      try {
-        [latestRun, findings] = await Promise.all([
-          request<InspectionRun>(
+    const [questions, inspection] = await Promise.all([
+      request<{ questions: Question[] }>(
+        `/services/${prep.service_id}/questions`,
+      ),
+      prep.latest_inspection_id
+        ? request<InspectionRun>(
             `/preparations/${id}/inspections/${prep.latest_inspection_id}`,
-          ),
-          serverList<Finding>(
-            `/preparations/${id}/inspections/${prep.latest_inspection_id}/findings`,
-          ),
-        ]);
-      } catch {
-        inspectionError = "Hasil validasi belum bisa dimuat.";
-      }
-    }
+          ).then(
+            (run) => ({ run, error: "" }),
+            () => ({ run: null, error: "Hasil validasi belum bisa dimuat." }),
+          )
+        : Promise.resolve({ run: null, error: "" }),
+    ]);
     return {
       prep,
       questions: questions.questions,
       requirements: requirements.requirements,
-      docs,
-      latestRun,
-      findings,
-      inspectionError,
+      docs: prep.documents,
+      latestRun: inspection.run,
+      inspectionError: inspection.error,
     };
   });
+  const runId = resource.data?.latestRun?.id;
+  const findings = useServerResource(
+    stage === 3 && id && runId ? `findings:${id}:${runId}` : null,
+    () => serverList<Finding>(`/preparations/${id}/inspections/${runId}/findings`),
+  );
   const action = useServerAction(resource.refresh);
+  const correction = useServerAction(findings.refresh);
   const [answers, setAnswers] = useState<Record<string, Answer["value"]>>({});
   const [savedNeeds, setSavedNeeds] = useState<Prep>();
   const [consent, setConsent] = useState(false);
@@ -793,6 +798,14 @@ export function ApiPreparation() {
   const paths = ["kebutuhan", "data", "dokumen", "validasi", "ringkasan"];
   const link = (index: number) =>
     `/persiapan/${paths[index]}?prep=${id}${applicationId ? "&application=" + applicationId : ""}`;
+  const documentSlot = params.get("document");
+  const hasPreparation = Boolean(resource.data);
+  useEffect(() => {
+    if (stage !== 2 || !documentSlot || !hasPreparation) return;
+    const input = document.getElementById("upload-" + documentSlot);
+    input?.focus({ preventScroll: true });
+    input?.scrollIntoView({ block: "center" });
+  }, [stage, documentSlot, hasPreparation]);
   const loaded = resource.data?.prep;
   const prep =
     loaded && savedNeeds?.id === loaded.id && savedNeeds.data_version > loaded.data_version
@@ -949,6 +962,9 @@ export function ApiPreparation() {
                     penyimpanan server setelah dipilih.
                   </p>
                   {resource.data.requirements.map((req) => {
+                    const sampleName = Object.hasOwn(demoDocumentBySlot, req.code)
+                      ? demoDocumentBySlot[req.code]
+                      : undefined;
                     const doc = resource.data!.docs.find((item) =>
                       [req.code, req.requirement_id].includes(
                         item.document_type,
@@ -1020,7 +1036,7 @@ export function ApiPreparation() {
                             }}
                           />
                         </div>
-                        {DEMO_HELPERS_ENABLED && (
+                        {DEMO_HELPERS_ENABLED && sampleName && (
                           <button
                             type="button"
                             className="text-link min-h-[44px]"
@@ -1028,7 +1044,7 @@ export function ApiPreparation() {
                             onClick={() =>
                               action.run(async () => {
                                 const sample = await fetch(
-                                  "/demo-documents/contoh-berkas.pdf",
+                                  "/demo-documents/" + sampleName,
                                 );
                                 if (!sample.ok)
                                   throw new Error(
@@ -1038,8 +1054,8 @@ export function ApiPreparation() {
                                   id!,
                                   new File(
                                     [await sample.blob()],
-                                    "CONTOH-DEMO.pdf",
-                                    { type: "application/pdf" },
+                                    sampleName,
+                                    { type: sampleName.endsWith(".png") ? "image/png" : "application/pdf" },
                                   ),
                                   req.code,
                                 );
@@ -1104,6 +1120,8 @@ export function ApiPreparation() {
                     </button>
                   </div>
 
+                  <Feedback {...correction} />
+                  <Loading resource={findings} />
                   {resource.data.inspectionError ? (
                     <div role="alert">
                       <p>{resource.data.inspectionError}</p>
@@ -1157,11 +1175,10 @@ export function ApiPreparation() {
                       </div>
 
                       <h3 className="font-medium text-sm mt-4">
-                        Daftar Temuan Pemeriksaan (
-                        {resource.data.findings.length})
+                        Temuan pemeriksaan{findings.data ? ` (${findings.data.length})` : ""}
                       </h3>
 
-                      {resource.data.findings.length === 0 ? (
+                      {findings.data?.length === 0 ? (
                         <p className="text-xs text-gray-500 italic">
                           {resource.data.latestRun.status === "completed"
                             ? "Tidak ada temuan pada hasil validasi ini."
@@ -1169,7 +1186,19 @@ export function ApiPreparation() {
                         </p>
                       ) : (
                         <div className="space-y-3">
-                          {resource.data.findings.map((f) => (
+                          {findings.data?.map((f) => {
+                            const needsFile =
+                              f.suggested_action?.type === "replace_document" ||
+                              f.category === "document_type" ||
+                              f.category === "readability" ||
+                              f.category === "completeness";
+                            const slot = requirements.find(
+                              (item) => item.requirement_id === f.rule_reference?.requirement_id ||
+                                (f.document_id && item.document?.id === f.document_id),
+                            );
+                            const canCorrectText = !needsFile && Boolean(f.evidence?.field) &&
+                              (f.category === "data_mismatch" || f.category === "uncertainty");
+                            return (
                             <div
                               key={f.id}
                               className={`p-3.5 rounded-lg border text-xs space-y-2 ${
@@ -1191,7 +1220,8 @@ export function ApiPreparation() {
                                         : "bg-blue-200 text-blue-800"
                                   }`}
                                 >
-                                  {f.action_level} · {f.status}
+                                  {f.action_level === "must_fix" ? "Perlu perbaikan" :
+                                    f.action_level === "needs_confirmation" ? "Perlu dikonfirmasi" : "Informasi"}
                                 </span>
                               </div>
                               <p className="text-gray-700">{f.explanation}</p>
@@ -1201,11 +1231,25 @@ export function ApiPreparation() {
                                   {f.evidence.quoted_text}&rdquo;
                                 </p>
                               )}
-                              {f.status === "open" && (
+                              {f.status === "open" && needsFile && (
+                                <Link className="button-secondary" to={
+                                  link(2) + (slot ? "&document=" + encodeURIComponent(slot.code) : "")
+                                }>
+                                  {f.category === "completeness" && !f.document_id ? "Unggah berkas" : "Ganti berkas"}
+                                </Link>
+                              )}
+                              {f.status === "open" && f.category === "required_data" && !needsFile && (
+                                <Link className="button-secondary" to={link(0)}>Periksa isian permohonan</Link>
+                              )}
+                              {(f.status === "open" || f.status === "needs_confirmation") && canCorrectText && (
                                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200/60">
+                                  <label className="w-full" htmlFor={"correction-" + f.id}>
+                                    Nilai yang benar sesuai dokumen
+                                  </label>
                                   <input
+                                    id={"correction-" + f.id}
                                     type="text"
-                                    placeholder="Isikan nilai koreksi atau konfirmasi..."
+                                    maxLength={500}
                                     className="text-xs p-1.5 border rounded flex-1 min-w-[180px]"
                                     value={correctionValues[f.id] ?? ""}
                                     onChange={(e) =>
@@ -1219,11 +1263,11 @@ export function ApiPreparation() {
                                     type="button"
                                     className="button-secondary text-xs py-1 px-3"
                                     disabled={
-                                      action.busy ||
+                                      correction.busy ||
                                       !correctionValues[f.id]?.trim()
                                     }
                                     onClick={() =>
-                                      action.run(async () => {
+                                      correction.run(async () => {
                                         await request(
                                           `/preparations/${id}/findings/${f.id}/corrections`,
                                           {
@@ -1242,7 +1286,8 @@ export function ApiPreparation() {
                                 </div>
                               )}
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1685,12 +1730,11 @@ export function ApiOfficer() {
   const { id } = useParams();
   const { pathname } = useLocation();
   const [query, setQuery] = useState("");
-  const list = useServerResource("officer-list", () =>
+  const list = useServerResource(id ? null : "officer-list", () =>
     serverList<Application>("/officer/assignments"),
   );
-  const detail = useServerResource("officer-detail:" + id, () =>
-    id
-      ? request<
+  const detail = useServerResource(id ? "officer-detail:" + id : null, () =>
+      request<
           Application & {
             snapshot: Snapshot | null;
             evaluation: { items: Assessment[]; overall_notes?: string };
@@ -1700,8 +1744,7 @@ export function ApiOfficer() {
               original_filename?: string;
             }[];
           }
-        >(`/officer/applications/${id}`)
-      : Promise.resolve(null),
+        >(`/officer/applications/${id}`),
   );
   const action = useServerAction(detail.refresh);
   const [items, setItems] = useState<Assessment[]>([]);
@@ -1730,11 +1773,43 @@ export function ApiOfficer() {
     );
     setNotes(data.evaluation?.overall_notes || "");
   }, [detail.data]);
+  const history = pathname.includes("/riwayat");
+  const overview = pathname.endsWith("/ringkasan");
+  const isClosed = (item: Application) =>
+    ["review_completed", "withdrawn"].includes(code(item.review_status));
+  const search = query.trim().toLowerCase();
+  const assignments = list.data ?? [];
+  const closedCount = assignments.filter(isClosed).length;
+  const rows = assignments.filter((item) =>
+    isClosed(item) === history &&
+    [item.internal_reference, item.service.name, item.citizen?.name]
+      .join(" ").toLowerCase().includes(search),
+  );
+  const reviewStatus = code(detail.data?.review_status);
+  const canEditReview = reviewStatus === "in_review";
+  if (!id && overview)
+    return (
+      <Shell title="Ringkasan pekerjaan">
+        <Loading resource={list} />
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 my-5">
+          <Link className="plain-panel block min-w-0 break-words" to="/petugas">
+            <h2 className="panel-title">Antrean tinjauan</h2>
+            {list.data && <p>{assignments.length - closedCount} penugasan aktif</p>}
+            <span className="text-link">Buka antrean →</span>
+          </Link>
+          <Link className="plain-panel block min-w-0 break-words" to="/petugas/riwayat">
+            <h2 className="panel-title">Riwayat tinjauan</h2>
+            {list.data && <p>{closedCount} penugasan selesai atau ditarik</p>}
+            <span className="text-link">Buka riwayat →</span>
+          </Link>
+        </div>
+      </Shell>
+    );
   if (!id)
     return (
       <Shell
         title={
-          pathname.includes("riwayat") ? "Riwayat tinjauan" : "Antrean tinjauan"
+          history ? "Riwayat tinjauan" : "Antrean tinjauan"
         }
       >
         <div className="form-field my-4">
@@ -1747,24 +1822,11 @@ export function ApiOfficer() {
           />
         </div>
         <Loading resource={list} />
-        {list.data
-          ?.filter((item) => {
-            const complete = ["review_completed", "withdrawn"].includes(
-              code(item.review_status),
-            );
-            return (
-              (pathname.includes("/riwayat") ? complete : !complete) &&
-              [item.internal_reference, item.service.name, item.citizen?.name]
-                .join(" ")
-                .toLowerCase()
-                .includes(query.toLowerCase())
-            );
-          })
-          .map((item) => (
+        {rows.map((item) => (
             <Link
               className="plain-panel block my-3"
               key={item.application_id || item.id}
-              to={"/petugas/" + (item.application_id || item.id)}
+              to={(history ? "/petugas/riwayat/" : "/petugas/") + (item.application_id || item.id)}
             >
               <h2>{item.service.name}</h2>
               <p>
@@ -1773,18 +1835,20 @@ export function ApiOfficer() {
               <p>{label(item.review_status || item.current_status)}</p>
             </Link>
           ))}
-        {!list.loading && !list.error && !list.data?.length && (
-          <p className="plain-panel">
-            Belum ada pekerjaan yang ditugaskan. Warga perlu mengirim terlebih
-            dahulu dan admin menyiapkan penugasan.
-          </p>
+        {list.data && rows.length === 0 && (
+          <div className="plain-panel">
+            <p role="status">{search
+              ? "Tidak ada kiriman yang cocok dengan pencarian."
+              : history ? "Belum ada riwayat tinjauan." : "Belum ada penugasan aktif."}</p>
+            {search && <button type="button" className="text-link" onClick={() => setQuery("")}>Hapus pencarian</button>}
+          </div>
         )}
       </Shell>
     );
   return (
     <Shell title="Tinjauan berkas">
-      <Link to="/petugas" className="text-link">
-        ← Antrean
+      <Link to={history ? "/petugas/riwayat" : "/petugas"} className="text-link">
+        {history ? "← Riwayat" : "← Antrean"}
       </Link>
       <Loading resource={detail} />
       <Feedback {...action} />
@@ -1797,10 +1861,10 @@ export function ApiOfficer() {
             </p>
             <p>Kiriman versi {detail.data.snapshot?.version_number}</p>
             <p>{label(detail.data.review_status)}</p>
-            {detail.data.review_status === "submitted" && (
+            {reviewStatus === "submitted" && detail.data.snapshot && (
               <button
                 className="button-primary my-3"
-                disabled={action.busy}
+                disabled={action.busy || detail.loading}
                 onClick={() =>
                   action.run(async () => {
                     await request(
@@ -1819,11 +1883,15 @@ export function ApiOfficer() {
               </p>
             ))}
           </section>
-          {detail.data.snapshot ? (
+          {detail.data.snapshot && reviewStatus === "submitted" && (
+            <p className="plain-panel">Pilih Mulai tinjauan untuk membuka penilaian data dan berkas.</p>
+          )}
+          {detail.data.snapshot && reviewStatus !== "submitted" && (
             <form
               className="auth-form"
               onSubmit={(event) => {
                 event.preventDefault();
+                if (!canEditReview) return;
                 void action.run(async () => {
                   if (items.some((item) => !item.verdict))
                     throw new Error(
@@ -1885,7 +1953,8 @@ export function ApiOfficer() {
                   <div className="form-field">
                     <label htmlFor={"verdict-" + index}>Penilaian</label>
                     <select
-                      required
+                      required={canEditReview}
+                      disabled={!canEditReview}
                       id={"verdict-" + index}
                       value={item.verdict}
                       onChange={(event) =>
@@ -1911,7 +1980,8 @@ export function ApiOfficer() {
                       Catatan dan arahan perbaikan
                     </label>
                     <textarea
-                      required={!!item.verdict && item.verdict !== "SESUAI"}
+                      required={canEditReview && !!item.verdict && item.verdict !== "SESUAI"}
+                      readOnly={!canEditReview}
                       id={"assessment-note-" + index}
                       value={item.note}
                       onChange={(event) =>
@@ -1931,16 +2001,17 @@ export function ApiOfficer() {
                 <label htmlFor="review-notes">Ringkasan hasil tinjauan</label>
                 <textarea
                   id="review-notes"
-                  required
+                  required={canEditReview}
+                  readOnly={!canEditReview}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                 />
               </div>
-              <div className="flex flex-wrap gap-3">
+              {canEditReview && <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   className="button-secondary"
-                  disabled={action.busy}
+                  disabled={action.busy || detail.loading}
                   onClick={() =>
                     action.run(async () => {
                       await request(
@@ -1961,20 +2032,23 @@ export function ApiOfficer() {
                 <button
                   className="button-primary"
                   disabled={
-                    action.busy || detail.data.review_status !== "in_review"
+                    action.busy || detail.loading || !items.length || items.some((item) => !item.verdict)
                   }
                 >
                   {items.length &&
                   items.every((item) => item.verdict === "SESUAI")
                     ? "Selesaikan tinjauan"
-                    : "Kirim permintaan perbaikan"}
+                    : items.length && items.every((item) => item.verdict)
+                      ? "Kirim permintaan perbaikan"
+                      : "Kirim keputusan"}
                 </button>
-              </div>
+              </div>}
             </form>
-          ) : (
+          )}
+          {!detail.data.snapshot && (
             <p className="plain-panel">Kiriman belum tersedia untuk dinilai.</p>
           )}
-          <details className="plain-panel mt-5">
+          {canEditReview && <details className="plain-panel mt-5">
             <summary>Minta klarifikasi admin</summary>
             <form
               className="auth-form"
@@ -2001,7 +2075,7 @@ export function ApiOfficer() {
                 Kirim klarifikasi
               </button>
             </form>
-          </details>
+          </details>}
         </>
       )}
     </Shell>

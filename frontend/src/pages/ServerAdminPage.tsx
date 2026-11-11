@@ -84,7 +84,7 @@ export function ServerAdminPage({ initialTab = 'akun' }: {initialTab?: 'akun' | 
     };
   }, [tab, query, cursor, attempt]);
   const changeTab = (value: string) => {
-    navigate(value === 'akun' ? '/admin/petugas' : '/admin/aktivitas');
+    navigate(value === 'akun' ? '/admin/akun' : '/admin/aktivitas');
     setTab(value);
     setQuery("");
     setSearch("");

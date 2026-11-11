@@ -43,6 +43,15 @@ class ChatDto extends createZodDto(schema) {}
 const redact = (text: string) =>
   text.replace(/\b(?:\d[ -]?){16}\b/g, '[identitas disamarkan]');
 
+function isCatalogQuestion(query: string): boolean {
+  const normalized = query.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  return (
+    /\b(?:daftar layanan|layanan apa saja|layanan apa aja|apa saja layanan|apa aja layanan|layanan yang tersedia)\b/.test(normalized) ||
+    /^(?:(?:halo|hai|min|permisi) )?(?:di sini |disini |di daftarin )?(?:ada apa|apa) (?:aja|saja)(?: (?:di sini|disini|di daftarin|nih|ya|dong))*$/.test(normalized) ||
+    /^(?:(?:di sini|disini|di daftarin) )?bisa (?:urus |mengurus )?apa (?:aja|saja)(?: (?:di sini|disini|di daftarin|nih|ya|dong))*$/.test(normalized)
+  );
+}
+
 class ProviderAccessError extends Error {}
 
 @Injectable()
@@ -71,8 +80,7 @@ export class ChatService {
   }
   async ask(dto: ChatDto) {
     const query = redact(dto.query);
-    const catalogQuestion = /\b(?:daftar layanan|layanan apa saja|layanan apa aja|apa saja layanan|apa aja layanan|layanan yang tersedia)\b/i.test(query);
-    if (this.catalog && catalogQuestion) {
+    if (this.catalog && isCatalogQuestion(query)) {
       const { data, meta } = await this.catalog.listServices({
         page: 1,
         pageSize: 15,
@@ -86,6 +94,27 @@ export class ChatService {
         actionSteps: [],
         legalCitations: [],
         quickAction: { label: 'Cari layanan', route: '/katalog' },
+        source: 'catalog',
+      };
+    }
+    if (this.catalog && /\b(?:kk|kartu keluarga)\b/i.test(query) && /\b(?:rusak|sobek|robek|lecek|hilang)\b/i.test(query)) {
+      const { data } = await this.catalog.listServices({
+        q: 'Kartu Keluarga',
+        page: 1,
+        pageSize: 15,
+        sort: 'name',
+        order: 'asc',
+      });
+      const service = data.find((item) => item.slug === 'penerbitan-kartu-keluarga');
+      return {
+        text: service
+          ? 'Buka panduan Kartu Keluarga dan mulai persiapan. Pilih kondisi yang sesuai dengan kebutuhanmu agar DaftarIn menampilkan daftar berkasnya.'
+          : 'Panduan Kartu Keluarga belum tersedia di katalog. Coba lihat layanan yang tersedia atau hubungi bantuan.',
+        actionSteps: [],
+        legalCitations: [],
+        quickAction: service
+          ? { label: 'Buka panduan Kartu Keluarga', route: '/layanan/1' }
+          : { label: 'Cari layanan', route: '/katalog' },
         source: 'catalog',
       };
     }
