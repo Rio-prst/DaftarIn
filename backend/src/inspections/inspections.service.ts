@@ -441,7 +441,7 @@ export class InspectionsService implements IInspectionsService {
         createdRun.id,
         {
           status: InspectionStatus.COMPLETED,
-          modelVersion: lastModelVersion ?? 'gemini-3.5-flash-lite',
+          modelVersion: lastModelVersion,
           summaryJson,
           completedAt: new Date(),
         },

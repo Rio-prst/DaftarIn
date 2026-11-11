@@ -8,6 +8,7 @@ import { ServicesController } from './services.controller';
 
 @Module({
   controllers: [RegionsController, ServicesController],
+  exports: [CATALOG_SERVICE],
   providers: [
     {
       provide: CATALOG_REPOSITORY,

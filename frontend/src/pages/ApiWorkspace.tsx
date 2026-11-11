@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Finding, InspectionRun } from "../types/api";
 import {
   Link,
+  Navigate,
   useLocation,
   useNavigate,
   useParams,
@@ -609,6 +610,21 @@ export function ApiCitizenHome() {
   );
 }
 
+function visibleQuestions(questions: Question[], answers: Record<string, Answer["value"]>) {
+  return questions.filter((question) => {
+    const rule = question.visible_if;
+    if (!rule) return true;
+    const parent = questions.find(
+      (item) => item.id === rule.question_id || item.key === rule.question_key,
+    );
+    if (!parent) return true;
+    const value = answers[parent.id];
+    return "equals" in rule
+      ? String(value) === String(rule.equals)
+      : value !== undefined && value !== "";
+  });
+}
+
 function QuestionFields({
   questions,
   answers,
@@ -692,13 +708,14 @@ export function ApiPreparation() {
   const id = params.get("prep");
   const applicationId = params.get("application");
   const family = useFamilyMembers();
+  const { user } = useAuth();
   const stage = pathname.endsWith("kebutuhan")
     ? 0
     : pathname.endsWith("data")
       ? 1
       : pathname.endsWith("dokumen")
         ? 2
-        : pathname.endsWith("validasi")
+        : pathname.endsWith("validasi") || pathname.endsWith("pemeriksaan")
           ? 3
           : 4;
   const resource = useServerResource("prep:" + id, async () => {
@@ -715,19 +732,19 @@ export function ApiPreparation() {
     ]);
     let latestRun: InspectionRun | null = null;
     let findings: Finding[] = [];
+    let inspectionError = "";
     if (prep.latest_inspection_id) {
       try {
-        latestRun = await request<InspectionRun>(
-          `/preparations/${id}/inspections/${prep.latest_inspection_id}`,
-        );
-        const findingsRes = await request<{ data?: Finding[] } | Finding[]>(
-          `/preparations/${id}/inspections/${prep.latest_inspection_id}/findings`,
-        );
-        findings = Array.isArray(findingsRes)
-          ? findingsRes
-          : findingsRes.data ?? [];
+        [latestRun, findings] = await Promise.all([
+          request<InspectionRun>(
+            `/preparations/${id}/inspections/${prep.latest_inspection_id}`,
+          ),
+          serverList<Finding>(
+            `/preparations/${id}/inspections/${prep.latest_inspection_id}/findings`,
+          ),
+        ]);
       } catch {
-        // ignore if not found
+        inspectionError = "Hasil validasi belum bisa dimuat.";
       }
     }
     return {
@@ -737,10 +754,12 @@ export function ApiPreparation() {
       docs,
       latestRun,
       findings,
+      inspectionError,
     };
   });
   const action = useServerAction(resource.refresh);
   const [answers, setAnswers] = useState<Record<string, Answer["value"]>>({});
+  const [savedNeeds, setSavedNeeds] = useState<Prep>();
   const [consent, setConsent] = useState(false);
   const [correctionValues, setCorrectionValues] = useState<
     Record<string, string>
@@ -758,21 +777,59 @@ export function ApiPreparation() {
       setConsent(false);
     }
   }, [resource.data]);
-  const names = ["Kebutuhan", "Data", "Dokumen", "Validasi", "Tinjau & kirim"];
+  const names = ["Kebutuhan", "Data pemohon", "Dokumen", "Validasi", "Tinjau & kirim"];
   const paths = ["kebutuhan", "data", "dokumen", "validasi", "ringkasan"];
   const link = (index: number) =>
     `/persiapan/${paths[index]}?prep=${id}${applicationId ? "&application=" + applicationId : ""}`;
+  const loaded = resource.data?.prep;
+  const prep =
+    loaded && savedNeeds?.id === loaded.id && savedNeeds.data_version > loaded.data_version
+      ? savedNeeds
+      : loaded;
+  const questions = resource.data?.questions ?? [];
+  const savedAnswers = Object.fromEntries(
+    (prep?.answers ?? []).map((answer) => [answer.question_id, answer.value]),
+  );
+  const needsComplete = visibleQuestions(questions, savedAnswers).every(
+    (question) => !question.required ||
+      (savedAnswers[question.id] !== undefined && savedAnswers[question.id] !== ""),
+  );
+  const requirements = resource.data?.requirements ?? [];
+  const requiredDocs = requirements.filter((item) => item.required);
+  const uploadedCount = requiredDocs.filter((item) => item.fulfilled).length;
+  const documentsComplete = requirements.length > 0 && uploadedCount === requiredDocs.length;
+  const validation = resource.data?.latestRun;
+  const documents = resource.data?.docs ?? [];
+  const validationComplete =
+    validation?.status === "completed" &&
+    validation.input_snapshot.data_version === prep?.data_version &&
+    validation.is_current_for_active_input !== false &&
+    validation.input_snapshot.document_versions.length === documents.length &&
+    documents.every((document) =>
+      validation.input_snapshot.document_versions.some(
+        (input) => input.document_id === document.id && input.version === document.active_version,
+      ),
+    );
+  let reachableStage = 0;
+  if (resource.data && needsComplete) {
+    reachableStage = documentsComplete ? 3 : 2;
+    if (documentsComplete && validationComplete) reachableStage = 4;
+  }
   const save = async () => {
-    if (!id || !resource.data) return;
-    await request(`/preparations/${id}`, {
+    if (!id || !prep) return;
+    const updated = await request<Prep>(`/preparations/${id}`, {
       method: "PATCH",
       body: {
-        expected_data_version: resource.data.prep.data_version,
-        answers: resource.data.questions
-          .filter((q) => answers[q.id] !== undefined)
-          .map((q) => ({ question_id: q.id, value: answers[q.id] })),
+        expected_data_version: prep.data_version,
+        answers: visibleQuestions(questions, answers)
+          .filter((q) => answers[q.id] !== undefined && answers[q.id] !== "")
+          .map((q) => ({
+            question_id: q.id,
+            value: q.type === "boolean" ? String(answers[q.id]) === "true" : answers[q.id],
+          })),
       },
     });
+    setSavedNeeds(updated);
   };
   const preview = (doc: FileRecord) =>
     action.run(async () => {
@@ -784,6 +841,9 @@ export function ApiPreparation() {
         throw new Error("Alamat berkas tidak valid.");
       window.open(url.href, "_blank", "noopener,noreferrer");
     }, "Pratinjau dibuka pada tab baru.");
+  if (resource.data?.prep.id === id && stage > reachableStage) {
+    return <Navigate replace to={link(reachableStage)} />;
+  }
   return (
     <Shell title={names[stage]}>
       {!id ? (
@@ -799,7 +859,11 @@ export function ApiPreparation() {
             aria-label="Tahap persiapan"
             className="flex flex-wrap gap-3 my-5"
           >
-            {names.map((name, index) => (
+            {names.map((name, index) => index > reachableStage ? (
+              <span key={name} className="button-secondary opacity-60" aria-disabled="true">
+                {index + 1}. {name}
+              </span>
+            ) : (
               <Link
                 key={name}
                 className={
@@ -820,7 +884,7 @@ export function ApiPreparation() {
                 {resource.data.prep.service.name} ·{" "}
                 {resource.data.prep.internal_reference}
               </p>
-              {stage < 2 && (
+              {stage === 0 && (
                 <form
                   className="plain-panel auth-form"
                   onSubmit={(event) => {
@@ -837,7 +901,7 @@ export function ApiPreparation() {
                   </p>
                   {resource.data.questions.length ? (
                     <QuestionFields
-                      questions={resource.data.questions}
+                      questions={visibleQuestions(questions, answers)}
                       answers={answers}
                       setAnswers={setAnswers}
                     />
@@ -852,8 +916,22 @@ export function ApiPreparation() {
                   </button>
                 </form>
               )}
+              {stage === 1 && (
+                <section className="plain-panel auth-form">
+                  <h2 className="panel-title">Periksa data akun pemohon</h2>
+                  <dl className="grid gap-4 sm:grid-cols-2">
+                    <div><dt>Nama</dt><dd className="font-semibold">{user?.name || "Belum tersedia"}</dd></div>
+                    <div><dt>Email</dt><dd className="break-words font-semibold">{user?.email || "Belum tersedia"}</dd></div>
+                  </dl>
+                  <Link className="text-link" to="/akun">Ubah data akun</Link>
+                  <Link className="button-primary" to={link(2)}>Lanjut ke dokumen</Link>
+                </section>
+              )}
               {stage === 2 && (
                 <>
+                  <p className="plain-panel my-4">
+                    <strong>{uploadedCount} dari {requiredDocs.length} dokumen wajib tersedia</strong>
+                  </p>
                   <p className="my-4">
                     Gunakan PDF, JPG, atau PNG maksimal 10 MB. Berkas dikirim ke
                     penyimpanan server setelah dipilih.
@@ -874,6 +952,7 @@ export function ApiPreparation() {
                           {req.required ? " (wajib)" : ""}
                         </h2>
                         <p>{req.description}</p>
+                        <p className="font-semibold mt-2">{doc ? "Sudah diunggah" : "Belum diunggah"}</p>
                         {doc && (
                           <>
                             <p className="my-3">
@@ -967,9 +1046,11 @@ export function ApiPreparation() {
                       Periksa pilihan kebutuhan atau minta bantuan.
                     </p>
                   )}
-                  <Link className="button-primary" to={link(3)}>
-                    Lanjut ke validasi berkas →
-                  </Link>
+                  {documentsComplete ? (
+                    <Link className="button-primary" to={link(3)}>Lanjut ke validasi berkas →</Link>
+                  ) : (
+                    <p className="plain-panel">Lengkapi dokumen wajib untuk membuka Validasi.</p>
+                  )}
                 </>
               )}
               {stage === 3 && (
@@ -1011,7 +1092,14 @@ export function ApiPreparation() {
                     </button>
                   </div>
 
-                  {resource.data.latestRun ? (
+                  {resource.data.inspectionError ? (
+                    <div role="alert">
+                      <p>{resource.data.inspectionError}</p>
+                      <button type="button" className="text-link" onClick={resource.refresh}>
+                        Muat ulang hasil
+                      </button>
+                    </div>
+                  ) : resource.data.latestRun ? (
                     <div className="space-y-4">
                       <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1021,7 +1109,9 @@ export function ApiPreparation() {
                               resource.data.latestRun.status}
                           </span>
                           <span className="text-xs px-2.5 py-1 rounded bg-blue-100 text-blue-800 font-medium">
-                            {resource.data.latestRun.status}
+                          {resource.data.latestRun.summary?.documents_failed
+                            ? "Sebagian pemeriksaan tidak tersedia"
+                            : resource.data.latestRun.status}
                           </span>
                         </div>
                         {resource.data.latestRun.summary && (
@@ -1061,8 +1151,9 @@ export function ApiPreparation() {
 
                       {resource.data.findings.length === 0 ? (
                         <p className="text-xs text-gray-500 italic">
-                          Tidak ada temuan masalah pada berkas. Dokumen siap
-                          diajukan.
+                          {resource.data.latestRun.status === "completed"
+                            ? "Tidak ada temuan pada hasil validasi ini."
+                            : "Hasil validasi belum tersedia."}
                         </p>
                       ) : (
                         <div className="space-y-3">
@@ -1152,9 +1243,14 @@ export function ApiPreparation() {
                   )}
 
                   <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-200">
-                    <Link className="button-primary" to={link(4)}>
-                      Lanjut ke Tinjau &amp; kirim →
-                    </Link>
+                    {validation?.status === "completed" && !validationComplete && (
+                      <p className="w-full">Data atau dokumen telah berubah. Jalankan validasi ulang.</p>
+                    )}
+                    {validationComplete && (
+                      <Link className="button-primary" to={link(4)}>
+                        Lanjut ke Tinjau &amp; kirim →
+                      </Link>
+                    )}
                     <Link className="button-secondary" to={link(2)}>
                       ← Kembali ke dokumen
                     </Link>

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Injectable,
   Module,
   Post,
@@ -15,6 +16,11 @@ import { Public } from '../common/decorators/public.decorator';
 import { Response } from '../common/response/response';
 import { retrieveAdmindukKnowledge } from './knowledge';
 import { readChatConfiguration } from './chat.config';
+import { CatalogModule } from '../catalog/catalog.module';
+import {
+  CATALOG_SERVICE,
+  type ICatalogService,
+} from '../catalog/interfaces/catalog.service.interface';
 
 const schema = z
   .object({
@@ -41,7 +47,10 @@ class ProviderAccessError extends Error {}
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Inject(CATALOG_SERVICE) private readonly catalog?: ICatalogService,
+  ) {}
   private configuration() {
     return readChatConfiguration(this.config);
   }
@@ -61,12 +70,30 @@ export class ChatService {
     };
   }
   async ask(dto: ChatDto) {
+    const query = redact(dto.query);
+    const catalogQuestion = /\b(?:daftar layanan|layanan apa saja|layanan apa aja|apa saja layanan|apa aja layanan|layanan yang tersedia)\b/i.test(query);
+    if (this.catalog && catalogQuestion) {
+      const { data, meta } = await this.catalog.listServices({
+        page: 1,
+        pageSize: 15,
+        sort: 'name',
+        order: 'asc',
+      });
+      return {
+        text: data.length
+          ? `Layanan di katalog DaftarIn:\n${data.map((service) => `• ${service.name}`).join('\n')}${meta.total_items > data.length ? '\nLihat katalog untuk daftar lengkap.' : ''}`
+          : 'Katalog DaftarIn belum memiliki layanan yang diterbitkan.',
+        actionSteps: [],
+        legalCitations: [],
+        quickAction: { label: 'Cari layanan', route: '/katalog' },
+        source: 'catalog',
+      };
+    }
     if (!this.status().configured)
       throw new ServiceUnavailableException(
         'Chatbot AI belum dikonfigurasi. Panduan lokal tetap tersedia.',
       );
-    const query = redact(dto.query),
-      context = retrieveAdmindukKnowledge(query, dto.serviceId);
+    const context = retrieveAdmindukKnowledge(query, dto.serviceId);
     const {
       provider,
       key,
@@ -237,5 +264,9 @@ export class ChatController {
     return new Response({ data: await this.service.ask(body) });
   }
 }
-@Module({ controllers: [ChatController], providers: [ChatService] })
+@Module({
+  imports: [CatalogModule],
+  controllers: [ChatController],
+  providers: [ChatService],
+})
 export class ChatModule {}

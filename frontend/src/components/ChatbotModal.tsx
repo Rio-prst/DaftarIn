@@ -255,7 +255,9 @@ export function ChatbotModal({
                 <p className="text-xs text-slate-500 mt-2">
                   {message.source === "ai"
                     ? "Asisten AI · panduan pendamping"
-                    : "Panduan lokal"}
+                    : message.source === "catalog"
+                      ? "Katalog layanan"
+                      : "Panduan lokal"}
                 </p>
               )}
               {Boolean(message.actionSteps?.length) && (

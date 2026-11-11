@@ -6,7 +6,7 @@ export interface ChatMessage {
   sender: "user" | "bot";
   text: string;
   legalCitations?: string[];
-  source?: "ai" | "local_rag";
+  source?: "ai" | "catalog" | "local_rag";
   notice?: string;
   actionSteps?: string[];
   quickAction?: { label: string; route: string };
@@ -41,7 +41,7 @@ export function readChatSession(key: string): ChatMessage[] {
         id: row.id.slice(0, 100),
         sender: row.sender,
         text: row.text.slice(0, row.sender === "user" ? 1000 : 6000),
-        source: row.source === "ai" || row.source === "local_rag" ? row.source : undefined,
+        source: row.source === "ai" || row.source === "catalog" || row.source === "local_rag" ? row.source : undefined,
         notice: typeof row.notice === "string" ? row.notice.slice(0, 500) : undefined,
         legalCitations: strings(row.legalCitations),
         actionSteps: strings(row.actionSteps),

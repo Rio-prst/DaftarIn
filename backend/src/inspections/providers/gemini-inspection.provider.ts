@@ -61,7 +61,6 @@ export class GeminiInspectionProvider implements IInspectionAiProvider {
     const key = firstNonEmpty(
       this.config.get<string>('AI_API_KEY'),
       this.config.get<string>('CHAT_GEMINI_API_KEY'),
-      this.config.get<string>('CHAT_AI_API_KEY'),
     );
     const provider = (
       firstNonEmpty(
@@ -74,7 +73,7 @@ export class GeminiInspectionProvider implements IInspectionAiProvider {
         this.config.get<string>('AI_MODEL'),
         this.config.get<string>('OCR_MODEL'),
         this.config.get<string>('CHAT_GEMINI_MODEL'),
-      ) ?? 'gemini-3.5-flash-lite';
+      ) ?? 'gemini-2.5-flash';
     const timeoutMs = positiveNumber(
       this.config.get<string>('INSPECTION_AI_TIMEOUT_MS'),
       30_000,

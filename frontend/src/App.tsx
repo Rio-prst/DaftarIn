@@ -88,6 +88,10 @@ function Application() {
               element={mode === "api" ? <ApiPreparation /> : <PreparationInspectionPage />}
             />
             <Route
+              path="/persiapan/validasi"
+              element={mode === "api" ? <ApiPreparation /> : <PreparationInspectionPage />}
+            />
+            <Route
               path="/persiapan/ringkasan"
               element={mode === "api" ? <ApiPreparation /> : <PreparationSummaryPage />}
             />
