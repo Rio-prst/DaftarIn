@@ -249,6 +249,13 @@ function Field({
   );
 }
 
+const legacyCatalogSlugs: Readonly<Record<string, string>> = {
+  "1": "penerbitan-kartu-keluarga",
+  "2": "penerbitan-ktp-el",
+  "3": "pencatatan-kelahiran",
+  "4": "perpindahan-penduduk",
+};
+
 export function ApiCatalog() {
   const params = useParams();
   const navigate = useNavigate();
@@ -258,8 +265,13 @@ export function ApiCatalog() {
   const list = useServerResource("catalog", () =>
     serverList<Service>("/services"),
   );
+  const serviceId = params.id;
+  const serviceSlug =
+    serviceId && Object.hasOwn(legacyCatalogSlugs, serviceId)
+      ? legacyCatalogSlugs[serviceId]
+      : serviceId;
   const selected = list.data?.find(
-    (item) => item.id === params.id || item.slug === params.id,
+    (item) => item.id === serviceId || item.slug === serviceSlug,
   );
   const details = useServerResource(
     "guide:" + (selected?.id || "none"),
