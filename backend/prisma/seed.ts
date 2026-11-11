@@ -40,6 +40,131 @@ const PUBLISHED_AT = new Date('2026-01-01T00:00:00.000Z');
 const ACCESSED_AT = new Date('2026-01-01T00:00:00.000Z');
 const LAST_CHECKED_AT = new Date('2026-01-01T00:00:00.000Z');
 
+const additionalDemoServices = [
+  {
+    slug: 'penerbitan-ktp-el',
+    name: 'Penerbitan dan Penggantian KTP-el',
+    options: [
+      { value: 'baru', label: 'KTP-el pertama' },
+      { value: 'hilang', label: 'KTP-el hilang' },
+      { value: 'rusak', label: 'KTP-el rusak' },
+    ],
+    documents: [
+      { code: 'kk', title: 'Kartu Keluarga' },
+      { code: 'bukti_hilang', title: 'Surat kehilangan contoh', when: 'hilang' },
+      { code: 'ktp_rusak', title: 'KTP-el lama', when: 'rusak' },
+    ],
+  },
+  {
+    slug: 'pencatatan-kelahiran',
+    name: 'Pencatatan Kelahiran',
+    options: [{ value: 'baru', label: 'Pencatatan kelahiran baru' }],
+    documents: [
+      { code: 'kk', title: 'Kartu Keluarga' },
+      { code: 'bukti_kelahiran', title: 'Surat keterangan kelahiran contoh' },
+    ],
+  },
+  {
+    slug: 'perpindahan-penduduk',
+    name: 'Perpindahan Penduduk',
+    options: [
+      { value: 'dalam_daerah', label: 'Pindah dalam daerah' },
+      { value: 'luar_daerah', label: 'Pindah ke luar daerah' },
+    ],
+    documents: [
+      { code: 'kk', title: 'Kartu Keluarga' },
+      { code: 'formulir_pindah', title: 'Formulir pindah contoh' },
+    ],
+  },
+];
+
+async function seedAdditionalDemoServices() {
+  const existing = await prisma.service.findUniqueOrThrow({
+    where: { slug: 'penerbitan-kartu-keluarga' },
+    include: { region: true },
+  });
+  if (existing.region.name !== 'Kota Contoh') {
+    throw new Error('Layanan contoh hanya dapat ditambahkan ke Kota Contoh.');
+  }
+
+  for (const entry of additionalDemoServices) {
+    await prisma.$transaction(async (db) => {
+      const alreadyExists = await db.service.findUnique({ where: { slug: entry.slug } });
+      if (alreadyExists) return;
+
+      const service = await db.service.create({
+        data: {
+          slug: entry.slug,
+          name: entry.name,
+          category: 'Administrasi Kependudukan',
+          summary: 'Layanan simulasi Kota Contoh. Gunakan berkas contoh untuk mencoba alur persiapan.',
+          agencyId: existing.agencyId,
+          regionId: existing.regionId,
+          publicationStatus: ServicePublicationStatus.PUBLISHED,
+          publishedAt: PUBLISHED_AT,
+        },
+      });
+      const source = await db.officialSource.create({
+        data: {
+          url: 'https://github.com/Rio-prst/DaftarIn',
+          title: 'Data simulasi DaftarIn',
+          publisher: 'DaftarIn',
+          sourceType: 'demo',
+          reviewStatus: 'needs_review',
+          accessedAt: ACCESSED_AT,
+        },
+      });
+      await db.guideVersion.create({
+        data: {
+          serviceId: service.id,
+          versionNumber: 1,
+          status: GuideVersionStatus.PUBLISHED,
+          procedureJson: [
+            { step: 1, title: 'Pilih kebutuhan', description: 'Pilih kondisi untuk mencoba alur simulasi.' },
+            { step: 2, title: 'Siapkan berkas contoh', description: 'Unggah dokumen contoh untuk melihat proses validasi.' },
+          ],
+          publishedAt: PUBLISHED_AT,
+        },
+      });
+      await db.requirementRuleVersion.create({
+        data: {
+          serviceId: service.id,
+          versionNumber: 1,
+          status: RuleVersionStatus.PUBLISHED,
+          rulesConfigJson: {},
+          publishedAt: PUBLISHED_AT,
+          requirements: {
+            create: entry.documents.map((document, index) => ({
+              requirementCode: document.code,
+              title: document.title,
+              description: 'Unggah berkas contoh yang terbaca untuk simulasi ini.',
+              requirementType: 'document',
+              isMandatory: true,
+              conditionJson: document.when
+                ? { type: 'conditional', question_key: 'alasan_permohonan', equals: document.when }
+                : { type: 'always' },
+              sourceId: source.id,
+              displayOrder: index + 1,
+            })),
+          },
+        },
+      });
+      await db.serviceQuestion.create({
+        data: {
+          serviceId: service.id,
+          questionKey: 'alasan_permohonan',
+          label: 'Apa kebutuhanmu?',
+          inputType: 'single_select',
+          isPublicNonpersonal: true,
+          isRequired: true,
+          optionsJson: entry.options,
+          displayOrder: 1,
+        },
+      });
+    });
+  }
+}
+
 async function main(): Promise<void> {
   const region = await prisma.region.upsert({
     where: { code: '3171' },
@@ -591,7 +716,11 @@ async function main(): Promise<void> {
   });
 }
 
-main()
+const seed = process.argv.includes('--additional-demo-services')
+  ? seedAdditionalDemoServices()
+  : main().then(seedAdditionalDemoServices);
+
+seed
   .then(async () => {
     await prisma.$disconnect();
   })

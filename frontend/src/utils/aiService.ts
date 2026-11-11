@@ -5,7 +5,7 @@ export interface AskRagResponse {
   legalCitations: string[];
   actionSteps: string[];
   quickAction?: { label: string; route: string };
-  source: "ai" | "local_rag";
+  source: "ai" | "catalog" | "local_rag";
   notice?: string;
 }
 export const safeChatRoute = (value: string) =>
@@ -46,7 +46,7 @@ export async function askAdmindukRag(params: {
     if (
       typeof data?.text !== "string" ||
       !data.text.trim() ||
-      data.source !== "ai"
+      (data.source !== "ai" && data.source !== "catalog")
     )
       throw new Error("invalid_response");
     return {
@@ -67,7 +67,7 @@ export async function askAdmindukRag(params: {
         safeChatRoute(data.quickAction.route)
           ? data.quickAction
           : undefined,
-      source: "ai",
+      source: data.source,
     };
   } catch (error) {
     if (params.signal.aborted) throw error;
