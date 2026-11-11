@@ -33,6 +33,7 @@ export function RegisterPage() {
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [fields, setFields] = useState(empty);
   const [photo, setPhoto] = useState<IdentityPhoto | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
@@ -55,20 +56,25 @@ export function RegisterPage() {
     setFields((previous) => ({ ...previous, [key]: value }));
     setErrors((previous) => ({ ...previous, [key]: "" }));
   };
-  const choosePhoto = (file?: File) => {
+  const maxPhotoMb = mode === "api" ? 4 : 5;
+  const maxPhotoBytes = maxPhotoMb * 1024 * 1024;
+  const choosePhoto = (file?: File, allowPreparation = true) => {
     if (!file) return;
-    if (file.type.startsWith("image/") && file.size > 5 * 1024 * 1024) {
+    setPhoto(null);
+    setPhotoFile(null);
+    setPreview("");
+    if (allowPreparation && file.type.startsWith("image/") && file.size > maxPhotoBytes) {
       setPendingPhoto(file);
       return;
     }
     const valid =
       ["image/jpeg", "image/png"].includes(file.type) &&
       /\.(jpg|jpeg|png)$/i.test(file.name);
-    if (!valid || file.size <= 0 || file.size > 5 * 1024 * 1024) {
+    if (!valid || file.size <= 0 || file.size > maxPhotoBytes) {
       setErrors((previous) => ({
         ...previous,
         photo:
-          "Pilih foto JPG atau PNG, maksimal 5 MB, dan pastikan file tidak kosong.",
+          `Pilih foto JPG atau PNG, maksimal ${maxPhotoMb} MB, dan pastikan file tidak kosong.`,
       }));
       return;
     }
@@ -78,7 +84,28 @@ export function RegisterPage() {
       size: file.size,
       sample: false,
     });
+    setPhotoFile(file);
     setPreview(URL.createObjectURL(file));
+    setErrors((previous) => ({ ...previous, photo: "" }));
+  };
+  const useExamplePhoto = async () => {
+    if (mode === "api") {
+      try {
+        const response = await fetch("/demo-documents/ktp-contoh.png");
+        if (!response.ok) throw new Error();
+        choosePhoto(new File([await response.blob()], "ktp-contoh.png", { type: "image/png" }));
+      } catch {
+        setErrors((previous) => ({ ...previous, photo: "Foto contoh gagal dimuat. Pilih foto dari perangkat." }));
+      }
+      return;
+    }
+    setPhoto({
+      name: "ktp-contoh.svg",
+      type: "image/svg+xml",
+      size: 0,
+      sample: true,
+    });
+    setPreview("/images/ktp-contoh.svg");
     setErrors((previous) => ({ ...previous, photo: "" }));
   };
   const example = () => {
@@ -93,13 +120,7 @@ export function RegisterPage() {
       password: EXAMPLE_PASSWORD,
       confirm: EXAMPLE_PASSWORD,
     });
-    setPhoto({
-      name: "ktp-contoh.svg",
-      type: "image/svg+xml",
-      size: 0,
-      sample: true,
-    });
-    setPreview("/images/ktp-contoh.svg");
+    void useExamplePhoto();
     setConsent(false);
     setErrors({});
     setError("");
@@ -118,18 +139,20 @@ export function RegisterPage() {
     const nextErrors: Record<string, string> = {};
     if (fields.name.trim().length < 1)
       nextErrors.name = "Isi nama lengkap sesuai identitas.";
-    if (mode === "demo" && !/^\d{16}$/.test(fields.nik))
+    if (!/^\d{16}$/.test(fields.nik))
       nextErrors.nik = "NIK harus berisi 16 angka.";
-    if (mode === "demo" && !/^\d{16}$/.test(fields.familyCardNumber))
+    if (!/^\d{16}$/.test(fields.familyCardNumber))
       nextErrors.familyCardNumber = "Nomor KK harus berisi 16 angka.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
       nextErrors.email = "Isi alamat email yang benar.";
-    if (mode === "demo" && !/^\+?\d{10,15}$/.test(fields.phone))
+    if (!/^\+?\d{10,15}$/.test(fields.phone))
       nextErrors.phone = "Isi nomor telepon 10–15 angka.";
-    if (mode === "demo" && !photo)
-      nextErrors.photo = "Pilih foto KTP atau gunakan foto contoh.";
+    if (mode === "api" ? !photoFile : !photo)
+      nextErrors.photo = "Pilih foto KTP.";
     if (fields.password.length < 8)
       nextErrors.password = "Gunakan minimal 8 karakter.";
+    if (new TextEncoder().encode(fields.password).length > 72)
+      nextErrors.password = "Kata sandi terlalu panjang. Gunakan karakter yang lebih pendek.";
     if (fields.confirm !== fields.password || !fields.confirm)
       nextErrors.confirm = "Ketik ulang kata sandi yang sama.";
     if (!consent)
@@ -146,7 +169,11 @@ export function RegisterPage() {
     }
     setBusy(true);
     try {
-      const result = await register({ ...fields, identityPhoto: photo ?? undefined });
+      const result = await register({
+        ...fields,
+        identityPhoto: photo ?? undefined,
+        identityPhotoFile: mode === "api" ? photoFile ?? undefined : undefined,
+      });
       navigate(
         result.signedIn
           ? permittedReturnPath(params.get("next"), result.account.role)
@@ -221,7 +248,7 @@ export function RegisterPage() {
       )}
       <p className="text-sm mt-4" role="status">
         Langkah {stage} dari 2 ·{" "}
-        {stage === 1 ? "Nama dan akun" : mode === "demo" ? "Identitas dan keamanan" : "Keamanan akun"}
+        {stage === 1 ? "Nama dan akun" : "Identitas dan keamanan"}
       </p>
       <Link
         className="text-link inline-flex items-center min-h-[44px]"
@@ -235,7 +262,7 @@ export function RegisterPage() {
           onClose={() => setPendingPhoto(null)}
           onReady={(file) => {
             setPendingPhoto(null);
-            choosePhoto(file);
+            choosePhoto(file, false);
           }}
         />
       )}
@@ -254,7 +281,7 @@ export function RegisterPage() {
         </fieldset>
         {stage === 1 && (
           <button type="submit" className="button-primary">
-            {mode === "demo" ? "Lanjutkan data identitas" : "Lanjutkan ke kata sandi"}
+            Lanjutkan ke data identitas
           </button>
         )}
         <div hidden={stage !== 2} className="space-y-5">
@@ -268,61 +295,48 @@ export function RegisterPage() {
           >
             Ubah data akun
           </button>
-          {mode === "demo" && (
-            <div className="form-grid">
-              {input("nik", "NIK (16 angka)")}
-              {input("familyCardNumber", "Nomor Kartu Keluarga (16 angka)")}
-              {input("phone", "Nomor telepon", "tel", "tel")}
-            </div>
-          )}
-          {mode === "demo" && (
-            <fieldset>
-              <legend>Foto KTP</legend>
-              <p className="field-hint">
-                JPG atau PNG, maksimal 5 MB. Pastikan tulisan dan seluruh sisi
-                kartu terlihat.
-              </p>
-              <div className="identity-upload">
-                {preview && (
-                  <img src={preview} alt="Pratinjau foto KTP yang dipilih" />
-                )}
-                <div>
-                  <input
-                    id="register-photo"
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    onChange={(event) => choosePhoto(event.target.files?.[0])}
-                    aria-invalid={!!errors.photo}
-                    aria-describedby="register-photo-hint"
-                  />
-                  {photo && <p className="selected-file">{photo.name}</p>}
-                  <button
-                    type="button"
-                    className="text-link"
-                    onClick={() => {
-                      setPhoto({
-                        name: "ktp-contoh.svg",
-                        type: "image/svg+xml",
-                        size: 0,
-                        sample: true,
-                      });
-                      setPreview("/images/ktp-contoh.svg");
-                      setErrors((previous) => ({ ...previous, photo: "" }));
-                    }}
-                  >
+          <div className="form-grid">
+            {input("nik", "NIK (16 angka)")}
+            {input("familyCardNumber", "Nomor Kartu Keluarga (16 angka)")}
+            {input("phone", "Nomor telepon", "tel", "tel")}
+          </div>
+          <fieldset>
+            <legend>Foto KTP</legend>
+            <p className="field-hint">
+              JPG atau PNG, maksimal {maxPhotoMb} MB. Pastikan tulisan dan seluruh sisi
+              kartu terlihat.
+            </p>
+            <div className="identity-upload">
+              {preview && (
+                <img src={preview} alt="Pratinjau foto KTP yang dipilih" />
+              )}
+              <div>
+                <input
+                  id="register-photo"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={(event) => choosePhoto(event.target.files?.[0])}
+                  aria-invalid={!!errors.photo}
+                  aria-describedby="register-photo-hint"
+                />
+                {photo && <p className="selected-file">{photo.name}</p>}
+                {(mode === "demo" || DEMO_HELPERS_ENABLED) && (
+                  <button type="button" className="text-link" onClick={useExamplePhoto}>
                     Gunakan foto contoh
                   </button>
-                  <p
-                    id="register-photo-hint"
-                    className={errors.photo ? "field-error" : "field-hint"}
-                  >
-                    {errors.photo ||
-                      "Foto hanya dipratinjau selama pendaftaran. Pada versi contoh ini, yang disimpan hanya keterangan file."}
-                  </p>
-                </div>
+                )}
+                <p
+                  id="register-photo-hint"
+                  className={errors.photo ? "field-error" : "field-hint"}
+                >
+                  {errors.photo ||
+                    (mode === "api"
+                      ? "Foto KTP disimpan secara privat untuk pendaftaran akun."
+                      : "Mode contoh hanya menyimpan keterangan file di browser.")}
+                </p>
               </div>
-            </fieldset>
-          )}
+            </div>
+          </fieldset>
           <fieldset>
             <legend>Keamanan akun</legend>
             <div className="form-grid">

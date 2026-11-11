@@ -62,6 +62,19 @@ export const serverAuth = {
     return mapServerAccount(result.user);
   },
   async register(input: RegisterInput) {
+    if (!input.identityPhotoFile || !input.familyCardNumber) {
+      throw new Error("Lengkapi nomor KK dan pilih foto KTP.");
+    }
+    const body = new FormData();
+    body.set("display_name", input.name.trim());
+    body.set("email", input.email.trim());
+    body.set("password", input.password);
+    body.set("phone", input.phone);
+    body.set("nik", input.nik);
+    body.set("family_card_number", input.familyCardNumber);
+    body.set("privacy_accepted", "true");
+    body.set("privacy_notice_version", "2026-11-11");
+    body.set("identity_photo", input.identityPhotoFile);
     const result = await request<{
       user: ServerUser;
       verification_required: boolean;
@@ -69,13 +82,8 @@ export const serverAuth = {
       "/auth/register",
       {
         method: "POST",
-        body: {
-          display_name: input.name.trim(),
-          email: input.email.trim(),
-          password: input.password,
-          privacy_accepted: true,
-          privacy_notice_version: "2026-11-01",
-        },
+        body,
+        timeoutMs: 30000,
       },
       false,
     );

@@ -80,6 +80,7 @@ export async function request<T>(
   } = {},
   retry = true,
 ): Promise<T> {
+  const multipartBody = options.body instanceof FormData ? options.body : null;
   const abort = new AbortController();
   const timeoutMs =
     options.timeoutMs ?? (path.includes('/inspections') ? 45000 : 15000);
@@ -97,13 +98,13 @@ export async function request<T>(
           Accept: "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(options.headers ?? {}),
-          ...(options.body === undefined
+          ...(options.body === undefined || multipartBody
             ? {}
             : { "Content-Type": "application/json" }),
         },
         ...(options.body === undefined
           ? {}
-          : { body: JSON.stringify(options.body) }),
+          : { body: multipartBody ?? JSON.stringify(options.body) }),
       });
     } catch (error) {
       throw new ApiError(

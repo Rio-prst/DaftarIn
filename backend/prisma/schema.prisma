@@ -407,10 +407,23 @@ model User {
   idempotencyRecords IdempotencyRecord[]
   accountTokens AccountToken[]
   preferences AccountPreference?
+  identity AccountIdentity?
 
   @@unique([email])
   @@index([accountStatus, updatedAt])
   @@map("users")
+}
+
+model AccountIdentity {
+  userId String @id @db.Uuid
+  nik String @db.VarChar(16)
+  familyCardNumber String @db.VarChar(16)
+  photoStorageKey String
+  privacyNoticeVersion String @db.VarChar(100)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_identities")
 }
 
 model RefreshSession {

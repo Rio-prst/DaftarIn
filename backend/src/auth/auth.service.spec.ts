@@ -105,6 +105,12 @@ describe('AuthService', () => {
   let signAsync: jest.Mock;
   let configGet: jest.Mock;
   let service: AuthService;
+  const storage = {
+    uploadFile: jest.fn(),
+    deleteFile: jest.fn(),
+    createSignedUrl: jest.fn(),
+    downloadFile: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -144,6 +150,7 @@ describe('AuthService', () => {
       repository,
       { signAsync } as unknown as JwtService,
       { get: configGet } as unknown as ConfigService,
+      storage,
     );
   });
 
@@ -177,6 +184,48 @@ describe('AuthService', () => {
         roles: ['citizen'],
         status: 'active',
       });
+    });
+
+    const registration = {
+      displayName: 'Budi',
+      email: 'budi@example.com',
+      password: 'secret123',
+      identity: {
+        phone: '080000000001',
+        nik: '0000000000000001',
+        familyCardNumber: '0000000000000002',
+        privacyNoticeVersion: '2026-11-11',
+        photo: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK2sAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      },
+    };
+
+    it('stores an identity photo privately and keeps identity out of the response', async () => {
+      repository.findUserByEmail.mockResolvedValue(null);
+      repository.createCitizenUser.mockResolvedValue(makeUser());
+
+      const result = await service.register(registration);
+      const [key, photo, mime] = storage.uploadFile.mock.calls[0];
+      expect(key).toMatch(/^registration-identities\/[a-f0-9-]+\.png$/);
+      expect(photo).toEqual(registration.identity.photo);
+      expect(mime).toBe('image/png');
+      const { photo: _, ...fields } = registration.identity;
+      expect(repository.createCitizenUser).toHaveBeenCalledWith(
+        expect.objectContaining({ identity: { ...fields, photoStorageKey: key } }),
+      );
+      expect(result.user).not.toHaveProperty('identity');
+      expect(storage.deleteFile).not.toHaveBeenCalled();
+    });
+
+    it('removes the uploaded identity photo when creating the account fails', async () => {
+      repository.findUserByEmail.mockResolvedValue(null);
+      const failure = new Error('create failed');
+      repository.createCitizenUser.mockRejectedValue(failure);
+
+      await expect(service.register(registration)).rejects.toBe(failure);
+      expect(storage.deleteFile).toHaveBeenCalledWith(storage.uploadFile.mock.calls[0][0]);
     });
 
     it('rejects an email that is already registered', async () => {
