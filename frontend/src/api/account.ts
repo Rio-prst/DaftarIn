@@ -4,6 +4,11 @@ export interface AccountProfile {
   display_name: string;
   email: string;
   phone: string;
+  identity?: {
+    nik_last_four: string;
+    family_card_last_four: string;
+    photo_uploaded: boolean;
+  } | null;
   email_verified: boolean;
   created_at: string;
   updated_at: string;

@@ -45,6 +45,13 @@ export function ProfileSettings() {
     };
   }, [mode, user?.id, attempt]);
   if (!user) return null;
+  const nikLastFour = mode === "api" ? profile?.identity?.nik_last_four : user.nik?.slice(-4);
+  const familyCardLastFour = mode === "api"
+    ? profile?.identity?.family_card_last_four
+    : user.familyCardNumber?.slice(-4);
+  const photoAdded = mode === "api" ? profile?.identity?.photo_uploaded : !!user.identityPhoto;
+  const showIdentity = user.role === "warga" && !loading && !loadError;
+  const masked = (lastFour?: string) => lastFour ? "•••• •••• •••• " + lastFour : "Belum tercatat";
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
@@ -163,11 +170,21 @@ export function ProfileSettings() {
             <dt>Peran</dt>
             <dd>{roleLabels[user.role]}</dd>
           </div>
-          {user.nik && (
-            <div>
-              <dt>NIK</dt>
-              <dd>{"•••• •••• •••• " + user.nik.slice(-4)}</dd>
-            </div>
+          {showIdentity && (
+            <>
+              <div>
+                <dt>NIK</dt>
+                <dd>{masked(nikLastFour)}</dd>
+              </div>
+              <div>
+                <dt>Nomor Kartu Keluarga</dt>
+                <dd>{masked(familyCardLastFour)}</dd>
+              </div>
+              <div>
+                <dt>Foto KTP</dt>
+                <dd>{photoAdded ? "Sudah ditambahkan" : "Belum tercatat"}</dd>
+              </div>
+            </>
           )}
           {(profile?.created_at || user.createdAt) && (
             <div>

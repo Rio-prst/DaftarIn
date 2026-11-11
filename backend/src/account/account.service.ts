@@ -25,6 +25,7 @@ export class AccountService {
         displayName: true,
         email: true,
         phone: true,
+        identity: { select: { nik: true, familyCardNumber: true } },
         emailVerifiedAt: true,
         createdAt: true,
         updatedAt: true,
@@ -36,6 +37,13 @@ export class AccountService {
       display_name: user.displayName,
       email: user.email,
       phone: user.phone || '',
+      identity: user.identity
+        ? {
+            nik_last_four: user.identity.nik.slice(-4),
+            family_card_last_four: user.identity.familyCardNumber.slice(-4),
+            photo_uploaded: true,
+          }
+        : null,
       email_verified: Boolean(user.emailVerifiedAt),
       created_at: user.createdAt.toISOString(),
       updated_at: user.updatedAt.toISOString(),
