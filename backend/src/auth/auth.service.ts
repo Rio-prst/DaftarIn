@@ -4,17 +4,21 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes } from 'node:crypto';
+import FileType from 'file-type';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   AccountStatus,
   AccountTokenType,
   Prisma,
 } from '../generated/prisma/client';
+import { STORAGE_SERVICE, type IStorageService } from '../storage/interfaces/storage.service.interface';
 import { SessionAlreadyRotatedError } from './errors/session-already-rotated.error';
 import {
   AUTH_REPOSITORY,
@@ -38,11 +42,15 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService implements IAuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(AUTH_REPOSITORY)
     private readonly authRepository: IAuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(STORAGE_SERVICE)
+    private readonly storage?: IStorageService,
   ) {}
 
   async register(input: RegisterInput): Promise<RegisterResult> {
@@ -55,18 +63,38 @@ export class AuthService implements IAuthService {
 
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
 
+    let identity;
+    if (input.identity) {
+      const { photo, ...fields } = input.identity;
+      const detected = await FileType.fromBuffer(photo).catch(() => undefined);
+      if (detected?.mime !== 'image/jpeg' && detected?.mime !== 'image/png') {
+        throw new BadRequestException('Isi foto KTP harus berupa JPG atau PNG.');
+      }
+      if (!this.storage) {
+        throw new ServiceUnavailableException('Penyimpanan foto KTP belum tersedia.');
+      }
+
+      const photoStorageKey = `registration-identities/${randomUUID()}.${detected.ext}`;
+      await this.storage.uploadFile(photoStorageKey, photo, detected.mime);
+      identity = { ...fields, photoStorageKey };
+    }
+
+    let user: AuthUser;
     try {
-      const user = await this.authRepository.createCitizenUser({
+      user = await this.authRepository.createCitizenUser({
         displayName: input.displayName,
         email,
         passwordHash,
+        ...(identity && { identity }),
       });
-
-      return {
-        user: this.toUserView(user),
-        verificationRequired: false,
-      };
     } catch (error) {
+      if (identity && this.storage) {
+        try {
+          await this.storage.deleteFile(identity.photoStorageKey);
+        } catch {
+          this.logger.warn(`Gagal membersihkan foto pendaftaran: ${identity.photoStorageKey}`);
+        }
+      }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -76,6 +104,11 @@ export class AuthService implements IAuthService {
 
       throw error;
     }
+
+    return {
+      user: this.toUserView(user),
+      verificationRequired: false,
+    };
   }
 
   async login(input: LoginInput): Promise<AuthSessionResult> {

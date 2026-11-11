@@ -5,7 +5,7 @@ export interface AskRagResponse {
   legalCitations: string[];
   actionSteps: string[];
   quickAction?: { label: string; route: string };
-  source: "ai" | "catalog" | "local_rag";
+  source?: "ai" | "catalog" | "local_rag";
   notice?: string;
 }
 export const safeChatRoute = (value: string) =>
@@ -20,6 +20,14 @@ export async function askAdmindukRag(params: {
     /\b(?:\d[ -]?){16}\b/g,
     "[identitas disamarkan]",
   );
+  if (/^(?:halo|hai|hei|hello|selamat (?:pagi|siang|sore|malam))(?:\s+(?:daftarin|asisten|min|kak))?[\s!,.?]*$/i.test(query.trim())) {
+    return {
+      text: "Halo! Aku bisa bantu mencari layanan dan menyiapkan berkas. Kamu mau mengurus dokumen apa?",
+      legalCitations: [],
+      actionSteps: [],
+      quickAction: { label: "Lihat layanan", route: "/katalog" },
+    };
+  }
   try {
     const response = await fetch(API_BASE_URL + "/chat/messages", {
       method: "POST",

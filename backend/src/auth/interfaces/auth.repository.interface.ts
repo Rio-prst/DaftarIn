@@ -35,6 +35,13 @@ export type CreateAuthUserInput = {
   displayName: string;
   email: string;
   passwordHash: string;
+  identity?: {
+    phone: string;
+    nik: string;
+    familyCardNumber: string;
+    privacyNoticeVersion: string;
+    photoStorageKey: string;
+  };
 };
 
 export type CreateRefreshSessionInput = {

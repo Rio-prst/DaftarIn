@@ -21,20 +21,20 @@ export function PrivacyPage() {
             <p>
               Nama, email, dan kata sandi dikirim ke server untuk membuat akun.
               Kata sandi disimpan sebagai hash. Waktu dan versi persetujuan
-              penggunaan data dicatat bersama akun. Nomor telepon dapat
-              ditambahkan melalui pengaturan profil.
+              penggunaan data dicatat bersama akun. Nomor telepon, NIK, dan
+              nomor KK disimpan di database server. Foto KTP disimpan di
+              penyimpanan privat.
             </p>
             <p>
               Profil, preferensi tampilan, dan sesi masuk tersimpan pada
               database server. Sesi menggunakan cookie HttpOnly. Email belum
               diverifikasi; pendaftaran tidak memeriksa identitas melalui
-              Dukcapil. Pendaftaran pada mode ini belum meminta NIK atau foto
-              KTP.
+              Dukcapil.
             </p>
           </>
         ) : (
           <p>
-            Mode contoh menyimpan nama, email, NIK contoh, nomor telepon, dan
+            Mode contoh menyimpan nama, email, NIK contoh, nomor KK, nomor telepon, dan
             keterangan foto KTP di browser. Foto KTP pendaftaran hanya digunakan
             untuk pratinjau. Isi foto tersebut tidak disimpan. Gunakan identitas
             dan kata sandi khusus contoh.

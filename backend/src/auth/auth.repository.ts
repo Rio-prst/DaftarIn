@@ -44,6 +44,7 @@ export class AuthRepository implements IAuthRepository {
   }
 
   async createCitizenUser(input: CreateAuthUserInput): Promise<AuthUser> {
+    const identity = input.identity;
     return this.prisma.$transaction(async (transaction) => {
       const citizenRole = await transaction.role.upsert({
         where: { roleCode: 'citizen' },
@@ -61,6 +62,17 @@ export class AuthRepository implements IAuthRepository {
           authProvider: 'local',
           passwordHash: input.passwordHash,
           accountStatus: AccountStatus.ACTIVE,
+          ...(identity && {
+            phone: identity.phone,
+            identity: {
+              create: {
+                nik: identity.nik,
+                familyCardNumber: identity.familyCardNumber,
+                privacyNoticeVersion: identity.privacyNoticeVersion,
+                photoStorageKey: identity.photoStorageKey,
+              },
+            },
+          }),
           userRoles: {
             create: {
               roleId: citizenRole.id,

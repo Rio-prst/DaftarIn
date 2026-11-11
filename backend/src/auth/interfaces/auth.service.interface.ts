@@ -30,6 +30,13 @@ export type RegisterInput = {
   displayName: string;
   email: string;
   password: string;
+  identity?: {
+    phone: string;
+    nik: string;
+    familyCardNumber: string;
+    privacyNoticeVersion: string;
+    photo: Buffer;
+  };
 };
 
 export type LoginInput = {

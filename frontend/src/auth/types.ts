@@ -27,6 +27,7 @@ export interface RegisterInput {
   phone: string;
   password: string;
   identityPhoto?: IdentityPhoto;
+  identityPhotoFile?: File;
 }
 export const roleHome: Record<Role, string> = {
   warga: "/dashboard",

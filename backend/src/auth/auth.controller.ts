@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,8 +9,11 @@ import {
   Post,
   Req,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type {
   CookieOptions,
@@ -31,6 +35,8 @@ import {
   type IAuthService,
 } from './interfaces/auth.service.interface';
 
+const MAX_IDENTITY_PHOTO_BYTES = 4 * 1024 * 1024;
+
 const ACCESS_COOKIE = 'access_token';
 const REFRESH_COOKIE = 'refresh_token';
 
@@ -46,11 +52,29 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto) {
+  @UseInterceptors(
+    FileInterceptor('identity_photo', {
+      limits: { fileSize: MAX_IDENTITY_PHOTO_BYTES + 1, files: 1, fields: 8 },
+    }),
+  )
+  async register(
+    @Body() dto: RegisterDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (!file?.buffer.length) {
+      throw new BadRequestException('Pilih foto KTP dalam format JPG atau PNG.');
+    }
     const result = await this.authService.register({
       displayName: dto.display_name,
       email: dto.email,
       password: dto.password,
+      identity: {
+        phone: dto.phone,
+        nik: dto.nik,
+        familyCardNumber: dto.family_card_number,
+        privacyNoticeVersion: dto.privacy_notice_version,
+        photo: file.buffer,
+      },
     });
 
     return new Response({
