@@ -10,6 +10,7 @@ export interface Account {
   name: string;
   email: string;
   nik: string;
+  familyCardNumber?: string;
   phone: string;
   role: Role;
   active?: boolean;
@@ -22,9 +23,10 @@ export interface RegisterInput {
   name: string;
   email: string;
   nik: string;
+  familyCardNumber?: string;
   phone: string;
   password: string;
-  identityPhoto: IdentityPhoto;
+  identityPhoto?: IdentityPhoto;
 }
 export const roleHome: Record<Role, string> = {
   warga: "/dashboard",

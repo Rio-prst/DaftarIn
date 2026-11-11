@@ -64,7 +64,7 @@ function valid(value: unknown): value is FamilyMember {
   );
 }
 
-export function useFamilyMembers() {
+export function useFamilyMembers(enabled = true) {
   const { user, mode } = useAuth();
   const key = "daftarin:" + (user?.id || "guest") + ":family:v1";
 
@@ -117,6 +117,7 @@ export function useFamilyMembers() {
   }, [mode, user, readLocal]);
 
   useEffect(() => {
+    if (!enabled) return;
     void fetchMembers();
     if (mode === "demo") {
       const sync = () => setMembers(readLocal());
@@ -127,7 +128,7 @@ export function useFamilyMembers() {
         window.removeEventListener("daftarin-family-updated", sync);
       };
     }
-  }, [fetchMembers, mode, readLocal]);
+  }, [enabled, fetchMembers, mode, readLocal]);
 
   const writeLocal = (next: FamilyMember[]) => {
     if (!user || user.role !== "warga")

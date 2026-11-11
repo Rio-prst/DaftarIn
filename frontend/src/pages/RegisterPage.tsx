@@ -10,6 +10,7 @@ import { PasswordField } from "../components/PasswordField";
 type Fields = {
   name: string;
   nik: string;
+  familyCardNumber: string;
   email: string;
   phone: string;
   password: string;
@@ -18,6 +19,7 @@ type Fields = {
 const empty: Fields = {
   name: "",
   nik: "",
+  familyCardNumber: "",
   email: "",
   phone: "",
   password: "",
@@ -85,6 +87,7 @@ export function RegisterPage() {
     setFields({
       name: "Warga Contoh",
       nik: ("0000000000000000" + unique).slice(-16),
+      familyCardNumber: "0000000000000010",
       email: "warga." + unique + "@contoh.test",
       phone: "080000000001",
       password: EXAMPLE_PASSWORD,
@@ -117,6 +120,8 @@ export function RegisterPage() {
       nextErrors.name = "Isi nama lengkap sesuai identitas.";
     if (mode === "demo" && !/^\d{16}$/.test(fields.nik))
       nextErrors.nik = "NIK harus berisi 16 angka.";
+    if (mode === "demo" && !/^\d{16}$/.test(fields.familyCardNumber))
+      nextErrors.familyCardNumber = "Nomor KK harus berisi 16 angka.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
       nextErrors.email = "Isi alamat email yang benar.";
     if (mode === "demo" && !/^\+?\d{10,15}$/.test(fields.phone))
@@ -141,7 +146,7 @@ export function RegisterPage() {
     }
     setBusy(true);
     try {
-      const result = await register({ ...fields, identityPhoto: photo! });
+      const result = await register({ ...fields, identityPhoto: photo ?? undefined });
       navigate(
         result.signedIn
           ? permittedReturnPath(params.get("next"), result.account.role)
@@ -163,11 +168,13 @@ export function RegisterPage() {
     }
   };
   const input = (
-    key: "name" | "nik" | "email" | "phone",
+    key: "name" | "nik" | "familyCardNumber" | "email" | "phone",
     label: string,
     type = "text",
     autoComplete?: string,
-  ) => (
+  ) => {
+    const numericId = key === "nik" || key === "familyCardNumber";
+    return (
     <div className="form-field">
       <label htmlFor={"register-" + key}>{label}</label>
       <input
@@ -175,12 +182,12 @@ export function RegisterPage() {
         value={fields[key]}
         type={type}
         autoComplete={autoComplete}
-        inputMode={key === "nik" ? "numeric" : undefined}
-        maxLength={key === "nik" ? 16 : undefined}
+        inputMode={numericId ? "numeric" : undefined}
+        maxLength={numericId ? 16 : undefined}
         onChange={(event) =>
           change(
             key,
-            key === "nik"
+            numericId
               ? event.target.value.replace(/\D/g, "")
               : event.target.value,
           )
@@ -196,7 +203,8 @@ export function RegisterPage() {
         </p>
       )}
     </div>
-  );
+    );
+  };
   return (
     <AuthLayout
       title="Daftar akun warga"
@@ -205,7 +213,7 @@ export function RegisterPage() {
     >
       {DEMO_HELPERS_ENABLED && (
         <div className="sample-registration">
-          <p>Format: nama lengkap, email aktif, dan sandi minimal 8 karakter. Gunakan data fiktif saat mencoba; baca dan centang persetujuan sendiri. Foto dan NIK hanya diminta jika kolomnya tersedia.</p>
+          <p>Gunakan data fiktif saat mencoba. Baca persetujuan sebelum mencentangnya.</p>
           <button type="button" className="text-link" onClick={example}>
             Isi data contoh
           </button>
@@ -213,7 +221,7 @@ export function RegisterPage() {
       )}
       <p className="text-sm mt-4" role="status">
         Langkah {stage} dari 2 ·{" "}
-        {stage === 1 ? "Nama dan akun" : "Identitas dan keamanan"}
+        {stage === 1 ? "Nama dan akun" : mode === "demo" ? "Identitas dan keamanan" : "Keamanan akun"}
       </p>
       <Link
         className="text-link inline-flex items-center min-h-[44px]"
@@ -246,7 +254,7 @@ export function RegisterPage() {
         </fieldset>
         {stage === 1 && (
           <button type="submit" className="button-primary">
-            Lanjutkan data identitas
+            {mode === "demo" ? "Lanjutkan data identitas" : "Lanjutkan ke kata sandi"}
           </button>
         )}
         <div hidden={stage !== 2} className="space-y-5">
@@ -263,6 +271,7 @@ export function RegisterPage() {
           {mode === "demo" && (
             <div className="form-grid">
               {input("nik", "NIK (16 angka)")}
+              {input("familyCardNumber", "Nomor Kartu Keluarga (16 angka)")}
               {input("phone", "Nomor telepon", "tel", "tel")}
             </div>
           )}

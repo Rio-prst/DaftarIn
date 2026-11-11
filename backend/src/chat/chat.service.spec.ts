@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { ChatService } from './chat.module';
 import { retrieveAdmindukKnowledge } from './knowledge';
+import type { ICatalogService } from '../catalog/interfaces/catalog.service.interface';
 
 describe('ChatService relay', () => {
   const create = (extra: Record<string, string> = {}) => {
@@ -18,6 +19,31 @@ describe('ChatService relay', () => {
     } as unknown as ConfigService);
   };
   afterEach(() => jest.restoreAllMocks());
+  it.each(['ada apa aja disini?', 'Di sini bisa urus apa aja?', 'Layanan apa saja?'])(
+    'answers %s from the catalog without an AI provider',
+    async (query) => {
+      const listServices = jest.fn().mockResolvedValue({
+        data: [{ name: 'Kartu Keluarga' }, { name: 'KTP-el' }],
+        meta: { total_items: 2 },
+      });
+      const service = new ChatService(new ConfigService(), { listServices } as unknown as ICatalogService);
+      await expect(service.ask({ query })).resolves.toMatchObject({
+        source: 'catalog',
+        text: expect.stringContaining('Kartu Keluarga'),
+        quickAction: { route: '/katalog' },
+      });
+    },
+  );
+  it('routes a damaged KK to its published guide instead of the KTP guide', async () => {
+    const listServices = jest.fn().mockResolvedValue({
+      data: [{ slug: 'penerbitan-ktp-el' }, { slug: 'penerbitan-kartu-keluarga' }],
+    });
+    const service = new ChatService(new ConfigService(), { listServices } as unknown as ICatalogService);
+    await expect(service.ask({ query: 'KK saya rusak. Apa yang perlu saya siapkan?' })).resolves.toMatchObject({
+      source: 'catalog',
+      quickAction: { route: '/layanan/1' },
+    });
+  });
   it('reads server process.env through the real Nest ConfigService', () => {
     const environment = jest.replaceProperty(process, 'env', {
       CHAT_AI_PROVIDER: 'openai_compatible',

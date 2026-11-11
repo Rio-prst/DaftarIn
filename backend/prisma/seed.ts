@@ -161,7 +161,7 @@ async function seedAdditionalDemoServices() {
           displayOrder: 1,
         },
       });
-    });
+    }, { timeout: 30_000 });
   }
 }
 

@@ -92,6 +92,13 @@ function ApiAssignments() {
   );
   const action = useServerAction(reviews.refresh);
   const [query, setQuery] = useState("");
+  const search = query.trim().toLowerCase();
+  const visibleReviews = reviews.data?.filter((item) =>
+    [item.internal_reference, item.citizen.name, item.service.name]
+      .join(" ")
+      .toLowerCase()
+      .includes(search),
+  );
   return (
     <WorkspaceLayout title="Petugas & penugasan">
       <Link className="button-secondary my-4" to="/admin/akun">
@@ -112,15 +119,8 @@ function ApiAssignments() {
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
-      {reviews.loading && <p role="status">Memuat penugasan…</p>}
-      {reviews.data
-        ?.filter((item) =>
-          [item.internal_reference, item.citizen.name, item.service.name]
-            .join(" ")
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-        )
-        .map((item) => (
+      {reviews.loading && !reviews.data && <p role="status">Memuat penugasan…</p>}
+      {visibleReviews?.map((item) => (
           <form
             key={item.id + ":" + item.version}
             className="plain-panel auth-form my-4"
@@ -216,6 +216,14 @@ function ApiAssignments() {
             </button>
           </form>
         ))}
+      {search && Boolean(reviews.data?.length) && visibleReviews?.length === 0 && (
+        <div className="plain-panel mt-5">
+          <p role="status">Tidak ada penugasan yang cocok dengan pencarian.</p>
+          <button type="button" className="text-link mt-2" onClick={() => setQuery("")}>
+            Hapus pencarian
+          </button>
+        </div>
+      )}
       {!reviews.loading && !reviews.error && !reviews.data?.length && (
         <p className="plain-panel mt-5">
           Belum ada permintaan tinjauan. Warga perlu mengirim terlebih dahulu.

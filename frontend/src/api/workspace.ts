@@ -3,39 +3,51 @@ import { request } from "./transport";
 import { api } from "./client";
 
 export { request as serverRequest };
-export function useServerResource<T>(key: string, load: () => Promise<T>) {
+export function useServerResource<T>(key: string | null, load: () => Promise<T>) {
   const loader = useRef(load);
   loader.current = load;
   const [state, setState] = useState<{
+    key: string;
     data?: T;
     error: string;
     loading: boolean;
-  }>({ error: "", loading: true });
+  }>();
   const [version, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((value) => value + 1), []);
   useEffect(() => {
+    if (key === null) return;
     let alive = true;
-    setState({ error: "", loading: true });
+    setState((previous) => ({
+      key,
+      data: previous?.key === key ? previous.data : undefined,
+      error: "",
+      loading: true,
+    }));
     loader
       .current()
       .then((data) => {
-        if (alive) setState({ data, error: "", loading: false });
+        if (alive) setState({ key, data, error: "", loading: false });
       })
       .catch((error) => {
         if (alive)
-          setState({
+          setState((previous) => ({
+            key,
+            data: previous?.key === key ? previous.data : undefined,
             error:
               error instanceof Error
                 ? error.message
                 : "Data belum dapat dimuat.",
             loading: false,
-          });
+          }));
       });
     return () => {
       alive = false;
     };
   }, [key, version]);
-  return { ...state, refresh };
+  if (state?.key !== key) {
+    return { data: undefined, error: "", loading: key !== null, refresh };
+  }
+  return { data: state.data, error: state.error, loading: state.loading, refresh };
 }
 
 export async function serverList<T>(path: string): Promise<T[]> {
